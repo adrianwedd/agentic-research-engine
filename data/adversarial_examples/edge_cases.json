@@ -1,0 +1,302 @@
+[
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 10%.",
+    "flawed_output": "The success rate was 11%.",
+    "critique": "The correct percentage is 10%, not 11%."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 5%.",
+    "flawed_output": "The success rate was 6%.",
+    "critique": "The correct percentage is 5%, not 6%."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 11/02/2018.",
+    "flawed_output": "The event occurred on 02/11/2018.",
+    "critique": "The date 02/11/2018 misinterprets the format; it should be 11/02/2018."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 07/08/2019.",
+    "flawed_output": "The event occurred on 08/07/2019.",
+    "critique": "The date 08/07/2019 misinterprets the format; it should be 07/08/2019."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 80%.",
+    "flawed_output": "The success rate was 84%.",
+    "critique": "The correct percentage is 80%, not 84%."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 07/08/2019.",
+    "flawed_output": "The event occurred on 08/07/2019.",
+    "critique": "The date 08/07/2019 misinterprets the format; it should be 07/08/2019."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 10 meters.",
+    "flawed_output": "The measurement was 10 feet.",
+    "critique": "Confuses units: the correct value is 10 meters."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "All cats are mammals.",
+    "flawed_output": "Fido is a mammal, therefore Fido is a cat.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 10 meters.",
+    "flawed_output": "The measurement was 10 feet.",
+    "critique": "Confuses units: the correct value is 10 meters."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 01/04/2020.",
+    "flawed_output": "The event occurred on 04/01/2020.",
+    "critique": "The date 04/01/2020 misinterprets the format; it should be 01/04/2020."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The moon landing happened in 1969.",
+    "flawed_output": "The moon landing happened in 1996.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 03/06/2022.",
+    "flawed_output": "The event occurred on 06/03/2022.",
+    "critique": "The date 06/03/2022 misinterprets the format; it should be 03/06/2022."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 20 kilometers.",
+    "flawed_output": "The measurement was 20 miles.",
+    "critique": "Confuses units: the correct value is 20 kilometers."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If it rains, the ground gets wet.",
+    "flawed_output": "The ground is wet, so it rained.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 10%.",
+    "flawed_output": "The success rate was 19%.",
+    "critique": "The correct percentage is 10%, not 19%."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "All cats are mammals.",
+    "flawed_output": "Fido is a mammal, therefore Fido is a cat.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The Berlin Wall fell in 1989.",
+    "flawed_output": "The Berlin Wall fell in 1998.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 25%.",
+    "flawed_output": "The success rate was 28%.",
+    "critique": "The correct percentage is 25%, not 28%."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 90%.",
+    "flawed_output": "The success rate was 91%.",
+    "critique": "The correct percentage is 90%, not 91%."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 12/05/2021.",
+    "flawed_output": "The event occurred on 05/12/2021.",
+    "critique": "The date 05/12/2021 misinterprets the format; it should be 12/05/2021."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If it rains, the ground gets wet.",
+    "flawed_output": "The ground is wet, so it rained.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The first iPhone launched in 2007.",
+    "flawed_output": "The first iPhone launched in 2017.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 100 Celsius.",
+    "flawed_output": "The measurement was 100 Fahrenheit.",
+    "critique": "Confuses units: the correct value is 100 Celsius."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 30%.",
+    "flawed_output": "The success rate was 34%.",
+    "critique": "The correct percentage is 30%, not 34%."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If I study, I'll pass the exam.",
+    "flawed_output": "I passed the exam, so I must have studied.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 5 kilograms.",
+    "flawed_output": "The measurement was 5 pounds.",
+    "critique": "Confuses units: the correct value is 5 kilograms."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 25%.",
+    "flawed_output": "The success rate was 34%.",
+    "critique": "The correct percentage is 25%, not 34%."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If the alarm is set, the door locks.",
+    "flawed_output": "The door is locked, so the alarm is set.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The Declaration of Independence was signed in 1776.",
+    "flawed_output": "The Declaration of Independence was signed in 1767.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 20 kilometers.",
+    "flawed_output": "The measurement was 20 miles.",
+    "critique": "Confuses units: the correct value is 20 kilometers."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If I study, I'll pass the exam.",
+    "flawed_output": "I passed the exam, so I must have studied.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If the alarm is set, the door locks.",
+    "flawed_output": "The door is locked, so the alarm is set.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The moon landing happened in 1969.",
+    "flawed_output": "The moon landing happened in 1996.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The Berlin Wall fell in 1989.",
+    "flawed_output": "The Berlin Wall fell in 1998.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "If it rains, the ground gets wet.",
+    "flawed_output": "The ground is wet, so it rained.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 01/04/2020.",
+    "flawed_output": "The event occurred on 04/01/2020.",
+    "critique": "The date 04/01/2020 misinterprets the format; it should be 01/04/2020."
+  },
+  {
+    "category": "logical_fallacy",
+    "prompt": "All cats are mammals.",
+    "flawed_output": "Fido is a mammal, therefore Fido is a cat.",
+    "critique": "The conclusion does not logically follow from the premise."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The Berlin Wall fell in 1989.",
+    "flawed_output": "The Berlin Wall fell in 1998.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 10%.",
+    "flawed_output": "The success rate was 17%.",
+    "critique": "The correct percentage is 10%, not 17%."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The Declaration of Independence was signed in 1776.",
+    "flawed_output": "The Declaration of Independence was signed in 1767.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 07/08/2019.",
+    "flawed_output": "The event occurred on 08/07/2019.",
+    "critique": "The date 08/07/2019 misinterprets the format; it should be 07/08/2019."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 5 kilograms.",
+    "flawed_output": "The measurement was 5 pounds.",
+    "critique": "Confuses units: the correct value is 5 kilograms."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The moon landing happened in 1969.",
+    "flawed_output": "The moon landing happened in 1996.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 11/02/2018.",
+    "flawed_output": "The event occurred on 02/11/2018.",
+    "critique": "The date 02/11/2018 misinterprets the format; it should be 11/02/2018."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 20 kilometers.",
+    "flawed_output": "The measurement was 20 miles.",
+    "critique": "Confuses units: the correct value is 20 kilometers."
+  },
+  {
+    "category": "historical_year_error",
+    "prompt": "The first iPhone launched in 2007.",
+    "flawed_output": "The first iPhone launched in 2017.",
+    "critique": "Incorrect year stated."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 20 kilometers.",
+    "flawed_output": "The measurement was 20 miles.",
+    "critique": "Confuses units: the correct value is 20 kilometers."
+  },
+  {
+    "category": "date_confusion",
+    "prompt": "The event occurred on 12/05/2021.",
+    "flawed_output": "The event occurred on 05/12/2021.",
+    "critique": "The date 05/12/2021 misinterprets the format; it should be 12/05/2021."
+  },
+  {
+    "category": "unit_swap",
+    "prompt": "The measurement was 10 meters.",
+    "flawed_output": "The measurement was 10 feet.",
+    "critique": "Confuses units: the correct value is 10 meters."
+  },
+  {
+    "category": "percentage_misinterpretation",
+    "prompt": "The success rate was 10%.",
+    "flawed_output": "The success rate was 14%.",
+    "critique": "The correct percentage is 10%, not 14%."
+  }
+]
