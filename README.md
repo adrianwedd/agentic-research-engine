@@ -80,9 +80,11 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    # Now, edit .env with your credentials
    ```
 
-5. **Launch core services:** The core infrastructure (e.g., OpenTelemetry collector, databases) can be launched using Docker Compose.
+5. **Launch core services:** The repository provides a `docker-compose.yml` that
+   starts an OpenTelemetry collector and Jaeger backend. Set `ENVIRONMENT` and
+   `SERVICE_VERSION` in your shell to tag telemetry data, then bring the stack up:
    ```bash
-   docker-compose up -d
+   ENVIRONMENT=dev SERVICE_VERSION=0.1.0 docker-compose up -d
    ```
 
 ## **6. Running Tests**

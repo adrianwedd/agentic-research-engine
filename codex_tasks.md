@@ -94,6 +94,14 @@ acceptance_criteria: []
 - [ ] When the service performs an action and emits a trace
 - [ ] Then the corresponding trace is visible in the configured observability backend
 
+```codex-task
+id: P1-04
+title: Set up OpenTelemetry collector and exporter
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-05: Define core agent action tracing schema
 
 **Goal:** Define and document a standardized OpenTelemetry tracing schema that will be used across the entire system.
@@ -1041,6 +1049,8 @@ acceptance_criteria: []
 
 ```codex-task
 id: P5-02
+title: Docker-based OTel collector service
+
 title: Add rollback support for CD pipeline
 steps: []
 acceptance_criteria: []
