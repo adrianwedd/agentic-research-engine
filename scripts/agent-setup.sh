@@ -3,7 +3,7 @@ set -e
 
 # Install Python dependencies
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 
 # Install pre-commit hooks
 pre-commit install
