@@ -1,6 +1,11 @@
+from threading import Thread
+
 import pytest
+import requests
 
 from agents.supervisor import State, SupervisorAgent
+from services.ltm_service import EpisodicMemoryService, InMemoryStorage
+from services.ltm_service.api import LTMService, LTMServiceServer
 
 
 class DummyGraphState:
@@ -9,6 +14,16 @@ class DummyGraphState:
 
     def update(self, other):
         self.data.update(other)
+
+
+def _start_server():
+    storage = InMemoryStorage()
+    service = LTMService(EpisodicMemoryService(storage))
+    server = LTMServiceServer(service, host="127.0.0.1", port=0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    endpoint = f"http://127.0.0.1:{server.httpd.server_port}"
+    return server, endpoint
 
 
 def test_analyze_query_returns_state():
@@ -88,3 +103,27 @@ def test_plan_research_task_produces_valid_plan():
     plan = agent.plan_research_task("What is AI?")
     # should not raise
     agent.validate_plan(plan)
+
+
+def test_plan_uses_ltm_endpoint():
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"query": "example"},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    requests.post(f"{endpoint}/consolidate", json={"record": record})
+
+    agent = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=1)
+    plan = agent.plan_research_task("example")
+
+    assert plan["context"]
+    server.httpd.shutdown()
+
+
+def test_plan_handles_no_memories():
+    server, endpoint = _start_server()
+    agent = SupervisorAgent(ltm_endpoint=endpoint)
+    plan = agent.plan_research_task("missing")
+    assert plan["context"] == []
+    server.httpd.shutdown()
