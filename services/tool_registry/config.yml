@@ -1,3 +1,4 @@
 permissions:
   WebResearcher:
     - web_search
+    - pdf_extract
