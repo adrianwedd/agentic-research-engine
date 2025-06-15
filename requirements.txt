@@ -9,6 +9,7 @@ pytesseract
 Pillow
 beautifulsoup4
 readability-lxml
+jsonschema
 
 opentelemetry-api
 opentelemetry-sdk

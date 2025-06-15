@@ -65,3 +65,26 @@ def test_parse_plan_invalid_yaml_raises():
     agent = SupervisorAgent()
     with pytest.raises(ValueError):
         agent.parse_plan("not: [valid")
+
+
+def test_parse_plan_schema_violation_raises():
+    agent = SupervisorAgent()
+    bad_yaml = """
+    query: q
+    context: []
+    graph:
+      nodes:
+        - id: n1
+          agent: WebResearcher
+    evaluation:
+      metric: quality
+    """
+    with pytest.raises(ValueError):
+        agent.parse_plan(bad_yaml)
+
+
+def test_plan_research_task_produces_valid_plan():
+    agent = SupervisorAgent()
+    plan = agent.plan_research_task("What is AI?")
+    # should not raise
+    agent.validate_plan(plan)
