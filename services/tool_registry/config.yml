@@ -9,4 +9,6 @@ permissions:
     - MemoryManager
   retrieve_memory:
     - MemoryManager
+  fact_check:
+    - Evaluator
 
