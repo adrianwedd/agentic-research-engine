@@ -1,0 +1,11 @@
+{
+  "request": {
+    "headers": {"X-Role": "viewer"},
+    "params": {"memory_type": "episodic"},
+    "json": {"query": {"description": "Write docs"}}
+  },
+  "response": {
+    "status": 200,
+    "body": {"results": "*"}
+  }
+}

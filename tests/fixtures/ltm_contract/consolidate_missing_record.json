@@ -1,0 +1,10 @@
+{
+  "request": {
+    "headers": {"X-Role": "editor"},
+    "json": {}
+  },
+  "response": {
+    "status": 400,
+    "body": {"error": "missing record"}
+  }
+}
