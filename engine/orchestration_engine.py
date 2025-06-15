@@ -25,6 +25,7 @@ from engine.state import State
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
 # introduce a dedicated class with additional orchestration-specific fields.
+
 GraphState = State
 
 logger = logging.getLogger(__name__)

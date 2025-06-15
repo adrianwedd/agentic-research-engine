@@ -125,6 +125,13 @@ steps: []
 acceptance_criteria: []
 ```
 
+```codex-task
+id: P1-32
+title: Extend orchestration engine state alias
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-05: Define core agent action tracing schema
 
 **Goal:** Define and document a standardized OpenTelemetry tracing schema that will be used across the entire system.
@@ -255,6 +262,14 @@ acceptance_criteria: []
 - [ ] Given the 'State' object contains a sub-task for the WebResearcher to "find papers on Transformer architecture"
 - [ ] When the 'WebResearcher' node is executed
 - [ ] Then the agent calls the 'web_search' tool with a relevant query, such as "Transformer architecture academic papers"
+
+```codex-task
+id: P1-11
+title: Implement WebResearcher agent for information extraction
+status: done
+steps: []
+acceptance_criteria: []
+```
 
 ## P1-12: Implement WebResearcher's summarization capability ✅
 
