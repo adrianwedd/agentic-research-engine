@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from engine.orchestration_engine import GraphState, create_orchestration_engine
+from engine.routing import make_edge_type_router
 
 pytestmark = pytest.mark.core
 
@@ -101,3 +102,37 @@ def test_export_dot_outputs_valid_graph():
     )
 
     assert dot == expected
+
+
+def test_typed_edges_routing_and_lookup():
+    engine = create_orchestration_engine()
+
+    def start(state: GraphState) -> GraphState:
+        return state
+
+    def node_b(state: GraphState) -> GraphState:
+        state.update({"dest": "B"})
+        return state
+
+    def node_c(state: GraphState) -> GraphState:
+        state.update({"dest": "C"})
+        return state
+
+    engine.add_node("Start", start)
+    engine.add_node("B", node_b)
+    engine.add_node("C", node_c)
+
+    engine.add_edge("Start", "B", edge_type="success")
+    engine.add_edge("Start", "C", edge_type="fail")
+
+    router = make_edge_type_router(engine, "Start", state_key="path")
+    engine.add_router("Start", router)
+
+    state = GraphState(data={"path": "fail"})
+    result = asyncio.run(engine.run_async(state))
+
+    assert result.data["dest"] == "C"
+    assert engine.get_edges("Start", "success")[0].end == "B"
+    engine.build()
+    dot = engine.export_dot()
+    assert '"Start" -> "B" [label="success"];' in dot

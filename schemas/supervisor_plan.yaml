@@ -42,6 +42,9 @@ mapping:
               to:
                 type: str
                 required: yes
+              edge_type:
+                type: str
+                required: no
       parallel_groups:
         type: seq
         sequence:
