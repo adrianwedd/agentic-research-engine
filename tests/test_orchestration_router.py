@@ -1,12 +1,41 @@
 import asyncio
+import importlib
 
 import pytest
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    SimpleSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
 
 from engine.orchestration_engine import GraphState, create_orchestration_engine
 from engine.routing import RoutingError, make_status_router
 
 
+class InMemorySpanExporter(SpanExporter):
+    def __init__(self) -> None:
+        self.spans = []
+
+    def export(self, spans):
+        self.spans.extend(spans)
+        return SpanExportResult.SUCCESS
+
+    def shutdown(self) -> None:  # pragma: no cover - interface req
+        pass
+
+    def force_flush(self, timeout_millis: int = 30_000) -> bool:  # pragma: no cover
+        return True
+
+
 def test_conditional_router_executes_verifier():
+    importlib.reload(trace)
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
     engine = create_orchestration_engine()
 
     def start(state: GraphState) -> GraphState:
@@ -41,6 +70,10 @@ def test_conditional_router_executes_verifier():
     result = asyncio.run(engine.run_async(state))
 
     assert result["data"]["order"] == ["Start", "Verifier", "Complete"]
+    assert any(
+        s.name == "route" and s.attributes["node"] == "Start" for s in exporter.spans
+    )
+    importlib.reload(trace)
 
 
 def test_conditional_router_invalid_status_raises():
