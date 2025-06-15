@@ -1,6 +1,8 @@
 # **agentic-research-engine: A Self-Improving Multi-Agent Research System**
 
-([https://img.shields.io/badge/build-passing-brightgreen](https://www.google.com/search?q=https://img.shields.io/badge/build-passing-brightgreen))\]([https://github.com/actions](https://github.com/actions)) ([https://www.google.com/search?q=%5Bhttps://codecov.io%5D](https://www.google.com/search?q=%5Bhttps://codecov.io%5D)([https://codecov.io](https://codecov.io))) ([https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)) ([https://www.google.com/search?q=./docs/ROADMAP.md](https://www.google.com/search?q=./docs/ROADMAP.md))
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/actions)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://codecov.io)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## **1. Vision & Mission**
 
@@ -32,20 +34,22 @@ To understand how these pillars work in concert, consider a query like: *"Analyz
 ## **4. Repository Structure**
 
 This is a mono-repo containing all services, agent definitions, and infrastructure code for the agentic-research-engine.
-`/`
-`├── agents/             # Source code for individual agent implementations (e.g., Supervisor, Evaluator)`
-`├── services/           # Backend services for core cognitive modules`
-`│   ├── ltm_service/    # The Long-Term Memory service`
-`│   └── tool_registry/  # The secure Tool Registry service`
-`├── engine/             # The core graph-based Orchestration Engine`
-`├── tools/              # Wrappers for external tools (e.g., Web Search, PDF Reader)`
-`├── infra/              # Infrastructure-as-Code (e.g., Terraform, Docker configs)`
-`├── pipelines/          # CI/CD and MLOps pipeline definitions`
-`├── notebooks/          # Jupyter notebooks for research, data analysis, and experimentation`
-`├── tests/              # Unit, integration, and benchmark tests`
-`│   ├── unit/`
-`│   └── integration/`
-`└── docs/               # Project documentation, including the full Change Request Ledger`
+```
+/
+├── agents/             # Source code for individual agent implementations (e.g., Supervisor, Evaluator)
+├── services/           # Backend services for core cognitive modules
+│   ├── ltm_service/    # The Long-Term Memory service
+│   └── tool_registry/  # The secure Tool Registry service
+├── engine/             # The core graph-based Orchestration Engine
+├── tools/              # Wrappers for external tools (e.g., Web Search, PDF Reader)
+├── infra/              # Infrastructure-as-Code (e.g., Terraform, Docker configs)
+├── pipelines/          # CI/CD and MLOps pipeline definitions
+├── notebooks/          # Jupyter notebooks for research, data analysis, and experimentation
+├── tests/              # Unit, integration, and benchmark tests
+│   ├── unit/
+│   └── integration/
+└── docs/               # Project documentation, including the full Change Request Ledger
+```
 
 ## **5. Getting Started**
 
@@ -59,21 +63,31 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
 ### **Development Setup**
 
 1. **Clone the repository:**
-   `git clone <repository-url>`
-   `cd agentic-research-engine`
+   ```bash
+   git clone <repository-url>
+   cd agentic-research-engine
+   ```
 
 2. **Install dependencies:** This project uses Poetry to manage dependencies.
-   `poetry install`
+   ```bash
+   poetry install
+   ```
 
 3. **Set up pre-commit hooks:** This will ensure your code is formatted and linted before each commit, as per our quality standards (P1-01).
-   `poetry run pre-commit install`
+   ```bash
+   poetry run pre-commit install
+   ```
 
 4. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
-   `cp.env.example.env`
-   `# Now, edit.env with your credentials`
+   ```bash
+   cp .env.example .env
+   # Now, edit .env with your credentials
+   ```
 
 5. **Launch core services:** The core infrastructure (e.g., OpenTelemetry collector, databases) can be launched using Docker Compose.
-   `docker-compose up -d`
+   ```bash
+   docker-compose up -d
+   ```
 
 ## **6. Running Tests**
 
@@ -81,18 +95,27 @@ A comprehensive test suite is crucial for maintaining system quality.
 
 ### **Unit Tests**
 
-Unit tests verify individual components in isolation. They are located in tests/unit/.
-`poetry run pytest tests/unit/`
+Unit tests verify individual components in isolation. They are located in `tests/unit/`.
+
+```
+poetry run pytest tests/unit/
+```
 
 ### **Integration Tests**
 
-Integration tests verify the interactions between different components and services. They are located in tests/integration/.
-`poetry run pytest tests/integration/`
+Integration tests verify the interactions between different components and services. They are located in `tests/integration/`.
+
+```
+poetry run pytest tests/integration/
+```
 
 ### **Benchmark Evaluation**
 
 The full system benchmark (P1-18), which evaluates end-to-end research capabilities, can be run via a dedicated script.
-`poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1`
+
+```
+poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1
+```
 
 ## **7. Project Roadmap**
 
@@ -127,4 +150,4 @@ All pull requests will be automatically validated by the CI pipeline (P1-02), wh
 
 ## **9. License**
 
-This project is licensed under the MIT License. See the(LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.
