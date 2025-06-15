@@ -1,0 +1,10 @@
+{
+  "request": {
+    "headers": {"X-Role": "editor"},
+    "json": {"record": {}, "memory_type": "invalid"}
+  },
+  "response": {
+    "status": 400,
+    "body": {"error": "Unsupported memory type: invalid"}
+  }
+}

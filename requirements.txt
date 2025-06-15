@@ -11,6 +11,8 @@ beautifulsoup4
 readability-lxml
 jsonschema
 pykwalify
+fastapi
+uvicorn
 
 opentelemetry-api
 opentelemetry-sdk
