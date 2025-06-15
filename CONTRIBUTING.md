@@ -50,3 +50,37 @@ pre-commit run --all-files
 ```
 
 This will apply `black`, `flake8`, and `isort` to your changes.
+
+## Pre-PR Testing
+
+Run the full test suite before creating a pull request:
+
+```bash
+pytest -q
+```
+
+A successful run exits with status code `0`. Any failures will be printed in the
+output and must be fixed prior to submission.
+
+After tests pass, run the pre-commit hooks on all files:
+
+```bash
+pre-commit run --all-files
+```
+
+The hooks will format code and perform lint checks.
+
+## Release Process
+
+Version bumps are performed by creating a git tag that matches the new
+`infra/helm/agent-services/Chart.yaml` version:
+
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+```
+
+Push the tag to GitHub to trigger the CD workflow. A push to `main` automatically
+deploys the tagged image to the `staging` environment via `.github/workflows/cd.yml`.
+Once validated, run the `promote-production` workflow from the GitHub Actions
+UI to deploy the same image to production. Release artifacts include the
+container image and updated Helm chart.
