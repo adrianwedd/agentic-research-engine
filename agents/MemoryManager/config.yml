@@ -1,0 +1,4 @@
+agent_name: "MemoryManager"
+role: "Episodic, semantic, procedural LTM operations"
+max_retries: 3
+rbac: []

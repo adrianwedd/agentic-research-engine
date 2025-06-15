@@ -1,0 +1,4 @@
+agent_name: "CitationAgent"
+role: "Precise source-claim matching & citation insertion"
+max_retries: 3
+rbac: []
