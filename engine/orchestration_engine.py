@@ -21,14 +21,6 @@ from opentelemetry import trace
 
 from .state import State
 
-
-class InMemorySaver:
-    """Minimal in-memory checkpoint saver used until a persistent backend is implemented."""
-
-    def save(self, state: dict) -> None:  # pragma: no cover - placeholder
-        pass
-
-
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
@@ -183,26 +175,6 @@ class OrchestrationEngine:
             else:
                 node_name = self.order.get(node_name)
         return state
-
-        if not hasattr(self, "entry") or self.entry is None:
-            self.build()
-        current = self.entry
-        while current:
-            node = self.nodes[current]
-            state = await node.run(state)
-            router_data = self.routers_map.get(current)
-            if router_data:
-                router, path_map = router_data
-                dest = router(state)
-                if path_map:
-                    dest = path_map.get(dest, dest)
-                current = dest
-            else:
-                current = self.order.get(current)
-            self._on_node_finished(node.name)
-        if isinstance(state, GraphState):
-            return state
-        return GraphState.model_validate(state.model_dump())
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""

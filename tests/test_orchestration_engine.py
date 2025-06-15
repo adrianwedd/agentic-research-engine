@@ -65,3 +65,26 @@ def test_sequential_execution_and_spans():
         for span in exporter.spans
     )
     importlib.reload(trace)
+
+
+def test_export_dot_outputs_valid_graph():
+    engine = create_orchestration_engine()
+
+    engine.add_node("A", lambda s: s)
+    engine.add_node("B", lambda s: s)
+    engine.add_edge("A", "B")
+
+    engine.build()
+    dot = engine.export_dot()
+
+    expected = "\n".join(
+        [
+            "digraph Orchestration {",
+            '  "A";',
+            '  "B";',
+            '  "A" -> "B";',
+            "}",
+        ]
+    )
+
+    assert dot == expected
