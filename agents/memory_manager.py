@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from engine.state import State
-from tools.ltm_client import consolidate_memory
+from services.tool_registry import ToolRegistry, create_default_registry
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,14 @@ logger = logging.getLogger(__name__)
 class MemoryManagerAgent:
     """Agent responsible for consolidating task episodes into LTM."""
 
-    def __init__(self, *, endpoint: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        *,
+        endpoint: Optional[str] = None,
+        tool_registry: ToolRegistry | None = None,
+    ) -> None:
         self.endpoint = endpoint
+        self.tool_registry = tool_registry or create_default_registry()
 
     def _format_record(self, state: State) -> Dict[str, Any]:
         return {
@@ -25,7 +31,12 @@ class MemoryManagerAgent:
     def __call__(self, state: State) -> State:
         record = self._format_record(state)
         try:
-            consolidate_memory(record, endpoint=self.endpoint)
+            self.tool_registry.invoke(
+                "MemoryManager",
+                "consolidate_memory",
+                record,
+                endpoint=self.endpoint,
+            )
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state

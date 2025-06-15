@@ -11,3 +11,10 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
+  - repo: local
+    hooks:
+      - id: forbid-tool-imports
+        name: forbid direct tool imports
+        entry: scripts/check_tool_imports.py
+        language: python
+        types: [python]
