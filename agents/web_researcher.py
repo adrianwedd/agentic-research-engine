@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from typing import Any, Callable, Dict, List, Optional
 
+from services.tracing.tracing_schema import ToolCallTrace
+
 
 class WebResearcherAgent:
     def __init__(
@@ -41,8 +43,17 @@ class WebResearcherAgent:
     def research_topic(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Conduct comprehensive web research on specified topic."""
         self._check_rate_limit()
-
+        start = time.perf_counter()
         search_results = self.web_search(topic)
+        latency_ms = (time.perf_counter() - start) * 1000
+        ToolCallTrace(
+            agent_id=str(context.get("agent_id", "")),
+            agent_role="WebResearcher",
+            tool_name="web_search",
+            tool_input=topic,
+            tool_output=search_results,
+            latency_ms=latency_ms,
+        ).record()
         processed: List[Dict[str, Any]] = []
         for r in search_results:
             url = r.get("url")
