@@ -11,7 +11,7 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from engine.orchestration_engine import GraphState, create_orchestration_engine
-from engine.routing import RoutingError, make_status_router
+from engine.routing import RoutingError, make_cosc_router, make_status_router
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -92,3 +92,81 @@ def test_conditional_router_invalid_status_raises():
 
     with pytest.raises(RoutingError):
         asyncio.run(engine.run_async(state))
+
+
+def test_cosc_router_routes_for_retry():
+    engine = create_orchestration_engine()
+
+    order: list[str] = []
+
+    def researcher(state: GraphState) -> GraphState:
+        order.append("Researcher")
+        return state
+
+    def evaluator(state: GraphState) -> GraphState:
+        order.append("Evaluator")
+        if state.retry_count == 0:
+            state.evaluator_feedback = {"overall_score": 0.2}
+        else:
+            state.evaluator_feedback = {"overall_score": 0.8}
+        return state
+
+    def complete(state: GraphState) -> GraphState:
+        order.append("Complete")
+        return state
+
+    engine.add_node("Researcher", researcher)
+    engine.add_node("Evaluator", evaluator)
+    engine.add_node("Complete", complete)
+
+    engine.add_edge("Researcher", "Evaluator")
+    router = make_cosc_router(
+        retry_node="Researcher",
+        pass_node="Complete",
+        max_retries=2,
+        score_threshold=0.5,
+    )
+    engine.add_router("Evaluator", router)
+
+    result = asyncio.run(engine.run_async(GraphState()))
+
+    assert order == ["Researcher", "Evaluator", "Researcher", "Evaluator", "Complete"]
+    assert result.retry_count == 1
+
+
+def test_cosc_router_stops_after_max_retries():
+    engine = create_orchestration_engine()
+
+    order: list[str] = []
+
+    def researcher(state: GraphState) -> GraphState:
+        order.append("Researcher")
+        return state
+
+    def evaluator(state: GraphState) -> GraphState:
+        order.append("Evaluator")
+        state.evaluator_feedback = {"overall_score": 0.1}
+        return state
+
+    def abort(state: GraphState) -> GraphState:
+        order.append("Abort")
+        return state
+
+    engine.add_node("Researcher", researcher)
+    engine.add_node("Evaluator", evaluator)
+    engine.add_node("Abort", abort)
+
+    engine.add_edge("Researcher", "Evaluator")
+    router = make_cosc_router(
+        retry_node="Researcher",
+        pass_node="Abort",
+        max_retries=1,
+        score_threshold=0.5,
+        fail_node="Abort",
+    )
+    engine.add_router("Evaluator", router)
+
+    result = asyncio.run(engine.run_async(GraphState()))
+
+    assert order == ["Researcher", "Evaluator", "Researcher", "Evaluator", "Abort"]
+    assert result.retry_count == 1

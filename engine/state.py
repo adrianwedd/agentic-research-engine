@@ -13,6 +13,8 @@ class State(BaseModel):
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     history: List[Dict[str, Any]] = Field(default_factory=list)
     status: str | None = None
+    evaluator_feedback: Dict[str, Any] | None = None
+    retry_count: int = 0
 
     def update(self, other: Dict[str, Any]) -> None:
         """Merge arbitrary key-value pairs into ``data`` and record the change."""
