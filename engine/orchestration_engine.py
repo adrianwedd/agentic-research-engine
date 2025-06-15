@@ -21,7 +21,6 @@ from opentelemetry import trace
 
 from .state import State
 
-
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
@@ -31,6 +30,19 @@ GraphState = State
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+class InMemorySaver:
+    """Minimal in-memory checkpoint stub used for testing."""
+
+    def __init__(self) -> None:
+        self._data: dict[str, State] = {}
+
+    def save(self, run_id: str, state: State) -> None:  # pragma: no cover - util
+        self._data[run_id] = state
+
+    def load(self, run_id: str) -> State | None:  # pragma: no cover - util
+        return self._data.get(run_id)
 
 
 @dataclass
