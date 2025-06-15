@@ -17,7 +17,7 @@ class JudgePipeline:
         llm: Callable[[str], str],
         db_path: str = "results.db",
         rubric_path: str
-        | Path = Path(__file__).resolve().parent / "rubric_schema.json",
+        | Path = Path(__file__).resolve().parents[2] / "schemas" / "judge_rubric.json",
         alert_fn: Callable[[Exception], None] | None = None,
     ) -> None:
         self.llm = llm

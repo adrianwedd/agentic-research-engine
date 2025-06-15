@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/judge_rubric.json",
+  "title": "LLM-as-a-Judge Evaluation Rubric",
+  "description": "Structured rubric used to score research reports",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version identifier"
+    },
+    "factual_accuracy": {
+      "type": "object",
+      "description": "Correctness of statements with respect to provided sources",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "justification": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "completeness": {
+      "type": "object",
+      "description": "Coverage of all key points and absence of omissions",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "justification": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "source_quality": {
+      "type": "object",
+      "description": "Reliability and relevance of cited sources",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "justification": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "coherence": {
+      "type": "object",
+      "description": "Logical flow and clarity of the writing",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "justification": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "factual_accuracy",
+    "completeness",
+    "source_quality",
+    "coherence"
+  ],
+  "additionalProperties": false
+}
