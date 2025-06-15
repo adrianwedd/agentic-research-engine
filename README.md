@@ -68,15 +68,11 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    cd agentic-research-engine
    ```
 
-2. **Install dependencies:** This project uses Poetry to manage dependencies.
+2. **Install dependencies and tools:**
    ```bash
-   poetry install
+   bash scripts/agent-setup.sh
    ```
 
-3. **Set up pre-commit hooks:** This will ensure your code is formatted and linted before each commit, as per our quality standards (P1-01).
-   ```bash
-   poetry run pre-commit install
-   ```
 
 4. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
    ```bash

@@ -1,18 +1,22 @@
 import json
 import os
 import sys
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
 
 import requests
 
 GITHUB_API = "https://api.github.com"
 WORKLOG_PENDING_FILE = os.path.join("state", "worklog_pending.json")
 
+
 def _get_token() -> str | None:
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        print("Error: GITHUB_TOKEN not set. Set the environment variable to enable issue logging.", file=sys.stderr)
+        print(
+            "Error: GITHUB_TOKEN not set. Set the environment variable to enable issue logging.",
+            file=sys.stderr,
+        )
         return None
     return token
 
@@ -39,7 +43,10 @@ def _store_pending_worklog(target: str, data: dict) -> None:
     except Exception as e:
         print(f"Failed to write pending worklog: {e}", file=sys.stderr)
 
-def create_issue(title: str, body: str, repo: str, labels: List[str] | None = None) -> str:
+
+def create_issue(
+    title: str, body: str, repo: str, labels: List[str] | None = None
+) -> str:
     """Create a GitHub issue and return its URL."""
     token = _get_token()
     if not token:
@@ -60,6 +67,7 @@ def create_issue(title: str, body: str, repo: str, labels: List[str] | None = No
         return ""
     return resp.json().get("html_url", "")
 
+
 def post_comment(issue_url: str, body: str) -> str:
     """Post a comment on a GitHub issue and return its URL."""
     token = _get_token()
@@ -77,6 +85,7 @@ def post_comment(issue_url: str, body: str) -> str:
         print(f"GitHub API error {resp.status_code}: {resp.text}", file=sys.stderr)
         return ""
     return resp.json().get("html_url", "")
+
 
 AGENT_ACTIONS = {
     "create_issue": create_issue,
@@ -151,19 +160,25 @@ def post_worklog_comment(issue_or_pr_url: str, worklog_data: dict) -> str:
     if existing:
         url = existing["url"]
         try:
-            update = requests.patch(url, headers=headers, json={"body": body}, timeout=10)
+            update = requests.patch(
+                url, headers=headers, json={"body": body}, timeout=10
+            )
         except Exception as e:
             print(f"Failed to update comment: {e}", file=sys.stderr)
             _store_pending_worklog(issue_or_pr_url, worklog_data)
             return ""
         if update.status_code >= 300:
-            print(f"GitHub API error {update.status_code}: {update.text}", file=sys.stderr)
+            print(
+                f"GitHub API error {update.status_code}: {update.text}", file=sys.stderr
+            )
             _store_pending_worklog(issue_or_pr_url, worklog_data)
             return ""
         return update.json().get("html_url", "")
 
     try:
-        create = requests.post(comments_url, headers=headers, json={"body": body}, timeout=10)
+        create = requests.post(
+            comments_url, headers=headers, json={"body": body}, timeout=10
+        )
     except Exception as e:
         print(f"Failed to post comment: {e}", file=sys.stderr)
         _store_pending_worklog(issue_or_pr_url, worklog_data)
@@ -195,5 +210,3 @@ class CodexAgentLogger:
         url = post_worklog_comment(self.target_url, worklog)
         if not url:
             print("Worklog comment failed; stored for retry", file=sys.stderr)
-
-
