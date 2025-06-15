@@ -1,3 +1,4 @@
+import argparse
 import fcntl
 import json
 import os
@@ -8,6 +9,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import requests
+import yaml
 
 GITHUB_API = "https://api.github.com"
 WORKLOG_PENDING_FILE = os.path.join("state", "worklog_pending.json")
@@ -127,6 +129,28 @@ AGENT_ACTIONS = {
 }
 
 
+def _read_body(arg: str | None) -> str:
+    """Return body text from stdin, file, or direct string."""
+    if not arg:
+        return ""
+    if arg == "-":
+        return sys.stdin.read()
+    if os.path.exists(arg):
+        with open(arg) as f:
+            return f.read()
+    return arg
+
+
+def _load_worklog(path: str) -> dict:
+    """Load a worklog mapping from JSON or YAML file."""
+    with open(path) as f:
+        text = f.read()
+    try:
+        return json.loads(text)
+    except Exception:
+        return yaml.safe_load(text)
+
+
 def _format_worklog(worklog: dict) -> str:
     lines = ["<!-- codex-log -->"]
     if worklog.get("task_name"):
@@ -237,3 +261,54 @@ class CodexAgentLogger:
         url = post_worklog_comment(self.target_url, worklog)
         if not url:
             print("Worklog comment failed; stored for retry", file=sys.stderr)
+
+
+def _resolve_target_url(
+    repo: str | None, issue: int | None, pr: int | None, url: str | None
+) -> str:
+    if url:
+        return url
+    if repo and issue:
+        return f"{GITHUB_API}/repos/{repo}/issues/{issue}"
+    if repo and pr:
+        return f"{GITHUB_API}/repos/{repo}/pulls/{pr}"
+    raise SystemExit("Target URL not provided")
+
+
+def main(argv: Optional[List[str]] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Codex issue logger")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    ci = sub.add_parser("create")
+    ci.add_argument("--repo", required=True)
+    ci.add_argument("--title", required=True)
+    ci.add_argument("--body")
+    ci.add_argument("--labels", nargs="*")
+
+    cc = sub.add_parser("comment")
+    cc.add_argument("--url", required=True)
+    cc.add_argument("--body")
+
+    wl = sub.add_parser("worklog")
+    wl.add_argument("--repo")
+    wl.add_argument("--issue", type=int)
+    wl.add_argument("--pr", type=int)
+    wl.add_argument("--url")
+    wl.add_argument("--worklog", required=True)
+
+    args = parser.parse_args(argv)
+
+    if args.cmd == "create":
+        body = _read_body(args.body)
+        create_issue(args.title, body, args.repo, args.labels)
+    elif args.cmd == "comment":
+        body = _read_body(args.body)
+        post_comment(args.url, body)
+    else:  # worklog
+        target = _resolve_target_url(args.repo, args.issue, args.pr, args.url)
+        data = _load_worklog(args.worklog)
+        post_worklog_comment(target, data)
+
+
+if __name__ == "__main__":
+    main()
