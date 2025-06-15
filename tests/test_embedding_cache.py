@@ -1,6 +1,7 @@
-import os
-
-from services.ltm_service.embedding_client import CachedEmbeddingClient, SimpleEmbeddingClient
+from services.ltm_service.embedding_client import (
+    CachedEmbeddingClient,
+    SimpleEmbeddingClient,
+)
 
 
 class CountingEmbeddingClient(SimpleEmbeddingClient):
@@ -22,7 +23,11 @@ def test_cached_embedding_client_hits():
 
 
 def test_service_cache_integration(monkeypatch):
-    from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage, InMemoryVectorStore
+    from services.ltm_service.episodic_memory import (
+        EpisodicMemoryService,
+        InMemoryStorage,
+        InMemoryVectorStore,
+    )
 
     monkeypatch.setenv("EMBED_CACHE_SIZE", "4")
     base = CountingEmbeddingClient()
@@ -35,4 +40,3 @@ def test_service_cache_integration(monkeypatch):
         service.retrieve_similar_experiences(ctx)
     # 1 call during store_experience + 1 during first retrieval
     assert base.calls <= 2
-

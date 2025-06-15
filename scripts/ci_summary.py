@@ -1,7 +1,7 @@
 import os
 import sys
-from pathlib import Path
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
 
 def coverage_percent(xml_path: str) -> str:
@@ -35,8 +35,14 @@ def main(log_path: str = "tests.log", cov_path: str = "coverage.xml") -> int:
         tail,
         "```",
         "",
-        f"[Coverage HTML](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}#artifacts)",
-        f"[Full Log](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ.get('GITHUB_RUN_ID')})",
+        (
+            f"[Coverage HTML](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/"
+            f"actions/runs/{os.environ.get('GITHUB_RUN_ID')}#artifacts)"
+        ),
+        (
+            f"[Full Log](https://github.com/{os.environ.get('GITHUB_REPOSITORY')}/"
+            f"actions/runs/{os.environ.get('GITHUB_RUN_ID')})"
+        ),
     ]
     if summary_file:
         summary_file.write_text("\n".join(text))
