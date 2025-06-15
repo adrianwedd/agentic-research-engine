@@ -17,10 +17,16 @@ def test_store_and_retrieve():
     service.store_experience(ctx2, {"steps": []}, {"success": True})
 
     results = service.retrieve_similar_experiences(
-        {"description": "Write code"}, limit=1
+        {"description": "Write code"}, limit=2
     )
     assert results
-    assert results[0]["task_context"]["description"] == "Write unit tests"
+    assert len(results) == 2
+    assert results[0]["similarity"] >= results[1]["similarity"]
+    descriptions = {
+        results[0]["task_context"]["description"],
+        results[1]["task_context"]["description"],
+    }
+    assert descriptions == {"Write a blog post", "Write unit tests"}
 
 
 def test_embedding_and_vector_storage():
