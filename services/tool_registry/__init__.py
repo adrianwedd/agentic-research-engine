@@ -9,6 +9,7 @@ import yaml
 
 from tools import (
     consolidate_memory,
+    fact_check_claim,
     html_scraper,
     pdf_extract,
     retrieve_memory,
@@ -65,6 +66,7 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "consolidate_memory": consolidate_memory,
     "retrieve_memory": retrieve_memory,
     "summarize": summarize_text,
+    "fact_check": fact_check_claim,
 }
 
 
