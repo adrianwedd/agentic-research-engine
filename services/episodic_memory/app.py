@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Dict, List, Optional
 
 from fastapi import Body, FastAPI
@@ -35,7 +36,8 @@ app = FastAPI(title="Episodic Memory Service")
 
 @app.post("/consolidate", response_model=ConsolidateResponse)
 async def consolidate(req: ConsolidateRequest) -> ConsolidateResponse:
-    rec_id = service.store_experience(
+    rec_id = await asyncio.to_thread(
+        service.store_experience,
         req.task_context,
         req.execution_trace,
         req.outcome,
@@ -49,5 +51,9 @@ async def retrieve(
     body: RetrieveBody = Body(default_factory=RetrieveBody),
 ) -> RetrieveResponse:
     query = body.query or body.task_context or {}
-    results = service.retrieve_similar_experiences(query, limit=limit)
+    results = await asyncio.to_thread(
+        service.retrieve_similar_experiences,
+        query,
+        limit=limit,
+    )
     return RetrieveResponse(results=results)
