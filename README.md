@@ -1,7 +1,7 @@
 # **agentic-research-engine: A Self-Improving Multi-Agent Research System**
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/actions)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://codecov.io)
+[![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen)](https://codecov.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## **1. Vision & Mission**
