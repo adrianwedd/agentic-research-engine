@@ -1,0 +1,42 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: false
+        default: ''
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+
+jobs:
+  deploy-staging:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y helm terraform
+      - name: Deploy to staging
+        run: |
+          bash scripts/deploy.sh staging ${{ github.sha }}
+
+  promote-production:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install tools
+        run: sudo apt-get update && sudo apt-get install -y helm terraform
+      - name: Deploy to production
+        run: |
+          IMAGE_TAG=${{ inputs.image_tag }}
+          if [ -z "$IMAGE_TAG" ]; then IMAGE_TAG=${{ github.sha }}; fi
+          bash scripts/deploy.sh production "$IMAGE_TAG"
