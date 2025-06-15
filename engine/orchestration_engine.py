@@ -99,7 +99,9 @@ class OrchestrationEngine:
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
-    checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
+    # Using ``Any`` here avoids importing optional dependencies for the dummy
+    # checkpointer implementation used in tests.
+    checkpointer: Any = field(default_factory=dict)
     _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
