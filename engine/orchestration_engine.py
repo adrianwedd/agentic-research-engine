@@ -17,11 +17,20 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
+
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import CONFIG_KEY_NODE_FINISHED
 from opentelemetry import trace
 
 from engine.state import State
+
+
+class GraphState(State):
+    """Graph state model with dictionary-style access."""
+
+    def __getitem__(self, key: str):
+        return getattr(self, key)
+
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
 # introduce a dedicated class with additional orchestration-specific fields.
@@ -37,7 +46,7 @@ class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
+    func: Callable[[State], Awaitable[State]] | Callable[[State], State]
     retries: int = 0
 
     async def run(self, state: State) -> State:
@@ -48,7 +57,8 @@ class Node:
                         result = await self.func(state)
                     else:
                         result = self.func(state)
-                if isinstance(result, GraphState):
+                if isinstance(result, (GraphState, State)):
+
                     return result
                 if isinstance(result, dict):
                     state.update(result)
@@ -84,15 +94,13 @@ def _build_order(edges: Iterable[tuple[str, str]]) -> Dict[str, str]:
 
 @dataclass
 class OrchestrationEngine:
-    """Core LangGraph-based orchestration engine."""
+    """Simplified orchestration engine for sequential workflows."""
 
     nodes: Dict[str, Node] = field(default_factory=dict)
     edges: list[tuple[str, str]] = field(default_factory=list)
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
-    checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
-    _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
     order: Dict[str, str] = field(init=False, default_factory=dict)
@@ -104,7 +112,7 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
+        func: Callable[[State], Awaitable[State]] | Callable[[State], State],
         *,
         retries: int = 0,
     ) -> None:
@@ -182,8 +190,29 @@ class OrchestrationEngine:
         return asyncio.run(self._execute_async(state, on_finished))
 
     async def run_async(self, state: State, *, thread_id: str = "default") -> State:
-        if self.entry is None:
+        if not hasattr(self, "entry") or self.entry is None:
             self.build()
+        current = self.entry
+        while current:
+            node = self.nodes[current]
+            state = await node.run(state)
+            router_data = self.routers_map.get(current)
+            if router_data:
+                router, path_map = router_data
+                dest = router(state)
+                if path_map:
+                    dest = path_map.get(dest, dest)
+                current = dest
+            else:
+                current = self.order.get(current)
+            self._on_node_finished(node.name)
+        if isinstance(state, GraphState):
+            return state
+        return GraphState.model_validate(state.model_dump())
+
+    def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
+        return asyncio.run(self.run_async(state, thread_id=thread_id))
+
         self._last_node = None
         config = {
             "configurable": {
