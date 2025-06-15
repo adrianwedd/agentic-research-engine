@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any, Awaitable, Callable, DefaultDict, Dict, List, Optional
 
 from ..state import State
+from .message_protocol import ChatMessage
 
 
 class DynamicGroupChat:
@@ -52,12 +53,12 @@ class DynamicGroupChat:
         recipient: Optional[str] = None,
     ) -> None:
         """Send a message to the chat."""
-        msg = {
-            "sender": sender,
-            "content": content,
-            "type": message_type,
-            "recipient": recipient,
-        }
+        msg = ChatMessage(
+            sender=sender,
+            content=content,
+            type=message_type,
+            recipient=recipient,
+        ).model_dump()
         self.message_history.append(msg)
         if recipient:
             self.inboxes[recipient].append(msg)
@@ -69,7 +70,7 @@ class DynamicGroupChat:
     def get_messages(self, agent_id: str) -> List[Dict[str, Any]]:
         """Return and clear the pending messages for the agent."""
         msgs = self.inboxes.pop(agent_id, [])
-        return msgs
+        return [ChatMessage.model_validate(m).model_dump() for m in msgs]
 
     def update_workspace(self, agent_id: str, key: str, value: Any) -> None:
         """Update the shared workspace if permitted."""
@@ -106,8 +107,9 @@ class GroupChatManager:
 
         self.chat.facilitate_team_collaboration(self.turn_order, state.data)
         turns = 0
+        idx = 0
         while turns < self.max_turns:
-            agent_id = self.turn_order[turns % len(self.turn_order)]
+            agent_id = self.turn_order[idx]
             agent_fn = self.agents[agent_id]
             incoming = self.chat.get_messages(agent_id)
             if asyncio.iscoroutinefunction(agent_fn):
@@ -128,12 +130,24 @@ class GroupChatManager:
                     agent_id, content, message_type=msg_type, recipient=recipient
                 )
                 state.add_message(
-                    {"sender": agent_id, "content": content, "type": msg_type}
+                    {
+                        "sender": agent_id,
+                        "content": content,
+                        "type": msg_type,
+                        "recipient": recipient,
+                    }
                 )
                 if msg_type == "finish" or content.strip().upper() == "FINISH":
                     break
 
             turns += 1
+            if result and isinstance(result, dict) and result.get("recipient"):
+                try:
+                    idx = self.turn_order.index(result["recipient"])
+                except ValueError:
+                    idx = (idx + 1) % len(self.turn_order)
+            else:
+                idx = (idx + 1) % len(self.turn_order)
 
         state.update({"conversation": self.chat.message_history})
         return state
