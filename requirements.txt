@@ -3,6 +3,7 @@ pytest
 pydantic
 pyyaml
 requests
+pdfplumber
 
 opentelemetry-api
 opentelemetry-sdk
