@@ -5,6 +5,7 @@ metadata:
 spec:
   selector:
     app: agent-services
+    color: {{ .Values.color }}
   ports:
   - protocol: TCP
     port: {{ .Values.service.port }}

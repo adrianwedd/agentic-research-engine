@@ -119,11 +119,14 @@ poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1
 
 All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
 The pipeline uses Terraform and Helm configurations under `infra/` to perform
-"rainbow" deployments, running the new version alongside the previous one and
-gradually shifting traffic. A push to `main` deploys to the `staging`
-environment automatically. Once verified, an operator can trigger the
-`promote-production` job to roll out the same release to `production` with zero
-downtime.
+"rainbow" deployments. The `scripts/deploy.sh` helper script toggles between
+`blue` and `green` deployments so the new version is spun up alongside the old
+one. Once the new pods are ready, the service selector is patched to shift
+traffic with no interruption before the old deployment is removed. A push to
+`main` deploys to the `staging` environment automatically. After verification,
+an operator can trigger the `promote-production` job to roll out the same
+release to production. In case of issues, `scripts/rollback.sh` reverts the
+selector to the previous color.
 
 ## **8. Project Roadmap**
 

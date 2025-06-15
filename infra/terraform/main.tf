@@ -24,6 +24,11 @@ variable "image_tag" {
   type        = string
 }
 
+variable "color" {
+  description = "Deployment color"
+  type        = string
+}
+
 resource "helm_release" "agent_services" {
   name       = "agent-services"
   namespace  = var.namespace
@@ -34,7 +39,7 @@ resource "helm_release" "agent_services" {
         repository = "agentic/research-engine"
         tag        = var.image_tag
       }
-      color = var.namespace == "production" ? "green" : "blue"
+      color = var.color
     })
   ]
 }
