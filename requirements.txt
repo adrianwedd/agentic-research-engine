@@ -14,7 +14,6 @@ jsonschema==4.21.1
 pykwalify==1.8.0
 fastapi==0.110.0
 uvicorn==0.27.0
-
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
 opentelemetry-exporter-otlp==1.24.0
@@ -23,4 +22,6 @@ langgraph==0.0.24
 langsmith==0.1.18
 weaviate-client==3.26.7
 googletrans==4.0.0rc1
-openai==1.3.5
+openai
+datasets
+transformers
