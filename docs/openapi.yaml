@@ -1,0 +1,175 @@
+components:
+  schemas:
+    ConsolidateRequest:
+      properties:
+        memory_type:
+          default: episodic
+          description: Type of memory module
+          examples:
+          - episodic
+          title: Memory Type
+          type: string
+        record:
+          additionalProperties: true
+          description: Record to store
+          title: Record
+          type: object
+      required:
+      - record
+      title: ConsolidateRequest
+      type: object
+    ConsolidateResponse:
+      properties:
+        id:
+          description: Stored record identifier
+          title: Id
+          type: string
+      required:
+      - id
+      title: ConsolidateResponse
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    RetrieveBody:
+      properties:
+        query:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          description: Query to match
+          title: Query
+        task_context:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          description: Deprecated alternative query field
+          title: Task Context
+      title: RetrieveBody
+      type: object
+    RetrieveResponse:
+      properties:
+        results:
+          description: Matching records
+          items:
+            additionalProperties: true
+            type: object
+          title: Results
+          type: array
+      required:
+      - results
+      title: RetrieveResponse
+      type: object
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+info:
+  title: LTM Service API
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /consolidate:
+    post:
+      operationId: consolidate_consolidate_post
+      parameters:
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsolidateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidateResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Store an experience
+  /retrieve:
+    get:
+      operationId: retrieve_retrieve_get
+      parameters:
+      - in: query
+        name: memory_type
+        required: false
+        schema:
+          default: episodic
+          title: Memory Type
+          type: string
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 5
+          maximum: 50
+          minimum: 1
+          title: Limit
+          type: integer
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrieveBody'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Retrieve similar experiences
