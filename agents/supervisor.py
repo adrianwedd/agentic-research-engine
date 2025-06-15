@@ -34,16 +34,21 @@ class SupervisorAgent:
     def _decompose_query(self, query: str) -> List[Dict[str, Any]]:
         """Return research sub-topics derived from the query."""
 
-        lowered = query.lower()
+        normalized = query.strip()
+        lowered = normalized.lower()
         if "transformer" in lowered and "lstm" in lowered:
             return [
                 {"topic": "Transformer performance"},
                 {"topic": "LSTM performance"},
             ]
 
-        parts = [q.strip() for q in query.replace("versus", "vs").split("vs")]
+        parts = [
+            q.strip()
+            for q in normalized.replace("versus", "vs").split("vs")
+            if q.strip()
+        ]
         if len(parts) <= 1:
-            return [{"topic": query}]
+            return [{"topic": normalized}]
         return [{"topic": p} for p in parts]
 
     def plan_research_task(self, query: str) -> Dict[str, Any]:
@@ -75,13 +80,17 @@ class SupervisorAgent:
     def analyze_query(self, query: str) -> State:
         """Perform initial analysis and create the workflow state."""
 
-        plan = self.plan_research_task(query)
-        return State(initial_query=query, plan=plan, context=plan.get("context", []))
+        cleaned = query.strip()
+        plan = self.plan_research_task(cleaned)
+        return State(initial_query=cleaned, plan=plan, context=plan.get("context", []))
 
     def __call__(self, graph_state: Any) -> Any:
         """Node entrypoint for the orchestration graph."""
 
         query = graph_state.data.get("query", "")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must be a non-empty string")
+
         state = self.analyze_query(query)
         graph_state.update({"state": state})
         return graph_state
