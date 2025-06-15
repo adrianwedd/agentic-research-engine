@@ -144,3 +144,57 @@ def test_invalid_plan_fixture_fails_schema():
     yaml_text = path.read_text(encoding="utf-8")
     with pytest.raises(ValueError):
         agent.parse_plan(yaml_text)
+
+
+def test_memories_scored_by_relevance():
+    server, endpoint = _start_server()
+    record_a = {
+        "task_context": {"query": "example"},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    record_b = {
+        "task_context": {"query": "unrelated"},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    requests.post(f"{endpoint}/consolidate", json={"record": record_a})
+    requests.post(f"{endpoint}/consolidate", json={"record": record_b})
+
+    agent = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=2)
+    plan = agent.plan_research_task("example")
+    scores = [m.get("relevance") for m in plan["context"]]
+    assert scores == sorted(scores, reverse=True)
+    server.httpd.shutdown()
+
+
+def test_plan_template_applied_when_enabled():
+    server, endpoint = _start_server()
+    template_plan = {
+        "query": "example",
+        "graph": {
+            "nodes": [
+                {"id": "research_0", "agent": "WebResearcher", "topic": "example"},
+                {"id": "analysis", "agent": "Supervisor", "task": "analyze"},
+            ],
+            "edges": [
+                {"from": "research_0", "to": "analysis"},
+            ],
+        },
+    }
+    record = {
+        "task_context": {"query": "example", "plan": template_plan},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    requests.post(f"{endpoint}/consolidate", json={"record": record})
+
+    agent_plain = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=False)
+    plain = agent_plain.plan_research_task("example")
+
+    agent_templ = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=True)
+    templ = agent_templ.plan_research_task("example")
+
+    assert plain["graph"] != template_plan["graph"]
+    assert templ["graph"] == template_plan["graph"]
+    server.httpd.shutdown()
