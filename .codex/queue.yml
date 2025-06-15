@@ -1,0 +1,23 @@
+queue:
+  - id: GH-API-03a
+    priority: high
+    retry_policy:
+      max_retries: 2
+      backoff_seconds: 30
+    timeout: 300
+  - id: GH-API-03b
+    priority: medium
+    retry_policy:
+      max_retries: 1
+      backoff_seconds: 60
+    timeout: 300
+mode: sequential
+on_block:
+  explain: true
+  request_human_input: true
+report:
+  status: after_each
+  format: markdown
+vars:
+  repo: "{{ github.repository }}"
+  pr: "{{ github.event.pull_request.number }}"

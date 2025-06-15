@@ -22,3 +22,36 @@ jobs:
         run: pre-commit run --all-files
       - name: Run tests
         run: pytest -v
+
+  codex_queue_lint:
+    name: Validate Codex Queue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+      - name: Schema Validate .codex/queue.yml
+        run: |
+          python - <<'EOF'
+import yaml, jsonschema, sys
+spec = yaml.safe_load(open('.codex/queue.yml'))
+schema = {
+    "type": "object",
+    "properties": {
+      "queue": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "priority", "retry_policy", "timeout"]
+        }
+      }
+    },
+    "required": ["queue"]
+}
+try:
+    jsonschema.validate(spec, schema)
+    print("\u2705 .codex/queue.yml is valid")
+except Exception as e:
+    print("\u274C Schema validation failed:", e)
+    sys.exit(1)
+EOF
