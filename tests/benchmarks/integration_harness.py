@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import os
 import statistics
 import time
 from pathlib import Path
@@ -15,9 +16,23 @@ from .browsecomp_evaluator import BrowseCompEvaluator
 class IntegrationTestHarness:
     """Run the BrowseComp benchmark with per-question timeouts."""
 
-    def __init__(self, dataset_path: str, *, timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        dataset_path: str,
+        *,
+        timeout: float | None = None,
+        retries: int | None = None,
+    ) -> None:
+        timeout_val = (
+            float(os.getenv("HARNESS_TIMEOUT", "30")) if timeout is None else timeout
+        )
+        retries_val = (
+            int(os.getenv("HARNESS_RETRIES", "0")) if retries is None else retries
+        )
+
         self.evaluator = BrowseCompEvaluator(dataset_path)
-        self.timeout = timeout
+        self.timeout = timeout_val
+        self.retries = retries_val
 
     def _execute_with_timeout(self, func: Callable[..., Any], *args: Any) -> Any:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
@@ -30,22 +45,38 @@ class IntegrationTestHarness:
             question = case.get("question", "")
             expected = case.get("answer", "").strip().lower()
             start = time.monotonic()
-            try:
-                response = self._execute_with_timeout(
-                    self.evaluator._call_agent, agent_system, question
-                )
-            except Exception as e:  # pragma: no cover - defensive guard
-                end = time.monotonic()
+            attempt = 0
+            timed_out = False
+            error = None
+            response = None
+            while attempt <= self.retries:
+                try:
+                    response = self._execute_with_timeout(
+                        self.evaluator._call_agent, agent_system, question
+                    )
+                    break
+                except concurrent.futures.TimeoutError:
+                    timed_out = True
+                    attempt += 1
+                    if attempt > self.retries:
+                        break
+                except Exception as e:  # pragma: no cover - defensive guard
+                    error = str(e)
+                    break
+            end = time.monotonic()
+
+            if response is None:
                 results.append(
                     {
                         "question": question,
-                        "error": str(e),
+                        "error": error or f"timeout after {self.timeout}s",
+                        "timed_out": timed_out,
                         "success": False,
                         "response_time": end - start,
                     }
                 )
                 continue
-            end = time.monotonic()
+
             answer = (
                 response.get("answer") if isinstance(response, dict) else str(response)
             )
@@ -56,6 +87,7 @@ class IntegrationTestHarness:
                     "expected": expected,
                     "answer": answer,
                     "success": success,
+                    "timed_out": timed_out,
                     "response_time": end - start,
                 }
             )

@@ -22,4 +22,7 @@ jobs:
       - name: Setup environment
         run: bash scripts/agent-setup.sh
       - name: Run BrowseComp benchmark harness
+        env:
+          HARNESS_TIMEOUT: '60'
+          HARNESS_RETRIES: '1'
         run: python tests/benchmarks/integration_harness.py
