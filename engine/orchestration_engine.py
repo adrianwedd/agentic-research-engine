@@ -15,13 +15,15 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, Dict, Iterable, Optional, Sequence
+from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import CONFIG_KEY_NODE_FINISHED
-from langgraph.graph import StateGraph
 from opentelemetry import trace
-from pydantic import BaseModel, Field
+
+from engine.state import State
+
+GraphState = State
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -44,7 +46,6 @@ class Node:
                     else:
                         result = self.func(state)
                 if isinstance(result, GraphState):
-
                     return result
                 if isinstance(result, dict):
                     state.update(result)
