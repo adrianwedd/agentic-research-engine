@@ -48,3 +48,21 @@ def test_html_scraper_extracts_main_text(tmp_path):
 def test_html_scraper_bad_url():
     with pytest.raises(ValueError):
         html_scraper("http://localhost:9/missing", timeout=1)
+
+
+def test_html_scraper_dynamic_content(tmp_path):
+    html = tmp_path / "dynamic.html"
+    html.write_text(
+        """
+        <html><head><script>document.body.innerHTML = '<p>Hi</p>';</script></head><body></body></html>
+        """,
+        encoding="utf-8",
+    )
+    httpd, t = _serve_dir(tmp_path)
+    try:
+        url = f"http://localhost:{httpd.server_port}/dynamic.html"
+        with pytest.raises(ValueError):
+            html_scraper(url)
+    finally:
+        httpd.shutdown()
+        t.join()
