@@ -12,7 +12,9 @@ This guide helps new contributors set up the development environment quickly.
    ```bash
    bash scripts/bootstrap_minimal.sh
    ```
-   For the full toolchain (including pre-commit hooks) run `bash scripts/agent-setup.sh` instead.
+  For the full toolchain (including pre-commit hooks) run `bash scripts/agent-setup.sh` instead.
+  The setup script installs packages using the pre-generated `constraints.txt` file
+  to ensure deterministic versions and avoid pip resolver loops.
 
 ## Troubleshooting
 
