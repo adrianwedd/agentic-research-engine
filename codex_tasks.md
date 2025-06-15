@@ -72,6 +72,14 @@ acceptance_criteria: []
 - [ ] When an operator triggers the "promote-to-production" step
 - [ ] Then the version from staging is deployed to the production environment
 
+```codex-task
+id: P1-03
+title: Implement CD Pipeline for automated deployments
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-04: Set up OpenTelemetry collector and exporter
 
 **Goal:** This task involves deploying and configuring an OpenTelemetry (OTel) collector within the system's infrastructure.
@@ -1042,6 +1050,8 @@ acceptance_criteria: []
 ```codex-task
 id: P5-02
 title: Docker-based OTel collector service
+
+title: Add rollback support for CD pipeline
 steps: []
 acceptance_criteria: []
 ```
