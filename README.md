@@ -1,1 +1,130 @@
-# agentic-research-engine
+# **agentic-research-engine: A Self-Improving Multi-Agent Research System**
+
+([https://img.shields.io/badge/build-passing-brightgreen](https://www.google.com/search?q=https://img.shields.io/badge/build-passing-brightgreen))\]([https://github.com/actions](https://github.com/actions)) ([https://www.google.com/search?q=%5Bhttps://codecov.io%5D](https://www.google.com/search?q=%5Bhttps://codecov.io%5D)([https://codecov.io](https://codecov.io))) ([https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT)) ([https://www.google.com/search?q=./docs/ROADMAP.md](https://www.google.com/search?q=./docs/ROADMAP.md))
+
+## **1. Vision & Mission**
+
+The agentic-research-engine is a next-generation multi-agent research system designed to transcend the limitations of current agentic paradigms. Our mission is to build a system capable of genuine learning, dynamic collaboration, and autonomous self-improvement, moving beyond the rigid orchestrator-worker models that are stateful but static.[1]
+This system is architected to address critical challenges in agentic AI, including coordination complexity, high operational cost, and the inability to learn from experience. By integrating advanced cognitive architectures with flexible collaboration protocols, the agentic-research-engine aims to become a true partner in the complex processes of research, discovery, and engineering.[1]
+
+## **2. Core Architectural Pillars**
+
+The architecture of the agentic-research-engine is founded on four key pillars that ensure robustness, intelligence, and adaptability [1]:
+
+1. **Hybrid Graph-Based Supervisor Model**: We abandon rigid, centralized control in favor of a dynamic, stateful graph for workflow management, inspired by LangGraph. This provides explicit control, deep observability, and resilience against failure.[1]
+2. **Multi-Layered Long-Term Memory (LTM)**: To enable genuine cognition, the system incorporates a dedicated memory service that distinguishes between:
+   * **Episodic Memory**: For learning from past tasks and experiences.
+   * **Semantic Memory**: A trusted internal knowledge graph of verified facts.
+   * **Procedural Memory**: For acquiring and reusing successful "skills" or action sequences.
+3. **Institutionalized Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalizes a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.[1]
+4. **Multi-Faceted Evaluation Framework**: System performance is measured through a comprehensive framework that assesses not only task accuracy (via a BrowseComp-style benchmark) but also output quality, source fidelity, and collaboration efficiency. This data feeds a Reinforcement Learning from AI Feedback (RLAIF) loop, enabling the system to continuously improve its own policies.[1]
+
+## **3. System Workflow Example**
+
+To understand how these pillars work in concert, consider a query like: *"Analyze the performance impact of the Transformer architecture compared to LSTMs for long-sequence NLP tasks."* [1]
+
+1. **Planning & LTM Query (Supervisor)**: The Supervisor receives the query. It first queries its **Episodic Memory** for similar past tasks and its **Semantic Memory** for core concepts like "Transformer" and "LSTM" to build initial context. It then constructs a research graph with parallel subgraphs for "Core Performance Comparison" and "Architectural Innovations for Long-Range Memory".[1]
+2. **Parallel Execution & Collaboration (Agent Teams)**: The Orchestration Engine executes the graph. For the "Innovations" subgraph, a team of a WebResearcher and a CodeResearcher is formed. They use a **dynamic group chat** to collaborate, sharing papers and code analysis on a shared scratchpad.[1]
+3. **Verification & Self-Correction (Evaluator)**: The team's summary is passed to the Evaluator agent. The Evaluator finds a minor misrepresentation and routes the task back with a critique. The team receives the feedback, corrects its summary, and resubmits for approval.[1]
+4. **Synthesis & Citation (Supervisor & CitationAgent)**: Once all subgraphs are complete and verified, the Supervisor synthesizes the findings into a coherent report. This draft is then passed to the mandatory CitationAgent, which ensures every claim is accurately attributed to its source.[1]
+5. **Memory Consolidation (MemoryManager)**: After the final report is delivered, the MemoryManager agent processes the entire task, consolidating the experience into Episodic Memory and extracting new, verified facts for the Semantic Memory knowledge graph.[1]
+
+## **4. Repository Structure**
+
+This is a mono-repo containing all services, agent definitions, and infrastructure code for the agentic-research-engine.
+`/`
+`├── agents/             # Source code for individual agent implementations (e.g., Supervisor, Evaluator)`
+`├── services/           # Backend services for core cognitive modules`
+`│   ├── ltm_service/    # The Long-Term Memory service`
+`│   └── tool_registry/  # The secure Tool Registry service`
+`├── engine/             # The core graph-based Orchestration Engine`
+`├── tools/              # Wrappers for external tools (e.g., Web Search, PDF Reader)`
+`├── infra/              # Infrastructure-as-Code (e.g., Terraform, Docker configs)`
+`├── pipelines/          # CI/CD and MLOps pipeline definitions`
+`├── notebooks/          # Jupyter notebooks for research, data analysis, and experimentation`
+`├── tests/              # Unit, integration, and benchmark tests`
+`│   ├── unit/`
+`│   └── integration/`
+`└── docs/               # Project documentation, including the full Change Request Ledger`
+
+## **5. Getting Started**
+
+### **Prerequisites**
+
+* Python 3.10+
+* Poetry (for dependency management)
+* Docker and Docker Compose
+* pre-commit
+
+### **Development Setup**
+
+1. **Clone the repository:**
+   `git clone <repository-url>`
+   `cd agentic-research-engine`
+
+2. **Install dependencies:** This project uses Poetry to manage dependencies.
+   `poetry install`
+
+3. **Set up pre-commit hooks:** This will ensure your code is formatted and linted before each commit, as per our quality standards (P1-01).
+   `poetry run pre-commit install`
+
+4. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
+   `cp.env.example.env`
+   `# Now, edit.env with your credentials`
+
+5. **Launch core services:** The core infrastructure (e.g., OpenTelemetry collector, databases) can be launched using Docker Compose.
+   `docker-compose up -d`
+
+## **6. Running Tests**
+
+A comprehensive test suite is crucial for maintaining system quality.
+
+### **Unit Tests**
+
+Unit tests verify individual components in isolation. They are located in tests/unit/.
+`poetry run pytest tests/unit/`
+
+### **Integration Tests**
+
+Integration tests verify the interactions between different components and services. They are located in tests/integration/.
+`poetry run pytest tests/integration/`
+
+### **Benchmark Evaluation**
+
+The full system benchmark (P1-18), which evaluates end-to-end research capabilities, can be run via a dedicated script.
+`poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1`
+
+## **7. Project Roadmap**
+
+This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see docs/change_request_ledger.md.
+
+* **Phase 1: Core Orchestration & Foundational Capabilities**
+  * **Objective**: Establish the foundational architecture and a baseline research capability.
+  * **Key Deliverables**: LangGraph-based orchestration engine, observability layer, Supervisor and WebResearcher agents, BrowseComp benchmark.[1]
+* **Phase 2: Advanced Cognition & Evaluation**
+  * **Objective**: Introduce memory and self-correction to improve accuracy and reliability.
+  * **Key Deliverables**: LTM service (Episodic Memory), Evaluator agent with self-correction loop, LLM-as-a-Judge pipeline.[1]
+* **Phase 3: Dynamic Collaboration & Self-Improvement**
+  * **Objective**: Enable complex collaboration and system-level learning.
+  * **Key Deliverables**: Dynamic group chat and hierarchical teams, RLAIF loop with Reward Model, Semantic Memory (knowledge graph).[1]
+* **Phase 4: Production Hardening & Specialization**
+  * **Objective**: Refine the system for production use, focusing on efficiency and robustness.
+  * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.[1]
+
+## **8. Contributing**
+
+Contributions are welcome and encouraged! Please follow these steps to contribute:
+
+1. **Fork the repository.**
+2. **Create a new branch** for your feature or bug fix: git checkout -b feature/your-feature-name.
+3. **Develop your changes.** Ensure your code adheres to the project's style guidelines and that you add appropriate unit tests.
+4. **Run all tests** to ensure your changes have not introduced any regressions.
+5. **Commit your changes** with a clear and descriptive commit message.
+6. **Push your branch** to your fork: git push origin feature/your-feature-name.
+7. **Open a Pull Request** against the main branch of this repository.
+
+All pull requests will be automatically validated by the CI pipeline (P1-02), which includes running linters, unit tests, and checking for code coverage. A review from at least one core team member is required for a PR to be merged.
+
+## **9. License**
+
+This project is licensed under the MIT License. See the(LICENSE) file for details.
