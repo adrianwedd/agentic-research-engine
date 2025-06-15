@@ -37,6 +37,7 @@ class NodeType(str, Enum):
 
     DEFAULT = "default"
     HUMAN_IN_THE_LOOP_BREAKPOINT = "human_in_the_loop_breakpoint"
+    GROUP_CHAT_MANAGER = "group_chat_manager"
 
 
 class InMemorySaver:
