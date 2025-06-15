@@ -215,6 +215,14 @@ acceptance_criteria: []
 - [ ] When the agent completes its analysis
 - [ ] Then it returns a 'State' object with the original query populated in the 'initial_query' field
 
+```codex-task
+id: P1-09
+title: Implement Supervisor agent for query analysis
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-10: Implement Supervisor's graph-based planning logic
 
 **Goal:** Enhance the Supervisor agent with the logic to decompose a complex user query into a high-level research plan.
@@ -1091,8 +1099,17 @@ acceptance_criteria: []
 
 ```codex-task
 id: P5-03
+title: Add supervisor node integration tests
+steps: []
+acceptance_criteria: []
+```
+
+
+
+```codex-task
 title: Add graph compilation benchmark script
 steps: []
 acceptance_criteria: []
 ```
+
 
