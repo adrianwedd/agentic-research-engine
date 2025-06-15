@@ -82,8 +82,9 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```
 
 4. **Launch core services:** The repository provides a `docker-compose.yml` that
-   starts an OpenTelemetry collector and Jaeger backend. Set `ENVIRONMENT` and
-   `SERVICE_VERSION` in your shell to tag telemetry data, then bring the stack up:
+   starts an OpenTelemetry collector, a Weaviate vector database, and a Jaeger backend.
+   Set `ENVIRONMENT` and `SERVICE_VERSION` in your shell to tag telemetry data, then
+   bring the stack up:
    ```bash
    ENVIRONMENT=dev SERVICE_VERSION=0.2.3 docker-compose up -d
    ```
