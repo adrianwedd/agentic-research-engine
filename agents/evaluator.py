@@ -7,8 +7,13 @@ and drives the iterative correction cycle.
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
+from urllib.parse import urlparse
+
+import yaml
 
 from agents.critique import Critique
 
@@ -36,11 +41,18 @@ class EvaluatorAgent:
         )
         self.evaluation_framework.setdefault("bias", self._evaluate_bias)
         self.evaluation_framework.setdefault("citations", self._evaluate_citations)
+        self.evaluation_framework.setdefault(
+            "source_quality", self._evaluate_source_quality
+        )
 
         # Optional callable for verifying individual claims against provided
         # sources. The callable should accept a prompt string and return a
         # textual response such as "yes" or "no".
         self.fact_check_llm = fact_check_llm
+
+        config = self._load_source_quality_config()
+        self.allowlist = set(config.get("allowlist", []))
+        self.blocklist = set(config.get("blocklist", []))
 
     # ------------------------------------------------------------------
     # Default evaluation helpers
@@ -74,6 +86,50 @@ class EvaluatorAgent:
         invalid: List[str] = [c for c in citations if c not in sources]
         score = 1.0 if not citations else max(0.0, 1.0 - len(invalid) / len(citations))
         return {"score": score, "invalid_citations": invalid}
+
+    def _load_source_quality_config(self) -> Dict[str, List[str]]:
+        path = (
+            Path(__file__).resolve().parent
+            / "evaluator"
+            / "config"
+            / "source_quality.yml"
+        )
+        if not path.exists():
+            return {}
+        with path.open("r", encoding="utf-8") as f:
+            try:
+                return yaml.safe_load(f) or {}
+            except Exception:
+                return {}
+
+    def _evaluate_source_quality(self, output: Dict, criteria: Dict) -> Dict:
+        sources: List[str] = output.get("sources", [])
+        scores: Dict[str, float] = {}
+        for src in sources:
+            domain = urlparse(src).netloc.lower()
+            if domain.startswith("www."):
+                domain = domain[4:]
+            score = 0.0
+            if domain in self.allowlist:
+                score += 1.0
+            if domain in self.blocklist:
+                score -= 1.0
+            if self.fact_check_llm:
+                prompt = (
+                    "Rate the trustworthiness of the domain '{domain}' on a scale of 1-5 "
+                    '(5 highest). Provide JSON {{"rating": <1-5>, "reason": "..."}}.'
+                ).format(domain=domain)
+                try:
+                    response = self.fact_check_llm(prompt)
+                    data = json.loads(str(response))
+                    rating = int(data.get("rating", 3))
+                    score += (rating - 3) / 2.0
+                except Exception:
+                    pass
+            scores[src] = round(score, 3)
+
+        avg = sum(scores.values()) / len(scores) if scores else 0.0
+        return {"score": round(avg, 3), "scores": scores}
 
     # ------------------------------------------------------------------
     # Public API

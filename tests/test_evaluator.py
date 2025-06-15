@@ -25,3 +25,19 @@ def test_verify_factual_accuracy_accepts_supported():
     sources = ["Dogs bark loudly."]
     result = agent.verify_factual_accuracy(summary, sources)
     assert result["unsupported_facts"] == []
+
+
+def test_assess_source_quality_penalizes_blocklist():
+    agent = EvaluatorAgent()
+    output = {"sources": ["http://clickbait.com/article"]}
+    results = agent.evaluate_research_output(output, {"source_quality": {}})
+    score = results["source_quality"]["scores"]["http://clickbait.com/article"]
+    assert score < 0
+
+
+def test_assess_source_quality_rewards_allowlist():
+    agent = EvaluatorAgent()
+    output = {"sources": ["https://jstor.org/paper"]}
+    results = agent.evaluate_research_output(output, {"source_quality": {}})
+    score = results["source_quality"]["scores"]["https://jstor.org/paper"]
+    assert score > 0
