@@ -80,9 +80,11 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    # Now, edit .env with your credentials
    ```
 
-5. **Launch core services:** The core infrastructure (e.g., OpenTelemetry collector, databases) can be launched using Docker Compose.
+5. **Launch core services:** The repository provides a `docker-compose.yml` that
+   starts an OpenTelemetry collector and Jaeger backend. Set `ENVIRONMENT` and
+   `SERVICE_VERSION` in your shell to tag telemetry data, then bring the stack up:
    ```bash
-   docker-compose up -d
+   ENVIRONMENT=dev SERVICE_VERSION=0.1.0 docker-compose up -d
    ```
 
 ## **6. Running Tests**
@@ -113,7 +115,17 @@ The full system benchmark (P1-18), which evaluates end-to-end research capabilit
 poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1
 ```
 
-## **7. Project Roadmap**
+## **7. Continuous Deployment**
+
+All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
+The pipeline uses Terraform and Helm configurations under `infra/` to perform
+"rainbow" deployments, running the new version alongside the previous one and
+gradually shifting traffic. A push to `main` deploys to the `staging`
+environment automatically. Once verified, an operator can trigger the
+`promote-production` job to roll out the same release to `production` with zero
+downtime.
+
+## **8. Project Roadmap**
 
 This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see docs/change_request_ledger.md.
 
@@ -130,7 +142,7 @@ This project is being executed in a phased approach to manage complexity and del
   * **Objective**: Refine the system for production use, focusing on efficiency and robustness.
   * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.[1]
 
-## **8. Contributing**
+## **9. Contributing**
 
 Contributions are welcome and encouraged! Please follow these steps to contribute:
 
@@ -144,6 +156,6 @@ Contributions are welcome and encouraged! Please follow these steps to contribut
 
 All pull requests will be automatically validated by the CI pipeline (P1-02), which includes running linters, unit tests, and checking for code coverage. A review from at least one core team member is required for a PR to be merged.
 
-## **9. License**
+## **10. License**
 
 This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.

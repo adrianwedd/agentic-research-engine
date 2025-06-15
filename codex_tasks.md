@@ -80,6 +80,14 @@ acceptance_criteria: []
 - [ ] When an operator triggers the "promote-to-production" step
 - [ ] Then the version from staging is deployed to the production environment
 
+```codex-task
+id: P1-03
+title: Implement CD Pipeline for automated deployments
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-04: Set up OpenTelemetry collector and exporter
 
 **Goal:** This task involves deploying and configuring an OpenTelemetry (OTel) collector within the system's infrastructure.
@@ -93,6 +101,14 @@ acceptance_criteria: []
 - [ ] And a system service is instrumented to send traces
 - [ ] When the service performs an action and emits a trace
 - [ ] Then the corresponding trace is visible in the configured observability backend
+
+```codex-task
+id: P1-04
+title: Set up OpenTelemetry collector and exporter
+status: done
+steps: []
+acceptance_criteria: []
+```
 
 ## P1-05: Define core agent action tracing schema
 
@@ -1042,6 +1058,10 @@ acceptance_criteria: []
 ```codex-task
 id: P5-02
 title: Integrate tracing schema with agents
+
+title: Docker-based OTel collector service
+
+title: Add rollback support for CD pipeline
 steps: []
 acceptance_criteria: []
 ```

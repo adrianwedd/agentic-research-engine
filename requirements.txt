@@ -1,7 +1,9 @@
 pre-commit
 pytest
+pydantic
 pyyaml
 requests
 
 opentelemetry-api
 opentelemetry-sdk
+opentelemetry-exporter-otlp
