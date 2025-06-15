@@ -16,10 +16,12 @@ class WebResearcherAgent:
         tool_registry: Dict[str, Callable[..., Any]],
         *,
         rate_limit_per_minute: int = 5,
+        max_retries: int = 2,
     ) -> None:
         """Initialize with secure tool access and rate limiting."""
         self.tool_registry = tool_registry
         self.rate_limit = rate_limit_per_minute
+        self.max_retries = max_retries
         self.call_times: List[float] = []
 
         # Required tools
@@ -32,7 +34,7 @@ class WebResearcherAgent:
     def _summarize_for_task(self, text: str, task: str) -> str:
         """Summarize ``text`` with focus on the current sub-task."""
         prompt = f"Summarize the following text focusing only on information relevant to '{task}':\n{text}"
-        return self.summarize(prompt)
+        return self._call_with_retry(self.summarize, prompt)
 
     def summarize_to_state(
         self, state: State, *, text_key: str = "raw_text", task_key: str = "task"
@@ -59,11 +61,27 @@ class WebResearcherAgent:
             raise RuntimeError("Rate limit exceeded")
         self.call_times.append(now)
 
+    def _call_with_retry(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        """Call ``func`` with simple exponential backoff retries."""
+        backoff = 1.0
+        for attempt in range(self.max_retries):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                if attempt >= self.max_retries - 1:
+                    raise RuntimeError(
+                        f"{func.__name__} failed after {self.max_retries} attempts: {exc}"
+                    ) from exc
+                time.sleep(backoff)
+                backoff *= 2
+
     def research_topic(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Conduct comprehensive web research on specified topic."""
         self._check_rate_limit()
         start = time.perf_counter()
-        search_results = self.web_search(topic)
+        search_results = self._call_with_retry(self.web_search, topic)
         latency_ms = (time.perf_counter() - start) * 1000
         input_tokens = len(str(topic).split())
         output_tokens = len(str(search_results).split())
@@ -88,9 +106,9 @@ class WebResearcherAgent:
 
             content: Optional[str] = None
             if url.lower().endswith(".pdf") and self.pdf_extract:
-                content = self.pdf_extract(url)
+                content = self._call_with_retry(self.pdf_extract, url)
             elif self.html_scraper:
-                content = self.html_scraper(url)
+                content = self._call_with_retry(self.html_scraper, url)
             if not content:
                 continue
 

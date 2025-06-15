@@ -1,3 +1,5 @@
+import pytest
+
 from agents.web_researcher import WebResearcherAgent
 from engine.orchestration_engine import GraphState
 
@@ -85,3 +87,28 @@ def test_webresearcher_node_executes_query():
     assert "transformer architecture" in q
     assert "academic papers" in q
     assert "research_result" in result.data
+
+
+def test_research_topic_retries_and_errors():
+    calls: list[int] = []
+
+    def web_search(q: str):
+        return [{"url": "http://example.com/doc.pdf", "title": "Doc"}]
+
+    def failing_pdf(url: str):
+        calls.append(1)
+        raise ValueError("boom")
+
+    registry = {
+        "web_search": web_search,
+        "pdf_extract": failing_pdf,
+        "html_scraper": None,
+        "summarize": lambda text: "summary",
+        "assess_source": lambda url: 1.0,
+    }
+
+    agent = WebResearcherAgent(registry, max_retries=2)
+    with pytest.raises(RuntimeError):
+        agent.research_topic("topic", {})
+
+    assert len(calls) == 2
