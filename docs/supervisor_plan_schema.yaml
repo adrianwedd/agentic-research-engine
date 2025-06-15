@@ -45,6 +45,8 @@ properties:
               type: string
             to:
               type: string
+            edge_type:
+              type: string
       parallel_groups:
         type: array
         items:

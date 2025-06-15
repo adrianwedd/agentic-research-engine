@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict
 
+from .orchestration_engine import OrchestrationEngine
 from .state import State
 
 
@@ -34,6 +35,23 @@ def make_status_router(mapping: Dict[str, str]) -> Callable[[State], str]:
             return mapping[status]
         except KeyError as exc:  # pragma: no cover - simple error path
             raise RoutingError(f"Unknown status: {status}") from exc
+
+    return router
+
+
+def make_edge_type_router(
+    engine: OrchestrationEngine,
+    start_node: str,
+    *,
+    state_key: str = "edge_type",
+) -> Callable[[State], str]:
+    """Route based on the ``edge_type`` metadata for outgoing edges."""
+
+    def router(state: State) -> str:
+        label = state.data.get(state_key)
+        for edge in engine.get_edges(start_node, edge_type=label):
+            return edge.end
+        raise RoutingError(f"No edge from {start_node} with type {label}")
 
     return router
 

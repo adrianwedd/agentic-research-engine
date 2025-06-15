@@ -92,6 +92,15 @@ class Node:
         return state
 
 
+@dataclass
+class Edge:
+    """Connection between two nodes."""
+
+    start: str
+    end: str
+    edge_type: str | None = None
+
+
 async def parallel_subgraphs(
     subgraphs: Sequence["OrchestrationEngine"], state: State
 ) -> State:
@@ -111,10 +120,19 @@ async def parallel_subgraphs(
     return merged
 
 
-def _build_order(edges: Iterable[tuple[str, str]]) -> Dict[str, str]:
+def _build_order(
+    edges: Iterable[Edge | tuple[str, str, str | None] | tuple[str, str]]
+) -> Dict[str, str]:
     """Convert edge list to lookup map."""
 
-    return {start: end for start, end in edges}
+    order: Dict[str, str] = {}
+    for edge in edges:
+        if isinstance(edge, Edge):
+            order[edge.start] = edge.end
+        else:
+            start, end = edge[:2]
+            order[start] = end
+    return order
 
 
 @dataclass
@@ -122,7 +140,7 @@ class OrchestrationEngine:
     """Core LangGraph-based orchestration engine."""
 
     nodes: Dict[str, Node] = field(default_factory=dict)
-    edges: list[tuple[str, str]] = field(default_factory=list)
+    edges: list[Edge] = field(default_factory=list)
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
@@ -151,8 +169,8 @@ class OrchestrationEngine:
     ) -> None:
         self.nodes[name] = Node(name, func, retries, node_type)
 
-    def add_edge(self, start: str, end: str) -> None:
-        self.edges.append((start, end))
+    def add_edge(self, start: str, end: str, *, edge_type: str | None = None) -> None:
+        self.edges.append(Edge(start=start, end=end, edge_type=edge_type))
 
     def add_router(
         self,
@@ -165,8 +183,14 @@ class OrchestrationEngine:
     def _on_node_finished(self, name: str) -> None:
         if self._last_node is not None and self._last_node != name:
             tracer = trace.get_tracer(__name__)
+            edge_type = None
+            for edge in self.edges:
+                if edge.start == self._last_node and edge.end == name:
+                    edge_type = edge.edge_type
+                    break
             with tracer.start_as_current_span(
-                "edge", attributes={"from": self._last_node, "to": name}
+                "edge",
+                attributes={"from": self._last_node, "to": name, "type": edge_type},
             ):
                 pass
         self._last_node = name
@@ -250,12 +274,27 @@ class OrchestrationEngine:
     def resume_from_queue(self, run_id: str) -> State:
         return asyncio.run(self.resume_from_queue_async(run_id))
 
+    def get_edges(
+        self, start: str | None = None, edge_type: str | None = None
+    ) -> list[Edge]:
+        """Return edges matching the optional criteria."""
+
+        matches: list[Edge] = []
+        for edge in self.edges:
+            if start is not None and edge.start != start:
+                continue
+            if edge_type is not None and edge.edge_type != edge_type:
+                continue
+            matches.append(edge)
+        return matches
+
     def export_dot(self) -> str:
         lines = ["digraph Orchestration {"]
         for name in self.nodes:
             lines.append(f'  "{name}";')
-        for start, end in self.edges:
-            lines.append(f'  "{start}" -> "{end}";')
+        for edge in self.edges:
+            label = f' [label="{edge.edge_type}"]' if edge.edge_type else ""
+            lines.append(f'  "{edge.start}" -> "{edge.end}"{label};')
         for start, _, path_map in self.routers:
             if path_map:
                 for label, dest in path_map.items():
