@@ -7,6 +7,7 @@ and drives the iterative correction cycle.
 
 from __future__ import annotations
 
+import re
 from typing import Callable, Dict, List, Optional
 
 from agents.critique import Critique
@@ -14,7 +15,9 @@ from agents.critique import Critique
 
 class EvaluatorAgent:
     def __init__(
-        self, evaluation_framework: Optional[Dict[str, Callable]] = None
+        self,
+        evaluation_framework: Optional[Dict[str, Callable]] = None,
+        fact_check_llm: Optional[Callable[[str], str]] = None,
     ) -> None:
         """Initialize with comprehensive evaluation capabilities.
 
@@ -33,6 +36,11 @@ class EvaluatorAgent:
         )
         self.evaluation_framework.setdefault("bias", self._evaluate_bias)
         self.evaluation_framework.setdefault("citations", self._evaluate_citations)
+
+        # Optional callable for verifying individual claims against provided
+        # sources. The callable should accept a prompt string and return a
+        # textual response such as "yes" or "no".
+        self.fact_check_llm = fact_check_llm
 
     # ------------------------------------------------------------------
     # Default evaluation helpers
@@ -101,3 +109,45 @@ class EvaluatorAgent:
         )
         critique.validate()
         return critique
+
+    # ------------------------------------------------------------------
+    # Factual Verification
+    # ------------------------------------------------------------------
+    def verify_factual_accuracy(
+        self, summary: str, sources: List[str]
+    ) -> Dict[str, List[str]]:
+        """Check each claim in ``summary`` against ``sources``.
+
+        The summary is split into sentences which are treated as discrete claims.
+        For each claim, the ``fact_check_llm`` callable is prompted with the
+        sources as context and asked whether the claim is supported. If no LLM
+        callable is provided, a simple substring match is used as a fallback.
+        """
+
+        if not isinstance(summary, str) or not summary.strip():
+            return {"unsupported_facts": []}
+
+        claims = [c.strip() for c in re.split(r"(?<=[.!?])\s+", summary) if c.strip()]
+        unsupported: List[str] = []
+
+        combined_sources = "\n".join(sources)
+        for claim in claims:
+            supported = False
+            if self.fact_check_llm is None:
+                supported = claim.lower() in combined_sources.lower()
+            else:
+                prompt = (
+                    "You are a factual verifier. Only use the provided sources "
+                    "to answer. Respond with 'yes' or 'no'.\n\nSources:\n"
+                    f"{combined_sources}\n\nClaim: {claim}"
+                )
+                try:
+                    response = str(self.fact_check_llm(prompt)).strip().lower()
+                except Exception:
+                    response = "no"
+                supported = response.startswith("yes")
+
+            if not supported:
+                unsupported.append(claim)
+
+        return {"unsupported_facts": unsupported}
