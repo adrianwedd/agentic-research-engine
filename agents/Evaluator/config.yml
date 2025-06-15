@@ -1,0 +1,4 @@
+agent_name: "Evaluator"
+role: "Fact-checker & self-correction loop manager"
+max_retries: 3
+rbac: []

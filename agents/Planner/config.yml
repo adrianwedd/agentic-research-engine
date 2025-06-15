@@ -1,0 +1,4 @@
+agent_name: "Planner"
+role: "Optimization-based plan generator"
+max_retries: 3
+rbac: []

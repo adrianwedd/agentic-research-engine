@@ -1,0 +1,4 @@
+agent_name: "WebResearcher"
+role: "Academic-grade web/internet researcher"
+max_retries: 3
+rbac: []

@@ -1,0 +1,4 @@
+agent_name: "Supervisor"
+role: "High-level strategist: builds and synthesizes graph"
+max_retries: 3
+rbac: []

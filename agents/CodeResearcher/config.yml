@@ -1,0 +1,4 @@
+agent_name: "CodeResearcher"
+role: "Code analysis & sandbox execution"
+max_retries: 3
+rbac: []
