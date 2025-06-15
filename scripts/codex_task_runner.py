@@ -5,6 +5,7 @@ import sys
 from typing import Any, Dict, List
 
 import yaml
+
 from scripts.issue_logger import create_issue
 
 BLOCK_RE = re.compile(r"```codex-task\n(.*?)\n```", re.DOTALL)
@@ -72,9 +73,15 @@ def merge_tasks(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate .codex/queue.yml from codex_tasks.md")
-    parser.add_argument("--from", dest="from_id", help="only process tasks with id >= given")
-    parser.add_argument("--preview", action="store_true", help="print output instead of writing")
+    parser = argparse.ArgumentParser(
+        description="Generate .codex/queue.yml from codex_tasks.md"
+    )
+    parser.add_argument(
+        "--from", dest="from_id", help="only process tasks with id >= given"
+    )
+    parser.add_argument(
+        "--preview", action="store_true", help="print output instead of writing"
+    )
     args = parser.parse_args()
 
     with open("codex_tasks.md") as f:
@@ -92,8 +99,8 @@ def main():
         for task in added:
             if task.get("create_issue"):
                 body = (
-                    f"Automated issue for Codex task {task['id']}\n\n" +
-                    yaml.safe_dump(task)
+                    f"Automated issue for Codex task {task['id']}\n\n"
+                    + yaml.safe_dump(task)
                 )
                 repo = task.get("repo", "")
                 url = create_issue(task["title"], body, repo, task.get("labels", []))
