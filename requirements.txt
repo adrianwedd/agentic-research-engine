@@ -5,6 +5,7 @@ pyyaml
 requests
 pdfplumber
 beautifulsoup4
+readability-lxml
 
 opentelemetry-api
 opentelemetry-sdk

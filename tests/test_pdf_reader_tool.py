@@ -59,8 +59,9 @@ def test_pdf_extract_from_url(tmp_path):
 def test_pdf_extract_no_text(tmp_path):
     blank = tmp_path / "blank.pdf"
     blank.write_bytes(base64.b64decode(BLANK_PDF_B64))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc:
         pdf_extract(str(blank))
+    assert "image-based" in str(exc.value)
 
 
 def test_pdf_extract_bad_path():
