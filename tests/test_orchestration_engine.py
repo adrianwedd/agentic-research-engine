@@ -1,3 +1,6 @@
+import asyncio
+import importlib
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
@@ -6,10 +9,7 @@ from opentelemetry.sdk.trace.export import (
     SpanExportResult,
 )
 
-import importlib
-
 from engine.orchestration_engine import GraphState, create_orchestration_engine
-import asyncio
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -59,7 +59,9 @@ def test_sequential_execution_and_spans():
     assert "node:A" in span_names
     assert "node:B" in span_names
     assert any(
-        span.name == "edge" and span.attributes["from"] == "A" and span.attributes["to"] == "B"
+        span.name == "edge"
+        and span.attributes["from"] == "A"
+        and span.attributes["to"] == "B"
         for span in exporter.spans
     )
     importlib.reload(trace)
