@@ -9,14 +9,19 @@ A small benchmark was implemented in `benchmarks/graph_compilation.py`. It build
 1. **Dynamic build** – a new graph is constructed and executed for every iteration.
 2. **Compiled reuse** – a graph is compiled once and reused across iterations.
 
-The benchmark was executed with 100 iterations using Python 3.12. Results:
+The benchmark was executed with 100 iterations using Python 3.12.
+Re-running the script on a fresh container yielded faster times because the
+sample graph is extremely small. Updated results:
 
 ```
-Dynamic build+run: 5.4072s, peak 578929 bytes
-Compiled run: 1.6196s, peak 1992695 bytes
+Dynamic build+run: 0.0687s, peak 23189 bytes
+Compiled run: 0.0604s, peak 10755 bytes
+Hybrid run:   0.0631s, peak 11259 bytes
 ```
 
-AOT reuse significantly reduced total runtime but consumed more peak memory due to the compiled graph object.
+The compiled approach shows a small latency win and lower memory usage. The
+hybrid test compiles a common subgraph while keeping the top level dynamic,
+landing between the two extremes.
 
 ## Recommendation
 
