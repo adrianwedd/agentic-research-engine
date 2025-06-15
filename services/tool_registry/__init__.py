@@ -2,9 +2,19 @@ from __future__ import annotations
 
 """Simple in-memory Tool Registry with RBAC controls."""
 
+import os
 from typing import Callable, Dict, Iterable, Optional
 
 import yaml
+
+from tools import (
+    consolidate_memory,
+    html_scraper,
+    pdf_extract,
+    retrieve_memory,
+    summarize_text,
+    web_search,
+)
 
 
 class AccessDeniedError(Exception):
@@ -44,3 +54,39 @@ class ToolRegistry:
         data = yaml.safe_load(open(path)) or {}
         perms = data.get("permissions", {})
         self._permissions = {tool: set(roles or []) for tool, roles in perms.items()}
+
+
+DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
+    "web_search": web_search.web_search
+    if hasattr(web_search, "web_search")
+    else web_search,
+    "pdf_extract": pdf_extract,
+    "html_scraper": html_scraper,
+    "consolidate_memory": consolidate_memory,
+    "retrieve_memory": retrieve_memory,
+    "summarize": summarize_text,
+}
+
+
+def create_default_registry(config_path: str | None = None) -> ToolRegistry:
+    """Create a ToolRegistry with all built-in tools registered."""
+
+    registry = ToolRegistry()
+
+    if config_path is None:
+        config_path = os.path.join(os.path.dirname(__file__), "config.yml")
+
+    if os.path.exists(config_path):
+        data = yaml.safe_load(open(config_path)) or {}
+        perms = data.get("permissions", {})
+    else:
+        perms = {}
+
+    for name, func in DEFAULT_TOOLS.items():
+        allowed = perms.get(name)
+        registry.register_tool(name, func, allowed_roles=allowed)
+
+    return registry
+
+
+__all__ = ["AccessDeniedError", "ToolRegistry", "create_default_registry"]

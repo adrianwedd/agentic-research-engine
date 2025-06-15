@@ -5,8 +5,8 @@ import requests
 
 from services.ltm_service.api import LTMService, LTMServiceServer
 from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
-from services.tool_registry import AccessDeniedError, ToolRegistry
-from tools.ltm_client import consolidate_memory, retrieve_memory
+from services.tool_registry import AccessDeniedError, create_default_registry
+from tools.ltm_client import consolidate_memory
 
 
 def _start_server() -> tuple[LTMServiceServer, str]:
@@ -39,13 +39,7 @@ def test_consolidate_and_retrieve(monkeypatch):
     assert resp.json()["results"]
 
     # Test via tool registry
-    registry = ToolRegistry()
-    registry.register_tool(
-        "consolidate_memory", consolidate_memory, allowed_roles=["MemoryManager"]
-    )
-    registry.register_tool(
-        "retrieve_memory", retrieve_memory, allowed_roles=["MemoryManager"]
-    )
+    registry = create_default_registry()
 
     tool = registry.get_tool("MemoryManager", "retrieve_memory")
     consolidate_memory(record, memory_type="episodic", endpoint=endpoint)
