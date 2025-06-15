@@ -21,10 +21,12 @@ from opentelemetry import trace
 
 from .state import State
 
+
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
 # introduce a dedicated class with additional orchestration-specific fields.
+
 GraphState = State
 
 logger = logging.getLogger(__name__)
@@ -36,7 +38,7 @@ class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: Callable[[State], Awaitable[State]] | Callable[[State], State]
+    func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
     retries: int = 0
 
     async def run(self, state: State) -> State:
@@ -83,13 +85,15 @@ def _build_order(edges: Iterable[tuple[str, str]]) -> Dict[str, str]:
 
 @dataclass
 class OrchestrationEngine:
-    """Simplified orchestration engine for sequential workflows."""
+    """Core LangGraph-based orchestration engine."""
 
     nodes: Dict[str, Node] = field(default_factory=dict)
     edges: list[tuple[str, str]] = field(default_factory=list)
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
+    checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
+    _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
     order: Dict[str, str] = field(init=False, default_factory=dict)
@@ -101,7 +105,7 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: Callable[[State], Awaitable[State]] | Callable[[State], State],
+        func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
         *,
         retries: int = 0,
     ) -> None:
@@ -133,53 +137,30 @@ class OrchestrationEngine:
         self.routers_map = {
             start: (router, path_map) for start, router, path_map in self.routers
         }
-        # Use the engine itself as the graph executor. This allows ``run`` and
-        # ``run_async`` to delegate to ``invoke``/``ainvoke`` implemented below
-        # without requiring an external dependency at this stage.
-        self._graph = self
 
-    async def _execute_async(
-        self, state: State, on_node_finished: Callable[[str], None] | None = None
-    ) -> State:
-        """Execute nodes sequentially following edges and routers."""
+    async def run_async(self, state: State, *, thread_id: str = "default") -> State:
+        """Execute the graph asynchronously in a simple sequential manner."""
+
+        if self.entry is None:
+            self.build()
+        self._last_node = None
 
         node_name = self.entry
         while node_name:
             node = self.nodes[node_name]
             state = await node.run(state)
-            if on_node_finished:
-                on_node_finished(node.name)
+            self._on_node_finished(node_name)
+
             if node_name in self.routers_map:
                 router, path_map = self.routers_map[node_name]
                 dest = router(state)
-                if path_map and isinstance(dest, str):
-                    node_name = path_map.get(dest)
-                else:
-                    node_name = dest if isinstance(dest, str) else None
+                if path_map:
+                    dest = path_map.get(dest, dest)
+                node_name = dest if isinstance(dest, str) else None
             else:
                 node_name = self.order.get(node_name)
         return state
 
-    async def ainvoke(
-        self, state: State, config: Dict[str, Any] | None = None
-    ) -> State:
-        on_finished = None
-        if config and (
-            cb := config.get("configurable", {}).get(CONFIG_KEY_NODE_FINISHED)
-        ):
-            on_finished = cb
-        return await self._execute_async(state, on_finished)
-
-    def invoke(self, state: State, config: Dict[str, Any] | None = None) -> State:
-        on_finished = None
-        if config and (
-            cb := config.get("configurable", {}).get(CONFIG_KEY_NODE_FINISHED)
-        ):
-            on_finished = cb
-        return asyncio.run(self._execute_async(state, on_finished))
-
-    async def run_async(self, state: State, *, thread_id: str = "default") -> State:
-        """Execute the graph asynchronously in a simple sequential manner."""
         if not hasattr(self, "entry") or self.entry is None:
             self.build()
         current = self.entry
