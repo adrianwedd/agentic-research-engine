@@ -139,7 +139,7 @@ selector to the previous color.
 
 ## **8. Project Roadmap**
 
-This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see docs/change_request_ledger.md.
+This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see [docs/change_request_ledger.md](docs/change_request_ledger.md).
 
 * **Phase 1: Core Orchestration & Foundational Capabilities**
   * **Objective**: Establish the foundational architecture and a baseline research capability.
