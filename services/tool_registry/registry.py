@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from . import AccessDeniedError, ToolRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class ToolRegistryServer:
@@ -22,6 +26,11 @@ class ToolRegistryServer:
         registry = self.registry
 
         class Handler(BaseHTTPRequestHandler):
+            def log_message(
+                self, format: str, *args
+            ) -> None:  # pragma: no cover - quiet
+                return
+
             def do_GET(self):
                 parsed = urlparse(self.path)
                 if parsed.path != "/tool":
@@ -34,6 +43,18 @@ class ToolRegistryServer:
                 try:
                     registry.get_tool(role, name)
                 except AccessDeniedError as e:
+                    logger.warning(
+                        json.dumps(
+                            {
+                                "timestamp": datetime.utcnow().isoformat(),
+                                "role": role,
+                                "tool": name,
+                                "client_ip": self.client_address[0],
+                                "path": self.path,
+                                "error": str(e),
+                            }
+                        )
+                    )
                     self.send_response(403)
                     self.end_headers()
                     self.wfile.write(json.dumps({"error": str(e)}).encode())

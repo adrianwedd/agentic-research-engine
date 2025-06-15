@@ -1,3 +1,4 @@
+import json
 from threading import Thread
 
 import pytest
@@ -45,6 +46,31 @@ def test_registry_server_permissions(tmp_path):
         )
         assert resp.status_code == 403
         assert "cannot access" in resp.json()["error"]
+    finally:
+        server.httpd.shutdown()
+        thread.join()
+
+
+def test_registry_server_logs_denied_access(tmp_path, caplog):
+    config = tmp_path / "config.yml"
+    config.write_text("permissions:\n  dummy:\n    - WebResearcher\n")
+
+    registry = ToolRegistry()
+    registry.register_tool("dummy", dummy_tool)
+    registry.load_permissions(str(config))
+    server = ToolRegistryServer(registry, host="127.0.0.1", port=0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    endpoint = f"http://127.0.0.1:{server.httpd.server_port}"
+    try:
+        caplog.set_level("WARNING")
+        requests.get(
+            f"{endpoint}/tool", params={"agent": "Supervisor", "name": "dummy"}
+        )
+        assert any(
+            json.loads(record.message).get("role") == "Supervisor"
+            for record in caplog.records
+        )
     finally:
         server.httpd.shutdown()
         thread.join()
