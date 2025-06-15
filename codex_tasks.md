@@ -48,6 +48,14 @@ acceptance_criteria:
 - [ ] Then the pipeline run is marked as "failed"
 - [ ] And a "fail" status check is visible on the pull request
 
+```codex-task
+id: P1-02
+title: Implement CI pipeline for automated builds and tests
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-03: Implement CD Pipeline for automated deployments
 
 **Goal:** Implement a CD pipeline that automates the deployment of all system services.
