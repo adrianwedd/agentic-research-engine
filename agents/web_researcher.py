@@ -65,12 +65,16 @@ class WebResearcherAgent:
         start = time.perf_counter()
         search_results = self.web_search(topic)
         latency_ms = (time.perf_counter() - start) * 1000
+        input_tokens = len(str(topic).split())
+        output_tokens = len(str(search_results).split())
         ToolCallTrace(
             agent_id=str(context.get("agent_id", "")),
             agent_role="WebResearcher",
             tool_name="web_search",
             tool_input=topic,
             tool_output=search_results,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             latency_ms=latency_ms,
         ).record()
         processed: List[Dict[str, Any]] = []

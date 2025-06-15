@@ -29,6 +29,7 @@ class InMemorySaver:
         pass
 
 
+
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
