@@ -10,7 +10,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 class TeacherDataPipeline:
     """Generate synthetic self-correction examples using a teacher LLM."""
 
-    def __init__(self, llm: Callable[[str], str], out_dir: str | Path = "data/teacher_dataset") -> None:
+    def __init__(
+        self, llm: Callable[[str], str], out_dir: str | Path = "data/teacher_dataset"
+    ) -> None:
         self.llm = llm
         self.out_dir = Path(out_dir)
         self.out_dir.mkdir(parents=True, exist_ok=True)
@@ -19,12 +21,14 @@ class TeacherDataPipeline:
         return (
             "You are a knowledgeable instructor. "
             "Given the following topic, act like a typical student who makes a reasoning mistake. "
-            "Provide a JSON object with fields: original_problem, flawed_output, detailed_critique, corrected_solution. "
-            "Topic: "
-            + topic
+            "Provide a JSON object with fields: "
+            "original_problem, flawed_output, detailed_critique, corrected_solution. "
+            "Topic: " + topic
         )
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=4))
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=4)
+    )
     def _call_llm(self, prompt: str) -> str:
         return self.llm(prompt)
 
@@ -32,12 +36,19 @@ class TeacherDataPipeline:
         prompt = self._build_prompt(topic)
         response = self._call_llm(prompt)
         data = json.loads(str(response))
-        required = ["original_problem", "flawed_output", "detailed_critique", "corrected_solution"]
+        required = [
+            "original_problem",
+            "flawed_output",
+            "detailed_critique",
+            "corrected_solution",
+        ]
         if not all(key in data for key in required):
             raise ValueError("Missing required fields in LLM response")
         return data
 
-    def run(self, topics: List[str], out_file: str | Path | None = None) -> List[Dict[str, str]]:
+    def run(
+        self, topics: List[str], out_file: str | Path | None = None
+    ) -> List[Dict[str, str]]:
         results = []
         for topic in topics:
             try:
