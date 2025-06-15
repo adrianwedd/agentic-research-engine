@@ -1,3 +1,6 @@
 permissions:
   WebResearcher:
     - web_search
+  MemoryManager:
+    - consolidate_memory
+    - retrieve_memory

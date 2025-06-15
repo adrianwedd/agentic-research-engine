@@ -17,30 +17,14 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
-from langgraph.checkpoint.memory import InMemorySaver
 from opentelemetry import trace
 
 from .state import State
 
-
-
-from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.constants import CONFIG_KEY_NODE_FINISHED
-from opentelemetry import trace
-
-from engine.state import State
-
-
-class GraphState(State):
-    """Graph state model with dictionary-style access."""
-
-    def __getitem__(self, key: str):
-        return getattr(self, key)
-
+CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
 # introduce a dedicated class with additional orchestration-specific fields.
-
 GraphState = State
 
 logger = logging.getLogger(__name__)
@@ -64,7 +48,6 @@ class Node:
                     else:
                         result = self.func(state)
                 if isinstance(result, GraphState):
-
                     return result
                 if isinstance(result, dict):
                     state.update(result)
@@ -197,7 +180,6 @@ class OrchestrationEngine:
 
     async def run_async(self, state: State, *, thread_id: str = "default") -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
-        if self.entry is None:
         if not hasattr(self, "entry") or self.entry is None:
             self.build()
         current = self.entry
@@ -219,51 +201,8 @@ class OrchestrationEngine:
         return GraphState.model_validate(state.model_dump())
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
-        return asyncio.run(self.run_async(state, thread_id=thread_id))
-
-        self._last_node = None
-
-        node_name = self.entry
-        while node_name:
-            node = self.nodes[node_name]
-            state = await node.run(state)
-            self._on_node_finished(node_name)
-
-            if node_name in self.routers_map:
-                router, path_map = self.routers_map[node_name]
-                dest = router(state)
-                if path_map:
-                    dest = path_map.get(dest, dest)
-                node_name = dest if isinstance(dest, str) else None
-            else:
-                node_name = self.order.get(node_name)
-        return state
-
-    def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""
         return asyncio.run(self.run_async(state, thread_id=thread_id))
-
-      config = {
-            "configurable": {
-                "thread_id": thread_id,
-                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
-            }
-        }
-        result = await self._graph.ainvoke(state, config)
-        return result
-
-    def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
-        if self._graph is None:
-            self.build()
-        self._last_node = None
-        config = {
-            "configurable": {
-                "thread_id": thread_id,
-                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
-            }
-        }
-        result = self._graph.invoke(state, config)
-        return result
 
     def export_dot(self) -> str:
         lines = ["digraph Orchestration {"]
