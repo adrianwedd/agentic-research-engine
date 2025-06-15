@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import logging
 import os
 import statistics
 import time
@@ -22,6 +23,7 @@ class IntegrationTestHarness:
         *,
         timeout: float | None = None,
         retries: int | None = None,
+        retry_delay: float | None = None,
     ) -> None:
         timeout_val = (
             float(os.getenv("HARNESS_TIMEOUT", "30")) if timeout is None else timeout
@@ -30,9 +32,16 @@ class IntegrationTestHarness:
             int(os.getenv("HARNESS_RETRIES", "0")) if retries is None else retries
         )
 
+        delay_val = (
+            float(os.getenv("HARNESS_RETRY_DELAY", "0.1"))
+            if retry_delay is None
+            else retry_delay
+        )
+
         self.evaluator = BrowseCompEvaluator(dataset_path)
         self.timeout = timeout_val
         self.retries = retries_val
+        self.retry_delay = delay_val
 
     def _execute_with_timeout(self, func: Callable[..., Any], *args: Any) -> Any:
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
@@ -41,6 +50,7 @@ class IntegrationTestHarness:
 
     def run(self, agent_system: Any) -> dict[str, Any]:
         results = []
+        logger = logging.getLogger(__name__)
         for case in self.evaluator.test_cases:
             question = case.get("question", "")
             expected = case.get("answer", "").strip().lower()
@@ -54,18 +64,43 @@ class IntegrationTestHarness:
                     response = self._execute_with_timeout(
                         self.evaluator._call_agent, agent_system, question
                     )
+                    if attempt:
+                        logger.info(
+                            "question '%s' succeeded after %d attempt(s)",
+                            question,
+                            attempt + 1,
+                        )
                     break
                 except concurrent.futures.TimeoutError:
                     timed_out = True
-                    attempt += 1
-                    if attempt > self.retries:
-                        break
+                    logger.warning(
+                        "timeout on question '%s' (attempt %d/%d)",
+                        question,
+                        attempt + 1,
+                        self.retries + 1,
+                    )
                 except Exception as e:  # pragma: no cover - defensive guard
                     error = str(e)
+                    logger.warning(
+                        "error on question '%s' (attempt %d/%d): %s",
+                        question,
+                        attempt + 1,
+                        self.retries + 1,
+                        e,
+                    )
+                attempt += 1
+                if attempt <= self.retries:
+                    time.sleep(self.retry_delay)
+                else:
                     break
             end = time.monotonic()
 
             if response is None:
+                logger.error(
+                    "question '%s' failed: %s",
+                    question,
+                    error or f"timeout after {self.timeout}s",
+                )
                 results.append(
                     {
                         "question": question,

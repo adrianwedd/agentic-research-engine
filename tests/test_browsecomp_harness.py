@@ -45,3 +45,25 @@ def test_harness_timeout_does_not_abort(tmp_path, monkeypatch):
     assert report["total_cases"] == 2
     assert report["passed"] == 1
     assert any(r["timed_out"] for r in report["results"] if r["question"] == "slow")
+
+
+def test_harness_retries_on_failure(tmp_path, monkeypatch):
+    data = [{"question": "q", "answer": "a"}]
+    dataset = tmp_path / "data.json"
+    dataset.write_text(json.dumps(data))
+
+    calls: dict[str, int] = {"n": 0}
+
+    def agent(question: str) -> dict:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("flaky")
+        return {"answer": "a"}
+
+    monkeypatch.setenv("HARNESS_RETRIES", "2")
+    monkeypatch.setenv("HARNESS_RETRY_DELAY", "0")
+
+    harness = IntegrationTestHarness(str(dataset))
+    report = harness.run(agent)
+    assert report["passed"] == 1
+    assert calls["n"] > 1
