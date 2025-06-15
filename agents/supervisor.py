@@ -6,6 +6,8 @@ This agent acts as the primary coordinator for research tasks.
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import yaml
+
 
 @dataclass
 class State:
@@ -76,6 +78,28 @@ class SupervisorAgent:
         }
 
         return plan
+
+    # ------------------------------------------------------------------
+    # YAML helpers
+    # ------------------------------------------------------------------
+    def format_plan_as_yaml(self, plan: Dict[str, Any]) -> str:
+        """Serialize plan dictionary to YAML string."""
+
+        return yaml.safe_dump(plan, sort_keys=False)
+
+    def parse_plan(self, plan_text: str) -> Dict[str, Any]:
+        """Parse YAML plan text and validate expected structure."""
+
+        try:
+            data = yaml.safe_load(plan_text) or {}
+        except yaml.YAMLError as exc:
+            raise ValueError("invalid plan format") from exc
+        if not isinstance(data, dict) or "graph" not in data:
+            raise ValueError("invalid plan format")
+        graph = data.get("graph", {})
+        if not isinstance(graph, dict) or "nodes" not in graph or "edges" not in graph:
+            raise ValueError("invalid graph definition")
+        return data
 
     def analyze_query(self, query: str) -> State:
         """Perform initial analysis and create the workflow state."""
