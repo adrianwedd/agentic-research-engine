@@ -1,13 +1,14 @@
 import json
 import random
 from pathlib import Path
+
 from googletrans import Translator
 
 translator = Translator()
 
 SAMPLES = [
-    "Long-Term Memory Consolidation & Forgetting Research (P2-19A)\n\nThis document summarizes a research spike into lifecycle management algorithms for the Long-Term Memory (LTM) service. The goal was to compare advanced forgetting strategies and recommend an approach for Phase 2 implementation.",
-    "Graph Compilation Strategies Research\n\nA short research spike evaluated dynamic graph execution versus ahead-of-time compilation for the orchestration engine."
+    "Long-Term Memory Consolidation & Forgetting Research (P2-19A)\n\nThis document summarizes a research spike into lifecycle management algorithms for the Long-Term Memory (LTM) service. The goal was to compare advanced forgetting strategies and recommend an approach for Phase 2 implementation.",  # noqa: E501
+    "Graph Compilation Strategies Research\n\nA short research spike evaluated dynamic graph execution versus ahead-of-time compilation for the orchestration engine.",  # noqa: E501
 ]
 
 
@@ -36,11 +37,13 @@ def main():
     for text in SAMPLES:
         bt = back_translate(text)
         typo = inject_typos(text)
-        data.append({
-            "original": text,
-            "back_translation": bt,
-            "typo_perturbation": typo,
-        })
+        data.append(
+            {
+                "original": text,
+                "back_translation": bt,
+                "typo_perturbation": typo,
+            }
+        )
     out_path = Path("data/synthetic_self_correction/sample_pairs.json")
     out_path.write_text(json.dumps(data, indent=2))
     print(f"Wrote {out_path}")
