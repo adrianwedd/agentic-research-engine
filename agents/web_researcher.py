@@ -31,10 +31,19 @@ class WebResearcherAgent:
         self.summarize = self._require_tool("summarize")
         self.assess_source = self.tool_registry.get("assess_source", lambda url: 1.0)
 
-    def _summarize_for_task(self, text: str, task: str) -> str:
+    def _summarize_for_task(self, text: str | None, task: str) -> str:
         """Summarize ``text`` with focus on the current sub-task."""
-        prompt = f"Summarize the following text focusing only on information relevant to '{task}':\n{text}"
-        return self._call_with_retry(self.summarize, prompt)
+        if not isinstance(text, str) or not text.strip():
+            return ""
+
+        prompt = (
+            "Summarize the following text focusing only on information "
+            f"relevant to '{task}'. Limit the summary to 200 words or fewer:\n{text}"
+        )
+        summary = self._call_with_retry(self.summarize, prompt)
+        if isinstance(summary, str) and len(summary.split()) > 200:
+            summary = " ".join(summary.split()[:200])
+        return summary
 
     def summarize_to_state(
         self, state: State, *, text_key: str = "raw_text", task_key: str = "task"
