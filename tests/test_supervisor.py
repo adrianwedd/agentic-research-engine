@@ -1,3 +1,5 @@
+import pytest
+
 from agents.supervisor import State, SupervisorAgent
 
 
@@ -33,3 +35,17 @@ def test_plan_contains_parallel_webresearcher_nodes():
     topics = [n.get("topic") for n in nodes if n["agent"] == "WebResearcher"]
     assert "Transformer performance" in topics
     assert "LSTM performance" in topics
+
+
+def test_invalid_query_raises_value_error():
+    agent = SupervisorAgent()
+    gs = DummyGraphState({"query": None})
+    with pytest.raises(ValueError):
+        agent(gs)
+
+
+def test_supervisor_trims_query():
+    agent = SupervisorAgent()
+    gs = DummyGraphState({"query": "  spaced query \n"})
+    result = agent(gs)
+    assert result.data["state"].initial_query == "spaced query"
