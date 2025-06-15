@@ -5,6 +5,8 @@ pydantic
 pyyaml
 requests
 pdfplumber
+pytesseract
+Pillow
 beautifulsoup4
 readability-lxml
 

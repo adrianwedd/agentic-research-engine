@@ -115,6 +115,14 @@ The full system benchmark (P1-18), which evaluates end-to-end research capabilit
 poetry run python -m tests.run_benchmark --benchmark=browsecomp_v1
 ```
 
+### **PDF Reader Tool**
+
+The `pdf_extract` helper under `tools/` retrieves text from PDF files or URLs.
+If the pages contain only images, the function can perform OCR using
+`pytesseract`. Enable this fallback by passing ``use_ocr=True`` or setting the
+``PDF_READER_ENABLE_OCR`` environment variable to ``true``. OCR requires the
+Tesseract binary to be installed and accessible on the system.
+
 ## **7. Continuous Deployment**
 
 All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
