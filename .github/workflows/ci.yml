@@ -48,7 +48,12 @@ jobs:
       - name: Setup environment
         run: bash scripts/agent-setup.sh
       - name: Run tests
-        run: pytest -v
+        run: pytest --cov=./ --cov-report=xml --cov-fail-under=80 -v
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.xml
       - name: Check codex queue
         run: python scripts/validate_queue.py
 
