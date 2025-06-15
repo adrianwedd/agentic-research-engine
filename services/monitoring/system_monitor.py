@@ -12,7 +12,9 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor, SpanExporter
 class SystemMonitor:
     """Collect system metrics and traces using OpenTelemetry."""
 
-    def __init__(self, metrics_collector: MetricReader, trace_exporter: SpanExporter) -> None:
+    def __init__(
+        self, metrics_collector: MetricReader, trace_exporter: SpanExporter
+    ) -> None:
         """Initialize monitoring with OpenTelemetry integration."""
         meter_provider = MeterProvider(metric_readers=[metrics_collector])
         metrics.set_meter_provider(meter_provider)
@@ -47,7 +49,9 @@ class SystemMonitor:
     def track_agent_performance(self, agent_id: str, task_metrics: Dict) -> None:
         """Record agent performance data for analysis."""
         attributes = {"agent_id": agent_id}
-        with self._tracer.start_as_current_span("agent_performance", attributes=attributes) as span:
+        with self._tracer.start_as_current_span(
+            "agent_performance", attributes=attributes
+        ) as span:
             time = task_metrics.get("task_completion_time")
             if time is not None:
                 self._task_time.record(time, attributes)
@@ -72,4 +76,3 @@ class SystemMonitor:
             if collab is not None:
                 self._collab_effectiveness.record(collab, attributes)
                 span.set_attribute("collaboration_effectiveness", collab)
-
