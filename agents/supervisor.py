@@ -4,9 +4,11 @@ This agent acts as the primary coordinator for research tasks.
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+from jsonschema import ValidationError, validate
 
 
 @dataclass
@@ -21,6 +23,10 @@ class State:
 
 
 class SupervisorAgent:
+    SCHEMA_PATH = (
+        Path(__file__).resolve().parent.parent / "docs" / "supervisor_plan_schema.yaml"
+    )
+
     def __init__(
         self,
         ltm_service: Optional[Any] = None,
@@ -32,6 +38,11 @@ class SupervisorAgent:
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
+        try:
+            with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
+                self.plan_schema = yaml.safe_load(f) or {}
+        except FileNotFoundError:  # pragma: no cover - doc missing only in dev
+            self.plan_schema = {}
 
     def _decompose_query(self, query: str) -> List[Dict[str, Any]]:
         """Return research sub-topics derived from the query."""
@@ -76,8 +87,21 @@ class SupervisorAgent:
             "graph": {"nodes": nodes, "edges": edges},
             "evaluation": {"metric": "quality"},
         }
-
+        self.validate_plan(plan)
         return plan
+
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
+    def validate_plan(self, plan: Dict[str, Any]) -> None:
+        """Validate a plan dictionary against the JSON schema."""
+
+        if not self.plan_schema:
+            return
+        try:
+            validate(instance=plan, schema=self.plan_schema)
+        except ValidationError as exc:
+            raise ValueError(f"plan validation error: {exc.message}") from exc
 
     # ------------------------------------------------------------------
     # YAML helpers
@@ -99,6 +123,7 @@ class SupervisorAgent:
         graph = data.get("graph", {})
         if not isinstance(graph, dict) or "nodes" not in graph or "edges" not in graph:
             raise ValueError("invalid graph definition")
+        self.validate_plan(data)
         return data
 
     def analyze_query(self, query: str) -> State:

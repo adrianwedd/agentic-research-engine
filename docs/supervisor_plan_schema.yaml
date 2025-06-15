@@ -1,0 +1,58 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Supervisor Plan
+type: object
+required:
+  - query
+  - context
+  - graph
+  - evaluation
+properties:
+  query:
+    type: string
+  context:
+    type: array
+  graph:
+    type: object
+    required:
+      - nodes
+      - edges
+    properties:
+      nodes:
+        type: array
+        items:
+          type: object
+          required:
+            - id
+            - agent
+          properties:
+            id:
+              type: string
+            agent:
+              type: string
+            topic:
+              type: string
+            task:
+              type: string
+      edges:
+        type: array
+        items:
+          type: object
+          required:
+            - from
+            - to
+          properties:
+            from:
+              type: string
+            to:
+              type: string
+      parallel_groups:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+  evaluation:
+    type: object
+    properties:
+      metric:
+        type: string
