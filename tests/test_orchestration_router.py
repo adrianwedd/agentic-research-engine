@@ -1,6 +1,9 @@
 import asyncio
 
+import pytest
+
 from engine.orchestration_engine import GraphState, create_orchestration_engine
+from engine.routing import RoutingError, make_status_router
 
 
 def test_conditional_router_executes_verifier():
@@ -23,12 +26,12 @@ def test_conditional_router_executes_verifier():
     engine.add_node("Verifier", verifier)
     engine.add_node("Complete", complete)
 
-    def router(state: GraphState) -> str:
-        return (
-            "Verifier"
-            if state.data.get("status") == "requires_verification"
-            else "Complete"
-        )
+    router = make_status_router(
+        {
+            "requires_verification": "Verifier",
+            "approved": "Complete",
+        }
+    )
 
     engine.add_router("Start", router)
     engine.add_edge("Verifier", "Complete")
@@ -38,3 +41,21 @@ def test_conditional_router_executes_verifier():
     result = asyncio.run(engine.run_async(state))
 
     assert result["data"]["order"] == ["Start", "Verifier", "Complete"]
+
+
+def test_conditional_router_invalid_status_raises():
+    engine = create_orchestration_engine()
+
+    def start(state: GraphState) -> GraphState:
+        state.data.setdefault("order", []).append("Start")
+        return state
+
+    engine.add_node("Start", start)
+
+    router = make_status_router({"requires_verification": "Verifier"})
+    engine.add_router("Start", router)
+
+    state = GraphState(data={"status": "unknown"})
+
+    with pytest.raises(RoutingError):
+        asyncio.run(engine.run_async(state))
