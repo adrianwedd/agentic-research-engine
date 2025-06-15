@@ -10,6 +10,5 @@ __all__ = [
     "retrieve_memory",
     "web_search",
     "html_scraper",
-    "pdf_extract"
+    "pdf_extract",
 ]
-

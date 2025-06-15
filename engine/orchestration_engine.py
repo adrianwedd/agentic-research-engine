@@ -82,10 +82,15 @@ async def parallel_subgraphs(
 
     results = await asyncio.gather(*(sg.run_async(state) for sg in subgraphs))
     merged = State(
-        data=state.data.copy(), messages=list(state.messages), status=state.status
+        data=state.data.copy(),
+        messages=list(state.messages),
+        history=list(state.history),
+        status=state.status,
     )
     for res in results:
         merged.update(res.data)
+        merged.messages.extend(res.messages)
+        merged.history.extend(res.history)
     return merged
 
 
