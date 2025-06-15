@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any, Callable, Dict, List, Optional
 
+from engine.orchestration_engine import GraphState
 from services.tracing.tracing_schema import ToolCallTrace
 
 
@@ -87,3 +88,21 @@ class WebResearcherAgent:
             else 0.0
         )
         return {"topic": topic, "sources": processed, "confidence": confidence}
+
+    # ------------------------------------------------------------------
+    # Graph node integration
+    # ------------------------------------------------------------------
+    def __call__(self, state: "GraphState") -> "GraphState":
+        """Graph node entrypoint for orchestrated execution."""
+        task: str | None = state.data.get("sub_task")
+        if not task:
+            return state
+
+        # Simple query crafting with light "interleaved thinking": strip verbs
+        query = task.lower().replace("find papers on", "").strip()
+        if query and "academic papers" not in query:
+            query = f"{query} academic papers"
+
+        result = self.research_topic(query, {"agent_id": state.data.get("agent_id")})
+        state.update({"research_result": result})
+        return state
