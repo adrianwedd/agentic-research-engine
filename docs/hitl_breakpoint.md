@@ -7,5 +7,5 @@ HTTP API and approve or reject the task.
 ## API Endpoints
 
 - `GET /tasks` – list paused tasks with their serialized state
-- `POST /tasks/<id>/approve` – resume execution from the stored point
-- `POST /tasks/<id>/reject` – terminate the task with status `REJECTED_BY_HUMAN`
+- `POST /tasks/<id>/approval` – resume execution from the stored point
+- `POST /tasks/<id>/rejection` – terminate the task with status `REJECTED_BY_HUMAN`

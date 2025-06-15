@@ -47,7 +47,7 @@ def ltm_endpoint():
 def test_consolidate_success_contract(ltm_endpoint):
     case = _load_case("consolidate_success")
     resp = requests.post(
-        f"{ltm_endpoint}/consolidate",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         json=case["request"].get("json"),
     )
@@ -56,7 +56,7 @@ def test_consolidate_success_contract(ltm_endpoint):
     # ensure retrieval works for subsequent test
     case_retrieve = _load_case("retrieve_success")
     resp = requests.get(
-        f"{ltm_endpoint}/retrieve",
+        f"{ltm_endpoint}/memory",
         headers=case_retrieve["request"].get("headers", {}),
         params=case_retrieve["request"].get("params"),
         json=case_retrieve["request"].get("json"),
@@ -67,7 +67,7 @@ def test_consolidate_success_contract(ltm_endpoint):
 def test_consolidate_missing_record_contract(ltm_endpoint):
     case = _load_case("consolidate_missing_record")
     resp = requests.post(
-        f"{ltm_endpoint}/consolidate",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         json=case["request"].get("json"),
     )
@@ -77,7 +77,7 @@ def test_consolidate_missing_record_contract(ltm_endpoint):
 def test_consolidate_invalid_memory_type_contract(ltm_endpoint):
     case = _load_case("consolidate_invalid_memory_type")
     resp = requests.post(
-        f"{ltm_endpoint}/consolidate",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         json=case["request"].get("json"),
     )
@@ -87,7 +87,7 @@ def test_consolidate_invalid_memory_type_contract(ltm_endpoint):
 def test_consolidate_invalid_role_contract(ltm_endpoint):
     case = _load_case("consolidate_invalid_role")
     resp = requests.post(
-        f"{ltm_endpoint}/consolidate",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         json=case["request"].get("json"),
     )
@@ -97,7 +97,7 @@ def test_consolidate_invalid_role_contract(ltm_endpoint):
 def test_retrieve_invalid_memory_type_contract(ltm_endpoint):
     case = _load_case("retrieve_invalid_memory_type")
     resp = requests.get(
-        f"{ltm_endpoint}/retrieve",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         params=case["request"].get("params"),
         json=case["request"].get("json"),
@@ -108,7 +108,7 @@ def test_retrieve_invalid_memory_type_contract(ltm_endpoint):
 def test_retrieve_invalid_role_contract(ltm_endpoint):
     case = _load_case("retrieve_invalid_role")
     resp = requests.get(
-        f"{ltm_endpoint}/retrieve",
+        f"{ltm_endpoint}/memory",
         headers=case["request"].get("headers", {}),
         json=case["request"].get("json"),
     )
