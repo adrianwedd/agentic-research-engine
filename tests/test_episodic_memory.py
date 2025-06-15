@@ -1,4 +1,9 @@
-from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
+from services.ltm_service import (
+    EpisodicMemoryService,
+    InMemoryStorage,
+    InMemoryVectorStore,
+    SimpleEmbeddingClient,
+)
 
 
 def test_store_and_retrieve():
@@ -16,3 +21,45 @@ def test_store_and_retrieve():
     )
     assert results
     assert results[0]["task_context"]["description"] == "Write unit tests"
+
+
+def test_embedding_and_vector_storage():
+    storage = InMemoryStorage()
+    vector_store = InMemoryVectorStore()
+    service = EpisodicMemoryService(
+        storage, embedding_client=SimpleEmbeddingClient(), vector_store=vector_store
+    )
+
+    ctx = {"description": "Vector test", "category": "testing"}
+    mem_id = service.store_experience(ctx, {}, {"success": True})
+    assert mem_id
+
+    results = service.retrieve_similar_experiences({"description": "Vector test"})
+    assert results
+    assert results[0]["id"] == mem_id
+
+
+class FlakyEmbeddingClient(SimpleEmbeddingClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = 0
+
+    def embed(self, texts):
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("transient")
+        return super().embed(texts)
+
+
+def test_embedding_retry():
+    storage = InMemoryStorage()
+    vector_store = InMemoryVectorStore()
+    client = FlakyEmbeddingClient()
+    service = EpisodicMemoryService(
+        storage, embedding_client=client, vector_store=vector_store
+    )
+
+    ctx = {"description": "Retry test"}
+    mem_id = service.store_experience(ctx, {}, {"success": True})
+    assert mem_id
+    assert client.calls >= 2
