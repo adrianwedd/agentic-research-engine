@@ -2,10 +2,17 @@ from __future__ import annotations
 
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List
+from typing import Dict, List, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from .episodic_memory import EpisodicMemoryService
+
+ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
+
+ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
+    ("POST", "/consolidate"): {"editor"},
+    ("GET", "/retrieve"): {"viewer", "editor"},
+}
 
 
 class LTMService:
@@ -15,6 +22,8 @@ class LTMService:
         self._modules: Dict[str, EpisodicMemoryService] = {"episodic": episodic_memory}
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
+        if memory_type not in ALLOWED_MEMORY_TYPES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
@@ -25,6 +34,8 @@ class LTMService:
         )
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
+        if memory_type not in ALLOWED_MEMORY_TYPES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
@@ -60,11 +71,19 @@ class LTMServiceServer:
                 self.end_headers()
                 self.wfile.write(json.dumps(payload).encode())
 
+            def _check_role(self, method: str, path: str) -> bool:
+                role = self.headers.get("X-Role", "")
+                allowed = ROLE_PERMISSIONS.get((method, path), set())
+                return role in allowed
+
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
                 if parsed.path != "/consolidate":
                     self.send_response(404)
                     self.end_headers()
+                    return
+                if not self._check_role("POST", parsed.path):
+                    self._send_json(403, {"error": "forbidden"})
                     return
                 data = self._json_body()
                 record = data.get("record")
@@ -84,6 +103,9 @@ class LTMServiceServer:
                 if parsed.path != "/retrieve":
                     self.send_response(404)
                     self.end_headers()
+                    return
+                if not self._check_role("GET", parsed.path):
+                    self._send_json(403, {"error": "forbidden"})
                     return
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]

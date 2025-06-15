@@ -50,3 +50,37 @@ def test_consolidate_and_retrieve(monkeypatch):
 
     with pytest.raises(AccessDeniedError):
         registry.get_tool("Supervisor", "retrieve_memory")
+
+
+def test_invalid_memory_type_and_rbac():
+    server, endpoint = _start_server()
+
+    # invalid memory type
+    resp = requests.post(
+        f"{endpoint}/consolidate",
+        json={"record": {}, "memory_type": "invalid"},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code == 400
+    assert "memory type" in resp.json()["error"]
+
+    resp = requests.get(
+        f"{endpoint}/retrieve",
+        params={"memory_type": "bad"},
+        headers={"X-Role": "viewer"},
+        json={"query": {}},
+    )
+    assert resp.status_code == 400
+
+    # unauthorized role
+    resp = requests.post(
+        f"{endpoint}/consolidate",
+        json={"record": {}},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 403
+
+    resp = requests.get(f"{endpoint}/retrieve", headers={"X-Role": "guest"})
+    assert resp.status_code == 403
+
+    server.httpd.shutdown()
