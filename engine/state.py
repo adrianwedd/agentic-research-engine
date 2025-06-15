@@ -10,15 +10,18 @@ class State(BaseModel):
 
     data: Dict[str, Any] = Field(default_factory=dict)
     messages: List[Dict[str, Any]] = Field(default_factory=list)
+    history: List[Dict[str, Any]] = Field(default_factory=list)
     status: str | None = None
 
     def update(self, other: Dict[str, Any]) -> None:
-        """Merge arbitrary key-value pairs into ``data``."""
+        """Merge arbitrary key-value pairs into ``data`` and record the change."""
         self.data.update(other)
+        self.history.append({"action": "update", "data": other})
 
     def add_message(self, message: Dict[str, Any]) -> None:
-        """Append a message to the history."""
+        """Append a message and log it in ``history``."""
         self.messages.append(message)
+        self.history.append({"action": "add_message", "message": message})
 
     def to_json(self) -> str:  # pragma: no cover - thin wrapper
         return self.model_dump_json()
