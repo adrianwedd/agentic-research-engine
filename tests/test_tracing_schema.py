@@ -9,6 +9,7 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from agents.web_researcher import WebResearcherAgent
+from services.tracing.tracing_schema import ToolCallTrace
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -57,3 +58,22 @@ def test_web_search_tool_emits_trace_span():
     assert span.attributes["tool_output"] == str(
         [{"url": "http://example.com", "title": "t"}]
     )
+    assert span.attributes["input_tokens"] == 1
+    assert span.attributes["output_tokens"] >= 1
+    assert span.attributes["latency_ms"] >= 0
+
+
+def test_parse_old_schema_version():
+    attrs = {
+        "schema_version": "1.0",
+        "agent_id": "A1",
+        "agent_role": "WebResearcher",
+        "tool_name": "web_search",
+        "tool_input": "q",
+        "tool_output": "result",
+    }
+
+    trace_obj = ToolCallTrace.from_attributes(attrs)
+    assert trace_obj.agent_id == "A1"
+    assert trace_obj.tool_name == "web_search"
+    assert trace_obj.schema_version == "1.0"

@@ -22,6 +22,12 @@ from opentelemetry import trace
 from .state import State
 
 
+class InMemorySaver:  # pragma: no cover - simple placeholder for tests
+    """Minimal checkpoint saver used for testing."""
+
+    pass
+
+
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
