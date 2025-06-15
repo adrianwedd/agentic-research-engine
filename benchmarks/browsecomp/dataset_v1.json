@@ -1,0 +1,252 @@
+[
+  {
+    "id": 1,
+    "question": "Which city is home to the university where the author of 'The Structure of Scientific Revolutions' earned his PhD in physics?",
+    "answer": "Cambridge, Massachusetts"
+  },
+  {
+    "id": 2,
+    "question": "What is the name of the NASA probe launched in 1997 to study Saturn that was named after the Italian astronomer who discovered its largest moon?",
+    "answer": "Cassini-Huygens"
+  },
+  {
+    "id": 3,
+    "question": "In which European city would you find the palace where Mozart's opera 'Don Giovanni' premiered in 1787?",
+    "answer": "Prague"
+  },
+  {
+    "id": 4,
+    "question": "Which island nation is the birthplace of the author who wrote 'The Remains of the Day' and won the Nobel Prize in Literature in 2017?",
+    "answer": "Japan"
+  },
+  {
+    "id": 5,
+    "question": "Which company manufactured the microprocessor used in the first IBM PC released in 1981?",
+    "answer": "Intel"
+  },
+  {
+    "id": 6,
+    "question": "What painting technique did the Mexican artist who married Frida Kahlo use for the 1930 mural 'Detroit Industry'?",
+    "answer": "Fresco"
+  },
+  {
+    "id": 7,
+    "question": "Which battle near a town that later hosted an abbey built by William the Conqueror secured his claim to the English throne in 1066?",
+    "answer": "Battle of Hastings"
+  },
+  {
+    "id": 8,
+    "question": "What is the name of the spacecraft that carried Yuri Gagarin, making him the first human in space?",
+    "answer": "Vostok 1"
+  },
+  {
+    "id": 9,
+    "question": "Which Dutch artist painted 'The Night Watch'?",
+    "answer": "Rembrandt"
+  },
+  {
+    "id": 10,
+    "question": "Which Italian city hosts the Leaning Tower that began construction in the 12th century?",
+    "answer": "Pisa"
+  },
+  {
+    "id": 11,
+    "question": "Who is the author of the 1818 novel that introduced the character Victor Frankenstein?",
+    "answer": "Mary Shelley"
+  },
+  {
+    "id": 12,
+    "question": "Which African country was formerly known as Abyssinia?",
+    "answer": "Ethiopia"
+  },
+  {
+    "id": 13,
+    "question": "What is the name of the famous equation introduced by Albert Einstein in his 1905 paper on special relativity?",
+    "answer": "E=mc^2"
+  },
+  {
+    "id": 14,
+    "question": "Which river runs through the city that hosts the Eiffel Tower?",
+    "answer": "Seine"
+  },
+  {
+    "id": 15,
+    "question": "What is the largest planet in our solar system?",
+    "answer": "Jupiter"
+  },
+  {
+    "id": 16,
+    "question": "Which U.S. president issued the Emancipation Proclamation in 1863?",
+    "answer": "Abraham Lincoln"
+  },
+  {
+    "id": 17,
+    "question": "What is the chemical symbol for the element gold?",
+    "answer": "Au"
+  },
+  {
+    "id": 18,
+    "question": "Which European country is home to the city of Bruges, famous for its medieval architecture?",
+    "answer": "Belgium"
+  },
+  {
+    "id": 19,
+    "question": "Which classical composer wrote the 'Moonlight Sonata'?",
+    "answer": "Ludwig van Beethoven"
+  },
+  {
+    "id": 20,
+    "question": "What instrument is Louis Armstrong most closely associated with?",
+    "answer": "Trumpet"
+  },
+  {
+    "id": 21,
+    "question": "Which continent is the Sahara Desert located on?",
+    "answer": "Africa"
+  },
+  {
+    "id": 22,
+    "question": "Who painted the ceiling of the Sistine Chapel?",
+    "answer": "Michelangelo"
+  },
+  {
+    "id": 23,
+    "question": "What is the name of the treaty signed in 1919 that ended World War I?",
+    "answer": "Treaty of Versailles"
+  },
+  {
+    "id": 24,
+    "question": "Which modern-day country contains the ancient city of Troy?",
+    "answer": "Turkey"
+  },
+  {
+    "id": 25,
+    "question": "Which planet is famous for its prominent rings?",
+    "answer": "Saturn"
+  },
+  {
+    "id": 26,
+    "question": "Who wrote 'To Kill a Mockingbird'?",
+    "answer": "Harper Lee"
+  },
+  {
+    "id": 27,
+    "question": "What is the freezing point of water in degrees Celsius?",
+    "answer": "0"
+  },
+  {
+    "id": 28,
+    "question": "What is the capital city of Canada?",
+    "answer": "Ottawa"
+  },
+  {
+    "id": 29,
+    "question": "Which European city is known for the landmark called the 'Colosseum'?",
+    "answer": "Rome"
+  },
+  {
+    "id": 30,
+    "question": "Which scientist proposed the three laws of motion?",
+    "answer": "Isaac Newton"
+  },
+  {
+    "id": 31,
+    "question": "Which animal is considered the largest land animal?",
+    "answer": "Elephant"
+  },
+  {
+    "id": 32,
+    "question": "Which country hosted the first modern Olympic Games in 1896?",
+    "answer": "Greece"
+  },
+  {
+    "id": 33,
+    "question": "Who wrote the play 'Romeo and Juliet'?",
+    "answer": "William Shakespeare"
+  },
+  {
+    "id": 34,
+    "question": "Which U.S. state is known as the 'Sunshine State'?",
+    "answer": "Florida"
+  },
+  {
+    "id": 35,
+    "question": "Which instrument has keys, pedals, and strings and is played using a keyboard?",
+    "answer": "Piano"
+  },
+  {
+    "id": 36,
+    "question": "Which city is home to the famous statue 'Christ the Redeemer'?",
+    "answer": "Rio de Janeiro"
+  },
+  {
+    "id": 37,
+    "question": "Which U.S. holiday commemorates the signing of the Declaration of Independence?",
+    "answer": "Independence Day"
+  },
+  {
+    "id": 38,
+    "question": "Which novel features the character Elizabeth Bennet?",
+    "answer": "Pride and Prejudice"
+  },
+  {
+    "id": 39,
+    "question": "Which gas do plants absorb from the atmosphere during photosynthesis?",
+    "answer": "Carbon dioxide"
+  },
+  {
+    "id": 40,
+    "question": "Which country is home to the Great Barrier Reef?",
+    "answer": "Australia"
+  },
+  {
+    "id": 41,
+    "question": "Who is the founder of Microsoft?",
+    "answer": "Bill Gates"
+  },
+  {
+    "id": 42,
+    "question": "Which physicist developed the theory of general relativity?",
+    "answer": "Albert Einstein"
+  },
+  {
+    "id": 43,
+    "question": "Which country is known as the Land of the Rising Sun?",
+    "answer": "Japan"
+  },
+  {
+    "id": 44,
+    "question": "What is the largest ocean on Earth?",
+    "answer": "Pacific Ocean"
+  },
+  {
+    "id": 45,
+    "question": "Which famous scientist is known for the law of gravity after observing a falling apple?",
+    "answer": "Isaac Newton"
+  },
+  {
+    "id": 46,
+    "question": "Which chemical element has the symbol 'O'?",
+    "answer": "Oxygen"
+  },
+  {
+    "id": 47,
+    "question": "What is the largest continent on Earth?",
+    "answer": "Asia"
+  },
+  {
+    "id": 48,
+    "question": "Which historic wall built in 1961 separated East and West Berlin?",
+    "answer": "Berlin Wall"
+  },
+  {
+    "id": 49,
+    "question": "What is the powerhouse of the cell?",
+    "answer": "Mitochondria"
+  },
+  {
+    "id": 50,
+    "question": "Who painted the Mona Lisa?",
+    "answer": "Leonardo da Vinci"
+  }
+]
