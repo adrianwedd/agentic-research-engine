@@ -231,6 +231,7 @@ acceptance_criteria: []
 ```
 
 ## P1-10: Implement Supervisor's graph-based planning logic
+status: done
 
 **Goal:** Enhance the Supervisor agent with the logic to decompose a complex user query into a high-level research plan.
 
@@ -241,6 +242,14 @@ acceptance_criteria: []
 - [ ] Given the Supervisor agent receives a query like "Compare the performance of Transformer and LSTM models"
 - [ ] When the agent generates a research plan
 - [ ] Then the output graph definition contains at least two parallel 'WebResearcher' nodes, one for 'Transformer performance' and one for 'LSTM performance'
+
+```codex-task
+id: P1-10
+title: Implement Supervisor's graph-based planning logic
+status: done
+steps: []
+acceptance_criteria: []
+```
 
 ## P1-11: Implement WebResearcher agent for information extraction ✅
 
@@ -1119,10 +1128,9 @@ steps: []
 acceptance_criteria: []
 ```
 
-
-
 ```codex-task
-title: Add graph compilation benchmark script
+id: P5-04
+title: Refine orchestration engine execution logic
 steps: []
 acceptance_criteria: []
 ```
