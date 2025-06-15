@@ -72,3 +72,45 @@ def test_review_server_endpoints():
     resp = requests.post(f"{endpoint}/tasks/t3/reject")
     assert resp.status_code == 200
     assert resp.json()["status"] == "REJECTED_BY_HUMAN"
+
+
+def test_breakpoint_emits_state_update_span():
+    import importlib
+
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import (
+        SimpleSpanProcessor,
+        SpanExporter,
+        SpanExportResult,
+    )
+
+    class InMemorySpanExporter(SpanExporter):
+        def __init__(self) -> None:
+            self.spans = []
+
+        def export(self, spans):
+            self.spans.extend(spans)
+            return SpanExportResult.SUCCESS
+
+        def shutdown(self) -> None:  # pragma: no cover - interface req
+            pass
+
+        def force_flush(self, timeout_millis: int = 30_000) -> bool:  # pragma: no cover
+            return True
+
+    importlib.reload(trace)
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
+    queue = InMemoryReviewQueue()
+    engine = _build_engine(queue)
+    asyncio.run(engine.run_async(GraphState(), thread_id="t-span"))
+
+    assert any(
+        s.name == "state.update" and s.attributes.get("keys") == "status"
+        for s in exporter.spans
+    )
+    importlib.reload(trace)

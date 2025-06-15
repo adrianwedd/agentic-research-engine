@@ -60,7 +60,7 @@ class HITLReviewServer:
                     except KeyError:
                         self._send_json(404, {"error": "not found"})
                         return
-                    state.status = None
+                    state.update({"status": None})
                     final_state = asyncio.run(
                         engine.run_async(state, thread_id=run_id, start_at=next_node)
                     )
@@ -71,7 +71,7 @@ class HITLReviewServer:
                     except KeyError:
                         self._send_json(404, {"error": "not found"})
                         return
-                    state.status = "REJECTED_BY_HUMAN"
+                    state.update({"status": "REJECTED_BY_HUMAN"})
                     self._send_json(200, state.model_dump())
                 else:
                     self.send_response(404)

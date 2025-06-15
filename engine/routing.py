@@ -75,7 +75,7 @@ def make_cosc_router(
 
         if score < score_threshold:
             if state.retry_count < max_retries:
-                state.retry_count += 1
+                state.update({"retry_count": state.retry_count + 1})
                 return retry_node
             if fail_node is not None:
                 return fail_node

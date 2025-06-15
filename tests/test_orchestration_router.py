@@ -73,6 +73,12 @@ def test_conditional_router_executes_verifier():
     assert any(
         s.name == "route" and s.attributes["node"] == "Start" for s in exporter.spans
     )
+    assert any(
+        s.name == "edge"
+        and s.attributes["from"] == "Start"
+        and s.attributes["to"] == "Verifier"
+        for s in exporter.spans
+    )
     importlib.reload(trace)
 
 
@@ -95,6 +101,12 @@ def test_conditional_router_invalid_status_raises():
 
 
 def test_cosc_router_routes_for_retry():
+    importlib.reload(trace)
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
     engine = create_orchestration_engine()
 
     order: list[str] = []
@@ -132,6 +144,11 @@ def test_cosc_router_routes_for_retry():
 
     assert order == ["Researcher", "Evaluator", "Researcher", "Evaluator", "Complete"]
     assert result.retry_count == 1
+    assert any(
+        s.name == "state.update" and s.attributes.get("keys") == "retry_count"
+        for s in exporter.spans
+    )
+    importlib.reload(trace)
 
 
 def test_cosc_router_stops_after_max_retries():
