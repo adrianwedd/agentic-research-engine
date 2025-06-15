@@ -1,0 +1,7 @@
+- acceptance_criteria:
+  - something done
+  id: CODEX-EXAMPLE-01
+  priority: low
+  steps:
+  - do something
+  title: Example task

@@ -1,3 +1,19 @@
+# Codex Task Blocks
+
+Tasks in this file can be automatically ingested into `.codex/queue.yml`. Each task is defined in a fenced code block tagged `codex-task` and contains YAML fields.
+
+Example:
+
+```codex-task
+id: CODEX-EXAMPLE-01
+title: Example task
+priority: low
+steps:
+  - do something
+acceptance_criteria:
+  - something done
+```
+
 ## P1-01: Set up mono-repo for agentic system
 
 **Goal:** This task involves the creation of a new Git mono-repository to house all source code and related artifacts for the multi-agent system.
