@@ -31,6 +31,15 @@ acceptance_criteria:
 - [ ] When the developer attempts to create a commit
 - [ ] Then the pre-commit hook fails and prevents the commit
 
+```codex-task
+id: P1-01
+title: Set up mono-repo for agentic system
+status: in_progress
+notes: Branch protection not verifiable from repo; pre-commit configured
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-02: Implement CI pipeline for automated builds and tests ✅
 
 **Goal:** Implement a CI pipeline using a standard platform (e.
@@ -388,6 +397,15 @@ acceptance_criteria: []
 - [ ] When the CI pipeline runs
 - [ ] Then the code coverage check fails and the pipeline is marked as "failed"
 
+```codex-task
+id: P1-19
+title: Create basic unit test framework and coverage goals
+status: in_progress
+notes: Tests exist but coverage threshold not enforced in CI
+steps: []
+acceptance_criteria: []
+```
+
 ## P2-01: Implement LTM Service API for memory operations
 
 **Goal:** Implement the public-facing API for the Long-Term Memory (LTM) service.
@@ -403,6 +421,15 @@ acceptance_criteria: []
 - [ ] Given a memory record has been previously stored
 - [ ] When a GET request is sent to the /retrieve endpoint with a relevant query
 - [ ] Then the service returns the corresponding memory record
+
+```codex-task
+id: P2-01
+title: Implement LTM Service API for memory operations
+status: in_progress
+notes: Endpoint works but `memory_type` validation and RBAC checks are missing
+steps: []
+acceptance_criteria: []
+```
 
 ## P2-02: Integrate vector database for Episodic Memory
 
