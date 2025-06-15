@@ -56,6 +56,14 @@ steps: []
 acceptance_criteria: []
 ```
 
+```codex-task
+id: P1-05
+title: Define core agent action tracing schema
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-03: Implement CD Pipeline for automated deployments
 
 **Goal:** Implement a CD pipeline that automates the deployment of all system services.
@@ -98,6 +106,21 @@ acceptance_criteria: []
 id: P1-04
 title: Set up OpenTelemetry collector and exporter
 status: done
+steps: []
+acceptance_criteria: []
+```
+
+```codex-task
+id: P1-08
+title: Implement conditional edge router for dynamic workflows
+status: done
+steps: []
+acceptance_criteria: []
+```
+
+```codex-task
+id: P1-31
+title: Future orchestration engine enhancements
 steps: []
 acceptance_criteria: []
 ```
@@ -171,6 +194,14 @@ acceptance_criteria: []
 - [ ] Given research has been conducted on graph compilation strategies
 - [ ] When a final report is delivered to technical leadership
 - [ ] Then the report contains a clear recommendation for the chosen strategy, supported by performance benchmarks and qualitative analysis
+
+```codex-task
+id: P1-20
+title: Research optimal graph compilation strategies
+status: done
+steps: []
+acceptance_criteria: []
+```
 
 ## P1-09: Implement Supervisor agent for query analysis
 
@@ -1057,6 +1088,8 @@ acceptance_criteria: []
 
 ```codex-task
 id: P5-02
+title: Integrate tracing schema with agents
+
 title: Docker-based OTel collector service
 
 title: Add rollback support for CD pipeline
@@ -1071,5 +1104,12 @@ steps: []
 acceptance_criteria: []
 ```
 
+
+
+```codex-task
+title: Add graph compilation benchmark script
+steps: []
+acceptance_criteria: []
+```
 
 
