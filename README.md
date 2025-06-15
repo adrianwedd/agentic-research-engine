@@ -9,6 +9,8 @@
 The agentic-research-engine is a next-generation multi-agent research system designed to transcend the limitations of current agentic paradigms. Our mission is to build a system capable of genuine learning, dynamic collaboration, and autonomous self-improvement, moving beyond the rigid orchestrator-worker models that are stateful but static.[1]
 This system is architected to address critical challenges in agentic AI, including coordination complexity, high operational cost, and the inability to learn from experience. By integrating advanced cognitive architectures with flexible collaboration protocols, the agentic-research-engine aims to become a true partner in the complex processes of research, discovery, and engineering.[1]
 
+For the complete implementation blueprint, see [BLUEPRINT.md](BLUEPRINT.md).
+
 ## **2. Core Architectural Pillars**
 
 The architecture of the agentic-research-engine is founded on four key pillars that ensure robustness, intelligence, and adaptability [1]:
