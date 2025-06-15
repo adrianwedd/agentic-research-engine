@@ -26,6 +26,9 @@ class VectorStore:
     ) -> List[Dict]:  # pragma: no cover - interface
         raise NotImplementedError
 
+    def delete(self, vec_id: str) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
 
 class InMemoryVectorStore(VectorStore):
     """Simple in-memory vector storage with cosine similarity search."""
@@ -61,6 +64,9 @@ class InMemoryVectorStore(VectorStore):
             rec = dict(meta)
             rec.setdefault("id", vec_id)
             yield vec_id, {"vector": vec, **rec}
+
+    def delete(self, vec_id: str) -> None:
+        self._data.pop(vec_id, None)
 
 
 class WeaviateVectorStore(VectorStore):
@@ -115,3 +121,9 @@ class WeaviateVectorStore(VectorStore):
             records.append(meta)
         records.sort(key=lambda r: r["similarity"], reverse=True)
         return records
+
+    def delete(self, vec_id: str) -> None:
+        try:
+            self._collection.data.delete(uuid=vec_id)
+        except Exception:  # pragma: no cover - best effort cleanup
+            pass

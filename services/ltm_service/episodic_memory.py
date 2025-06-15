@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 from typing import Dict, Iterable, List, Tuple
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from opentelemetry import trace
 
 from .embedding_client import EmbeddingClient, EmbeddingError, SimpleEmbeddingClient
 from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
@@ -20,6 +21,14 @@ class StorageBackend:
         raise NotImplementedError
 
     def all(self) -> Iterable[Tuple[str, Dict]]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def delete(self, record_id: str) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def update(
+        self, record_id: str, updates: Dict
+    ) -> None:  # pragma: no cover - interface
         raise NotImplementedError
 
 
@@ -37,6 +46,13 @@ class InMemoryStorage(StorageBackend):
 
     def all(self) -> Iterable[Tuple[str, Dict]]:
         return list(self._data.items())
+
+    def delete(self, record_id: str) -> None:
+        self._data.pop(record_id, None)
+
+    def update(self, record_id: str, updates: Dict) -> None:
+        if record_id in self._data:
+            self._data[record_id].update(updates)
 
 
 class EpisodicMemoryService:
@@ -84,6 +100,7 @@ class EpisodicMemoryService:
             "task_context": task_context,
             "execution_trace": execution_trace,
             "outcome": outcome,
+            "last_accessed": time.time(),
         }
         categories = set(task_context.get("tags", []))
         cat = task_context.get("category")
@@ -128,6 +145,7 @@ class EpisodicMemoryService:
             for rec in self.vector_store.query(vector, limit):
                 stored = dict(self.storage._data.get(rec["id"], {}))
                 stored.update(rec)
+                self.storage.update(rec["id"], {"last_accessed": time.time()})
                 results.append(stored)
         else:
             results = []
@@ -136,6 +154,8 @@ class EpisodicMemoryService:
                 score = self._similarity(query_text, context_text)
                 rec = rec.copy()
                 rec["similarity"] = score
+                if rec.get("id"):
+                    self.storage.update(rec["id"], {"last_accessed": time.time()})
                 results.append(rec)
 
         for rec in results:
@@ -156,3 +176,24 @@ class EpisodicMemoryService:
             results.sort(key=lambda r: r.get("similarity", 0), reverse=True)
 
         return results[:limit]
+
+    def prune_stale_memories(self, ttl_seconds: float) -> int:
+        """Delete memories not accessed within the TTL."""
+        cutoff = time.time() - ttl_seconds
+        pruned = 0
+        tracer = trace.get_tracer(__name__)
+        for rec_id, rec in list(self.storage.all()):
+            last = rec.get("last_accessed", 0)
+            if last < cutoff:
+                self.storage.delete(rec_id)
+                if hasattr(self.vector_store, "delete"):
+                    try:
+                        self.vector_store.delete(rec_id)
+                    except Exception:  # pragma: no cover - best effort
+                        pass
+                pruned += 1
+        with tracer.start_as_current_span(
+            "ltm.prune", attributes={"pruned_count": pruned}
+        ):
+            pass
+        return pruned
