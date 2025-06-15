@@ -1,0 +1,78 @@
+"""WebResearcher Agent implementation."""
+
+from __future__ import annotations
+
+import time
+from typing import Any, Callable, Dict, List, Optional
+
+
+class WebResearcherAgent:
+    def __init__(
+        self,
+        tool_registry: Dict[str, Callable[..., Any]],
+        *,
+        rate_limit_per_minute: int = 5,
+    ) -> None:
+        """Initialize with secure tool access and rate limiting."""
+        self.tool_registry = tool_registry
+        self.rate_limit = rate_limit_per_minute
+        self.call_times: List[float] = []
+
+        # Required tools
+        self.web_search = self._require_tool("web_search")
+        self.pdf_extract = self.tool_registry.get("pdf_extract")
+        self.html_scraper = self.tool_registry.get("html_scraper")
+        self.summarize = self._require_tool("summarize")
+        self.assess_source = self.tool_registry.get("assess_source", lambda url: 1.0)
+
+    def _require_tool(self, name: str) -> Callable[..., Any]:
+        tool = self.tool_registry.get(name)
+        if not callable(tool):
+            raise ValueError(f"Required tool '{name}' not available")
+        return tool
+
+    def _check_rate_limit(self) -> None:
+        now = time.time()
+        self.call_times = [t for t in self.call_times if now - t < 60]
+        if len(self.call_times) >= self.rate_limit:
+            raise RuntimeError("Rate limit exceeded")
+        self.call_times.append(now)
+
+    def research_topic(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Conduct comprehensive web research on specified topic."""
+        self._check_rate_limit()
+
+        search_results = self.web_search(topic)
+        processed: List[Dict[str, Any]] = []
+        for r in search_results:
+            url = r.get("url")
+            if not url:
+                continue
+            credibility = float(self.assess_source(url))
+            if credibility < 0.5:
+                continue
+
+            content: Optional[str] = None
+            if url.lower().endswith(".pdf") and self.pdf_extract:
+                content = self.pdf_extract(url)
+            elif self.html_scraper:
+                content = self.html_scraper(url)
+            if not content:
+                continue
+
+            summary = self.summarize(content)
+            processed.append(
+                {
+                    "url": url,
+                    "title": r.get("title", ""),
+                    "summary": summary,
+                    "credibility": credibility,
+                }
+            )
+
+        confidence = (
+            sum(p["credibility"] for p in processed) / len(processed)
+            if processed
+            else 0.0
+        )
+        return {"topic": topic, "sources": processed, "confidence": confidence}
