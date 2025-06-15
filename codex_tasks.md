@@ -56,6 +56,9 @@ steps: []
 acceptance_criteria: []
 ```
 
+
+
+
 ```codex-task
 id: P1-05
 title: Define core agent action tracing schema
@@ -225,6 +228,13 @@ acceptance_criteria: []
 ```codex-task
 id: P1-09
 title: Implement Supervisor agent for query analysis
+status: done
+steps: []
+acceptance_criteria: []
+```
+```codex-task
+id: P1-12
+title: Implement WebResearcher's summarization capability
 status: done
 steps: []
 acceptance_criteria: []

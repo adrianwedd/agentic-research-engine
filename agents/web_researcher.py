@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from typing import Any, Callable, Dict, List, Optional
-
+from engine.state import State
 from engine.orchestration_engine import GraphState
 from services.tracing.tracing_schema import ToolCallTrace
 
@@ -27,6 +27,23 @@ class WebResearcherAgent:
         self.html_scraper = self.tool_registry.get("html_scraper")
         self.summarize = self._require_tool("summarize")
         self.assess_source = self.tool_registry.get("assess_source", lambda url: 1.0)
+
+    def _summarize_for_task(self, text: str, task: str) -> str:
+        """Summarize ``text`` with focus on the current sub-task."""
+        prompt = f"Summarize the following text focusing only on information relevant to '{task}':\n{text}"
+        return self.summarize(prompt)
+
+    def summarize_to_state(
+        self, state: State, *, text_key: str = "raw_text", task_key: str = "task"
+    ) -> State:
+        """Condense ``state.data[text_key]`` and append the summary to messages."""
+        raw_text = state.data.get(text_key)
+        if not raw_text:
+            return state
+        task = state.data.get(task_key, "")
+        summary = self._summarize_for_task(raw_text, task)
+        state.add_message({"role": "WebResearcher", "content": summary})
+        return state
 
     def _require_tool(self, name: str) -> Callable[..., Any]:
         tool = self.tool_registry.get(name)
@@ -72,7 +89,7 @@ class WebResearcherAgent:
             if not content:
                 continue
 
-            summary = self.summarize(content)
+            summary = self._summarize_for_task(content, topic)
             processed.append(
                 {
                     "url": url,
