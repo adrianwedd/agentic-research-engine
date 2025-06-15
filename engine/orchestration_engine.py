@@ -120,6 +120,7 @@ async def parallel_subgraphs(
         data=state.data.copy(),
         messages=list(state.messages),
         history=list(state.history),
+        scratchpad=state.scratchpad.copy(),
         status=state.status,
     )
     for res in results:

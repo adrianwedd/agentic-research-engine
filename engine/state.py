@@ -12,6 +12,7 @@ class State(BaseModel):
     data: Dict[str, Any] = Field(default_factory=dict)
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     history: List[Dict[str, Any]] = Field(default_factory=list)
+    scratchpad: Dict[str, Any] = Field(default_factory=dict)
     status: str | None = None
     evaluator_feedback: Dict[str, Any] | None = None
     retry_count: int = 0

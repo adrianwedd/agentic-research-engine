@@ -6,6 +6,15 @@ from engine.state import State
 pytestmark = pytest.mark.core
 
 
+def test_state_scratchpad_roundtrip_and_default():
+    state = State()
+    assert state.scratchpad == {}
+    state.scratchpad["foo"] = "bar"
+    payload = state.to_json()
+    restored = State.from_json(payload)
+    assert restored.scratchpad == {"foo": "bar"}
+
+
 def test_state_serialization_roundtrip():
     state = State(data={"count": 1}, messages=[{"content": "hi"}], status="ok")
     payload = state.to_json()
