@@ -41,11 +41,10 @@ def test_registry_authorization():
     registry = ToolRegistry()
     registry.register_tool("dummy", dummy_tool, allowed_roles=["WebResearcher"])
 
-    tool = registry.get_tool("WebResearcher", "dummy")
-    assert tool() == "ok"
+    assert registry.invoke("WebResearcher", "dummy") == "ok"
 
     with pytest.raises(AccessDeniedError):
-        registry.get_tool("Supervisor", "dummy")
+        registry.invoke("Supervisor", "dummy")
 
 
 def test_registry_server_permissions(tmp_path):
@@ -99,6 +98,7 @@ def test_registry_server_logs_denied_access(tmp_path, caplog):
     finally:
         server.httpd.shutdown()
         thread.join()
+
 
 def test_tool_init_span_and_propagation():
     exporter = InMemorySpanExporter()

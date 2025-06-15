@@ -84,6 +84,11 @@ class ToolRegistry:
 
         return wrapped
 
+    def invoke(self, role: str, name: str, *args: object, **kwargs: object) -> object:
+        """Invoke a tool via the registry enforcing RBAC."""
+        tool = self.get_tool(role, name)
+        return tool(*args, **kwargs)
+
     def load_permissions(self, path: str) -> None:
         """Load role permissions from a YAML config."""
         data = yaml.safe_load(open(path)) or {}

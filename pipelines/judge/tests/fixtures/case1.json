@@ -1,0 +1,23 @@
+{
+  "id": 1,
+  "report": "Synthetic research report 1 on topic XYZ.",
+  "scores": {
+    "schema_version": "1.0",
+    "factual_accuracy": {
+      "score": 0.76,
+      "justification": "All facts cross-checked."
+    },
+    "completeness": {
+      "score": 0.82,
+      "justification": "Addresses key aspects."
+    },
+    "source_quality": {
+      "score": 0.76,
+      "justification": "Uses credible sources."
+    },
+    "coherence": {
+      "score": 0.99,
+      "justification": "Well structured."
+    }
+  }
+}

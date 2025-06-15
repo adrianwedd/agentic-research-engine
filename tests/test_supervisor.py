@@ -8,6 +8,7 @@ from agents.supervisor import SupervisorAgent
 from engine.state import State
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
+from services.tool_registry import create_default_registry
 
 pytestmark = pytest.mark.core
 
@@ -118,7 +119,37 @@ def test_plan_uses_ltm_endpoint():
     }
     requests.post(f"{endpoint}/memory", json={"record": record})
 
-    agent = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=1)
+    registry = create_default_registry()
+    agent = SupervisorAgent(
+        ltm_endpoint=endpoint, retrieval_limit=1, tool_registry=registry
+    )
+    plan = agent.plan_research_task("example")
+
+    assert plan["context"] == []
+    server.httpd.shutdown()
+
+
+def test_plan_uses_ltm_endpoint_authorized():
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"query": "example"},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    requests.post(f"{endpoint}/memory", json={"record": record})
+
+    registry = create_default_registry()
+    func = registry.get_tool("MemoryManager", "retrieve_memory")
+    registry.register_tool(
+        "retrieve_memory",
+        func,
+        allowed_roles=["MemoryManager", "Supervisor"],
+    )
+    agent = SupervisorAgent(
+        ltm_endpoint=endpoint,
+        retrieval_limit=1,
+        tool_registry=registry,
+    )
     plan = agent.plan_research_task("example")
 
     assert plan["context"]

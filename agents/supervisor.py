@@ -12,7 +12,11 @@ import yaml
 from pykwalify.core import Core
 
 from engine.state import State
-from tools.ltm_client import retrieve_memory
+from services.tool_registry import (
+    AccessDeniedError,
+    ToolRegistry,
+    create_default_registry,
+)
 
 
 class SupervisorAgent:
@@ -28,6 +32,7 @@ class SupervisorAgent:
         ltm_service: Optional[Any] = None,
         orchestration_engine: Optional[Any] = None,
         agent_registry: Optional[Any] = None,
+        tool_registry: ToolRegistry | None = None,
         use_plan_templates: bool | None = None,
     ) -> None:
         """Initialize supervisor with optional services."""
@@ -37,6 +42,7 @@ class SupervisorAgent:
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
+        self.tool_registry = tool_registry or create_default_registry()
         if use_plan_templates is None:
             use_plan_templates = bool(os.getenv("USE_PLAN_TEMPLATES"))
         self.use_plan_templates = use_plan_templates
@@ -89,11 +95,15 @@ class SupervisorAgent:
         past: List[Dict] = []
         if self.ltm_endpoint:
             try:
-                past = retrieve_memory(
+                past = self.tool_registry.invoke(
+                    "Supervisor",
+                    "retrieve_memory",
                     {"query": query},
                     limit=self.retrieval_limit,
                     endpoint=self.ltm_endpoint,
                 )
+            except AccessDeniedError:
+                past = []
             except Exception:  # pragma: no cover - network errors
                 past = []
         elif self.ltm_service:

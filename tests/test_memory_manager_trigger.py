@@ -5,6 +5,7 @@ from agents.memory_manager import MemoryManagerAgent
 from engine.orchestration_engine import GraphState, create_orchestration_engine
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
+from services.tool_registry import create_default_registry
 
 
 def _start_server():
@@ -19,7 +20,7 @@ def _start_server():
 
 def test_memory_manager_invoked_after_graph():
     server, endpoint = _start_server()
-    mm = MemoryManagerAgent(endpoint=endpoint)
+    mm = MemoryManagerAgent(endpoint=endpoint, tool_registry=create_default_registry())
 
     engine = create_orchestration_engine(memory_manager=mm)
     engine.add_node("A", lambda s: s)

@@ -6,6 +6,8 @@ from typing import Any, Dict, Optional
 from engine.state import State
 from tools.ltm_client import consolidate_memory, retrieve_memory
 
+from services.tool_registry import ToolRegistry, create_default_registry
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +24,11 @@ class MemoryManagerAgent:
         self.endpoint = endpoint
         self.pass_threshold = pass_threshold
         self.novelty_threshold = novelty_threshold
+
+        tool_registry: ToolRegistry | None = None,
+    ) -> None:
+        self.endpoint = endpoint
+        self.tool_registry = tool_registry or create_default_registry()
 
     def _format_record(self, state: State) -> Dict[str, Any]:
         return {
@@ -63,7 +70,12 @@ class MemoryManagerAgent:
             logger.info("MemoryManager: novelty gate failed")
             return state
         try:
-            consolidate_memory(record, endpoint=self.endpoint)
+            self.tool_registry.invoke(
+                "MemoryManager",
+                "consolidate_memory",
+                record,
+                endpoint=self.endpoint,
+            )
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state
