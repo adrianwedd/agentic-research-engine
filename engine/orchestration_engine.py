@@ -38,6 +38,7 @@ class NodeType(str, Enum):
     DEFAULT = "default"
     HUMAN_IN_THE_LOOP_BREAKPOINT = "human_in_the_loop_breakpoint"
     GROUP_CHAT_MANAGER = "group_chat_manager"
+    SUBGRAPH = "subgraph"
 
 
 class InMemorySaver:
@@ -70,7 +71,14 @@ class Node:
                     f"node:{self.name}",
                     attributes={"state_in": state.model_dump_json()},
                 ) as span:
-                    if asyncio.iscoroutinefunction(self.func):
+                    if self.node_type == NodeType.SUBGRAPH:
+                        if isinstance(self.func, OrchestrationEngine):
+                            result = await self.func.run_async(state)
+                        else:
+                            raise TypeError(
+                                "subgraph node must be an OrchestrationEngine"
+                            )
+                    elif asyncio.iscoroutinefunction(self.func):
                         result = await self.func(state)
                     else:
                         result = self.func(state)
@@ -169,6 +177,12 @@ class OrchestrationEngine:
         node_type: NodeType = NodeType.DEFAULT,
     ) -> None:
         self.nodes[name] = Node(name, func, retries, node_type)
+
+    def add_subgraph(
+        self, name: str, subgraph: "OrchestrationEngine", *, retries: int = 0
+    ) -> None:
+        """Add a subgraph node that runs another :class:`OrchestrationEngine`."""
+        self.nodes[name] = Node(name, subgraph, retries, NodeType.SUBGRAPH)
 
     def add_edge(self, start: str, end: str, *, edge_type: str | None = None) -> None:
         self.edges.append(Edge(start=start, end=end, edge_type=edge_type))
