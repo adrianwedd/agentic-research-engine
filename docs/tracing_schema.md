@@ -60,6 +60,27 @@ When a router decides the next node, a `route` span is emitted.
 | `node`      | Name of the router node                             |
 | `decision`  | Raw routing result before any path mapping is done |
 
+### Routing Span Example
+
+The following JSON illustrates a router decision span:
+
+```json
+{
+  "trace_id": "abc123",
+  "span_id": "route1",
+  "parent_span_id": "node5",
+  "span.kind": "internal",
+  "name": "route",
+  "node_id": "router1",
+  "decision": "fetch_data",
+  "timestamp": "2024-01-01T12:00:00Z"
+}
+```
+
+Edge spans generated after a routing decision share the same `trace_id` and use
+the routing span's `span_id` as their `parent_span_id`. This linkage allows a
+trace viewer to connect the decision to the subsequent transition between nodes.
+
 ### State Update Span
 
 Mutations to the shared `State` object are traced with a `state.update` span.
