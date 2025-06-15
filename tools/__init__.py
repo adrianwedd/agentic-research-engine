@@ -8,5 +8,5 @@ __all__ = [
     "consolidate_memory",
     "retrieve_memory",
     "web_search",
-    "pdf_extract",
+    "pdf_extract"
 ]

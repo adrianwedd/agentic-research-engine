@@ -22,10 +22,12 @@ from opentelemetry import trace
 from .state import State
 
 
-class InMemorySaver:  # pragma: no cover - simple placeholder for tests
-    """Minimal checkpoint saver used for testing."""
+class InMemorySaver:
+    """Minimal in-memory checkpoint saver used until a persistent backend is implemented."""
 
-    pass
+    def save(self, state: dict) -> None:  # pragma: no cover - placeholder
+        pass
+
 
 
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
@@ -37,6 +39,19 @@ GraphState = State
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
+
+
+class InMemorySaver:
+    """Minimal in-memory checkpoint stub used for testing."""
+
+    def __init__(self) -> None:
+        self._data: dict[str, State] = {}
+
+    def save(self, run_id: str, state: State) -> None:  # pragma: no cover - util
+        self._data[run_id] = state
+
+    def load(self, run_id: str) -> State | None:  # pragma: no cover - util
+        return self._data.get(run_id)
 
 
 @dataclass
@@ -98,7 +113,9 @@ class OrchestrationEngine:
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
-    checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
+    # Using ``Any`` here avoids importing optional dependencies for the dummy
+    # checkpointer implementation used in tests.
+    checkpointer: Any = field(default_factory=dict)
     _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
