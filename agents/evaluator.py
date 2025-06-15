@@ -7,7 +7,9 @@ and drives the iterative correction cycle.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
+
+from agents.critique import Critique
 
 
 class EvaluatorAgent:
@@ -77,27 +79,25 @@ class EvaluatorAgent:
                 results[criterion] = func(output, params)
         return results
 
-    def generate_correction_feedback(self, evaluation_results: Dict) -> Dict:
-        """Generate actionable feedback for improvement."""
-        issues: List[Dict[str, Any]] = []
-        scores: List[float] = []
+    def generate_correction_feedback(self, evaluation_results: Dict) -> Critique:
+        """Generate a structured critique object."""
+
+        scores: Dict[str, float] = {}
+        feedback_parts: List[str] = []
 
         for criterion, result in evaluation_results.items():
             score = float(result.get("score", 0))
-            scores.append(score)
+            scores[criterion] = score
             if score < 1.0:
-                issues.append({"criterion": criterion, "details": result})
+                feedback_parts.append(f"{criterion}: {result}")
 
-        overall_score = sum(scores) / len(scores) if scores else 0.0
-        feedback = {
-            "score": round(overall_score, 3),
-            "issues": issues,
-        }
+        overall = sum(scores.values()) / len(scores) if scores else 0.0
+        text = "; ".join(feedback_parts) if feedback_parts else "All criteria passed."
 
-        if issues:
-            feedback[
-                "recommendations"
-            ] = "Review the listed issues and revise the output accordingly."
-        else:
-            feedback["recommendations"] = "No issues detected."
-        return feedback
+        critique = Critique(
+            overall_score=round(overall, 3),
+            criteria_breakdown=scores,
+            feedback_text=text,
+        )
+        critique.validate()
+        return critique
