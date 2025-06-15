@@ -17,10 +17,15 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
-from langgraph.checkpoint.memory import InMemorySaver
 from opentelemetry import trace
 
 from .state import State
+
+
+CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
+
+# ``GraphState`` is currently an alias of ``State``. Future iterations may
+# introduce a dedicated class with additional orchestration-specific fields.
 
 GraphState = State
 
@@ -135,6 +140,7 @@ class OrchestrationEngine:
 
     async def run_async(self, state: State, *, thread_id: str = "default") -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
+
         if self.entry is None:
             self.build()
         self._last_node = None
@@ -154,6 +160,26 @@ class OrchestrationEngine:
             else:
                 node_name = self.order.get(node_name)
         return state
+
+        if not hasattr(self, "entry") or self.entry is None:
+            self.build()
+        current = self.entry
+        while current:
+            node = self.nodes[current]
+            state = await node.run(state)
+            router_data = self.routers_map.get(current)
+            if router_data:
+                router, path_map = router_data
+                dest = router(state)
+                if path_map:
+                    dest = path_map.get(dest, dest)
+                current = dest
+            else:
+                current = self.order.get(current)
+            self._on_node_finished(node.name)
+        if isinstance(state, GraphState):
+            return state
+        return GraphState.model_validate(state.model_dump())
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""
