@@ -48,12 +48,33 @@ jobs:
       - name: Setup environment
         run: bash scripts/agent-setup.sh
       - name: Run tests
-        run: pytest --cov=./ --cov-report=xml --cov-fail-under=80 -v
+        id: run-tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pytest --cov=./ --cov-report=xml --cov-report=html --cov-fail-under=80 -v | tee tests.log
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
+      - name: Upload coverage html
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+      - name: Upload test log
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-log
+          path: tests.log
+      - name: Summarize failures
+        if: always()
+        run: python scripts/ci_summary.py tests.log coverage.xml
+      - name: Fail if tests failed
+        if: steps.run-tests.outputs.exitcode != '0'
+        run: exit 1
       - name: Check codex queue
         run: python scripts/validate_queue.py
 

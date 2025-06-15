@@ -1,6 +1,7 @@
 pre-commit
 pytest
 pytest-cov
+pytest-github-actions-annotate-failures
 pydantic
 pyyaml
 requests
