@@ -1,24 +1,18 @@
 import pytest
 
-from services.tool_registry.registry import AccessDeniedError, ToolRegistry
+from services.tool_registry import AccessDeniedError, ToolRegistry
 
 
-def test_tool_permissions(tmp_path):
-    config = tmp_path / "config.yml"
-    config.write_text("permissions:\n  WebResearcher:\n    - web_search\n")
-    registry = ToolRegistry(str(config))
+def dummy_tool():
+    return "ok"
 
-    def web_search():
-        return "results"
 
-    def code_interpreter():
-        return "code"
+def test_registry_authorization():
+    registry = ToolRegistry()
+    registry.register_tool("dummy", dummy_tool, allowed_roles=["WebResearcher"])
 
-    registry.register_tool("web_search", web_search)
-    registry.register_tool("code_interpreter", code_interpreter)
+    tool = registry.get_tool("WebResearcher", "dummy")
+    assert tool() == "ok"
 
-    tool = registry.get_tool("WebResearcher", "web_search")
-    assert callable(tool)
-    assert tool() == "results"
     with pytest.raises(AccessDeniedError):
-        registry.get_tool("WebResearcher", "code_interpreter")
+        registry.get_tool("Supervisor", "dummy")
