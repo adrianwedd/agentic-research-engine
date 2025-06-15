@@ -5,6 +5,7 @@ import sys
 from typing import Any, Dict, List
 
 import yaml
+from scripts.issue_logger import create_issue
 
 BLOCK_RE = re.compile(r"```codex-task\n(.*?)\n```", re.DOTALL)
 REQUIRED_FIELDS = {"id", "title", "priority", "steps", "acceptance_criteria"}
@@ -52,8 +53,13 @@ def save_queue(path: str, tasks: List[Dict[str, Any]]):
         yaml.safe_dump(tasks, f)
 
 
-def merge_tasks(existing: List[Dict[str, Any]], new_tasks: List[Dict[str, Any]], from_id: str | None) -> List[Dict[str, Any]]:
+def merge_tasks(
+    existing: List[Dict[str, Any]],
+    new_tasks: List[Dict[str, Any]],
+    from_id: str | None,
+) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
     id_to_index = {t["id"]: i for i, t in enumerate(existing)}
+    added: List[Dict[str, Any]] = []
     for t in new_tasks:
         if from_id and t["id"] < from_id:
             continue
@@ -61,7 +67,8 @@ def merge_tasks(existing: List[Dict[str, Any]], new_tasks: List[Dict[str, Any]],
             print(f"Duplicate ID {t['id']} already in queue; skipping", file=sys.stderr)
             continue
         existing.append(t)
-    return existing
+        added.append(t)
+    return existing, added
 
 
 def main():
@@ -76,12 +83,22 @@ def main():
 
     queue_path = os.path.join(".codex", "queue.yml")
     existing = load_queue(queue_path)
-    merged = merge_tasks(existing, tasks, args.from_id)
+    merged, added = merge_tasks(existing, tasks, args.from_id)
 
     if args.preview:
         yaml.safe_dump(merged, sys.stdout)
     else:
         save_queue(queue_path, merged)
+        for task in added:
+            if task.get("create_issue"):
+                body = (
+                    f"Automated issue for Codex task {task['id']}\n\n" +
+                    yaml.safe_dump(task)
+                )
+                repo = task.get("repo", "")
+                url = create_issue(task["title"], body, repo, task.get("labels", []))
+                if url:
+                    print(f"Created issue for {task['id']}: {url}")
 
 
 if __name__ == "__main__":
