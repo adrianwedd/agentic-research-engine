@@ -3,28 +3,16 @@ Supervisor Agent Implementation.
 This agent acts as the primary coordinator for research tasks.
 """
 
-from dataclasses import dataclass, field
+import os
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-from difflib import SequenceMatcher
-import os
 
 import yaml
 from pykwalify.core import Core
 
+from engine.state import State
 from tools.ltm_client import retrieve_memory
-
-
-@dataclass
-class State:
-    """Simple representation of the system state."""
-
-    initial_query: str
-    plan: Optional[Dict[str, Any]] = None
-    context: List[Any] = field(default_factory=list)
-    messages: List[str] = field(default_factory=list)
-    evaluation: Optional[Dict[str, Any]] = None
 
 
 class SupervisorAgent:
@@ -183,7 +171,15 @@ class SupervisorAgent:
 
         cleaned = query.strip()
         plan = self.plan_research_task(cleaned)
-        return State(initial_query=cleaned, plan=plan, context=plan.get("context", []))
+        state = State()
+        state.update(
+            {
+                "initial_query": cleaned,
+                "plan": plan,
+                "context": plan.get("context", []),
+            }
+        )
+        return state
 
     def __call__(self, graph_state: Any) -> Any:
         """Node entrypoint for the orchestration graph."""

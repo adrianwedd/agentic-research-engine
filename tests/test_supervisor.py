@@ -4,7 +4,8 @@ from threading import Thread
 import pytest
 import requests
 
-from agents.supervisor import State, SupervisorAgent
+from agents.supervisor import SupervisorAgent
+from engine.state import State
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
 
@@ -33,7 +34,7 @@ def test_analyze_query_returns_state():
     agent = SupervisorAgent()
     state = agent.analyze_query("What is AI?")
     assert isinstance(state, State)
-    assert state.initial_query == "What is AI?"
+    assert state.data["initial_query"] == "What is AI?"
 
 
 def test_supervisor_node_updates_graph_state():
@@ -41,7 +42,7 @@ def test_supervisor_node_updates_graph_state():
     gs = DummyGraphState({"query": "Example query"})
     result = agent(gs)
     assert isinstance(result.data.get("state"), State)
-    assert result.data["state"].initial_query == "Example query"
+    assert result.data["state"].data["initial_query"] == "Example query"
 
 
 def test_plan_contains_parallel_webresearcher_nodes():
@@ -66,7 +67,7 @@ def test_supervisor_trims_query():
     agent = SupervisorAgent()
     gs = DummyGraphState({"query": "  spaced query \n"})
     result = agent(gs)
-    assert result.data["state"].initial_query == "spaced query"
+    assert result.data["state"].data["initial_query"] == "spaced query"
 
 
 def test_plan_yaml_roundtrip():
