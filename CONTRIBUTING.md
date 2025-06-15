@@ -54,14 +54,26 @@ This will apply `black`, `flake8`, and `isort` to your changes.
 ## Pre-PR Testing
 
 Before opening a pull request, verify your changes locally.
+Tests are tagged into three categories:
 
-Run the test suite:
+- **core** – fast unit tests that cover critical functionality
+- **integration** – tests that exercise service boundaries or heavy components
+- **optional** – slow or environment-specific checks
+
+Run the lightweight **core** test suite to verify basic functionality:
+
+```bash
+pytest -m "core" -q
+```
+
+You can also run `bash scripts/test_core.sh` as a shorthand. The command should complete quickly and exit with code `0`.
+
+To execute the full suite (all `core`, `integration`, and `optional` tests) run:
 
 ```bash
 pytest -q
 ```
 
-The command should exit with code `0` and display each test as `PASSED`.
 Any failures must be fixed prior to submission.
 
 Then execute the pre-commit hooks on all files:

@@ -1,5 +1,9 @@
+import pytest
+
 from engine.orchestration_engine import OrchestrationEngine
 from engine.state import State
+
+pytestmark = pytest.mark.core
 
 
 def test_state_serialization_roundtrip():

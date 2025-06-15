@@ -8,6 +8,8 @@ from agents.supervisor import State, SupervisorAgent
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
 
+pytestmark = pytest.mark.core
+
 
 class DummyGraphState:
     def __init__(self, data=None):

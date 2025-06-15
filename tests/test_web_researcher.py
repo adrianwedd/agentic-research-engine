@@ -3,6 +3,8 @@ import pytest
 from agents.web_researcher import WebResearcherAgent
 from engine.orchestration_engine import GraphState
 
+pytestmark = pytest.mark.core
+
 
 def test_research_topic_uses_tools():
     calls = {}
