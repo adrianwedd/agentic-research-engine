@@ -7,6 +7,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from difflib import SequenceMatcher
+import os
+
 import yaml
 from pykwalify.core import Core
 
@@ -37,6 +40,7 @@ class SupervisorAgent:
         ltm_service: Optional[Any] = None,
         orchestration_engine: Optional[Any] = None,
         agent_registry: Optional[Any] = None,
+        use_plan_templates: bool | None = None,
     ) -> None:
         """Initialize supervisor with optional services."""
 
@@ -45,6 +49,9 @@ class SupervisorAgent:
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
+        if use_plan_templates is None:
+            use_plan_templates = bool(os.getenv("USE_PLAN_TEMPLATES"))
+        self.use_plan_templates = use_plan_templates
         try:
             with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
                 self.plan_schema = yaml.safe_load(f) or {}
@@ -71,10 +78,27 @@ class SupervisorAgent:
             return [{"topic": normalized}]
         return [{"topic": p} for p in parts]
 
+    def _score_memories(self, query: str, memories: List[Dict]) -> List[Dict]:
+        """Attach a relevance score to each memory based on the query."""
+
+        for rec in memories:
+            ctx = str(rec.get("task_context", {}).get("query", "")).lower()
+            rec["relevance"] = SequenceMatcher(None, query.lower(), ctx).ratio()
+        memories.sort(key=lambda r: r.get("relevance", 0), reverse=True)
+        return memories
+
+    def _merge_template(self, plan: Dict[str, Any], template: Dict[str, Any]) -> None:
+        """Merge graph structure from a template plan into ``plan``."""
+
+        t_graph = template.get("graph")
+        if not isinstance(t_graph, dict):
+            return
+        plan["graph"] = t_graph
+
     def plan_research_task(self, query: str) -> Dict[str, Any]:
         """Decompose research query into executable subgraphs."""
 
-        past = []
+        past: List[Dict] = []
         if self.ltm_endpoint:
             try:
                 past = retrieve_memory(
@@ -89,6 +113,8 @@ class SupervisorAgent:
                 past = self.ltm_service.retrieve(query)
             except Exception:  # pragma: no cover - service errors
                 past = []
+
+        past = self._score_memories(query, past)
 
         tasks = self._decompose_query(query)
 
@@ -106,6 +132,13 @@ class SupervisorAgent:
             "graph": {"nodes": nodes, "edges": edges},
             "evaluation": {"metric": "quality"},
         }
+
+        if self.use_plan_templates:
+            for rec in past:
+                tmpl = rec.get("task_context", {}).get("plan")
+                if tmpl:
+                    self._merge_template(plan, tmpl)
+                    break
         self.validate_plan(plan)
         return plan
 
