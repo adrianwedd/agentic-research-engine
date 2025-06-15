@@ -164,11 +164,21 @@ class OrchestrationEngine:
         if self.entry is None:
             self.build()
         self._last_node = None
+        if hasattr(self.checkpointer, "start"):
+            try:
+                self.checkpointer.start(thread_id, state)
+            except Exception:  # pragma: no cover - defensive
+                pass
 
         node_name = self.entry
         while node_name:
             node = self.nodes[node_name]
             state = await node.run(state)
+            if hasattr(self.checkpointer, "save"):
+                try:
+                    self.checkpointer.save(thread_id, node_name, state)
+                except Exception:  # pragma: no cover - defensive
+                    pass
             self._on_node_finished(node_name)
 
             if node_name in self.routers_map:
