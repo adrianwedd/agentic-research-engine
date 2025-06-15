@@ -5,7 +5,15 @@ receivers:
       http:
 
 processors:
+  memory_limiter:
+    limit_mib: 400
+    check_interval: 1s
   batch:
+    send_batch_size: 1024
+    timeout: 5s
+  queued_retry:
+    num_workers: 4
+    queue_size: 10000
   attributes:
     actions:
       - key: environment
@@ -22,8 +30,11 @@ exporters:
       insecure: true
 
 service:
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, attributes]
+      processors: [memory_limiter, batch, queued_retry, attributes]
       exporters: [jaeger]
