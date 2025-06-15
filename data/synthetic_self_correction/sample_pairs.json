@@ -1,0 +1,12 @@
+[
+  {
+    "original": "Long-Term Memory Consolidation & Forgetting Research (P2-19A)\n\nThis document summarizes a research spike into lifecycle management algorithms for the Long-Term Memory (LTM) service. The goal was to compare advanced forgetting strategies and recommend an approach for Phase 2 implementation.",
+    "back_translation": "Long-term memory consolidation and forgetting research (P2-19A)\n\nThis document summarizes the research surge in the life cycle management algorithms for the long -term memory service (LTM). The target was to compare the advanced forgetting strategies and recommend the approach to the introduction of phase 2.",
+    "typo_perturbation": "Long-Term Memory Consolidation & Forgetting Research (P2-19A) This document summarizes a research spike into lifecycle management algorithms for the Long-Term Memory (LTM) sevrice. The goal was to compare advanced forgetting strategies and recommend an aprpoach for Phase 2 implementation."
+  },
+  {
+    "original": "Graph Compilation Strategies Research\n\nA short research spike evaluated dynamic graph execution versus ahead-of-time compilation for the orchestration engine.",
+    "back_translation": "Strategies for compilation of the study graph\n\nA short surge in the study assessed the dynamic execution of the graph in comparison with compilation at the upcoming time for the orchestration mechanism.",
+    "typo_perturbation": "Graph Compilation Strategies Reesarch A short research spike evaluated dynamic graph execution versus ahead-of-time compilation for the orchestration engine."
+  }
+]
