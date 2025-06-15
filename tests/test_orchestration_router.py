@@ -170,3 +170,51 @@ def test_cosc_router_stops_after_max_retries():
 
     assert order == ["Researcher", "Evaluator", "Researcher", "Evaluator", "Abort"]
     assert result.retry_count == 1
+
+
+def test_cosc_loop_terminates_after_three_retries():
+    engine = create_orchestration_engine()
+
+    order: list[str] = []
+
+    def researcher(state: GraphState) -> GraphState:
+        order.append("Researcher")
+        return state
+
+    def evaluator(state: GraphState) -> GraphState:
+        order.append("Evaluator")
+        state.evaluator_feedback = {"overall_score": 0.0}
+        return state
+
+    def failure(state: GraphState) -> GraphState:
+        order.append("Failure")
+        return state
+
+    engine.add_node("Researcher", researcher)
+    engine.add_node("Evaluator", evaluator)
+    engine.add_node("Failure", failure)
+
+    engine.add_edge("Researcher", "Evaluator")
+    router = make_cosc_router(
+        retry_node="Researcher",
+        pass_node="Failure",
+        max_retries=3,
+        score_threshold=0.5,
+        fail_node="Failure",
+    )
+    engine.add_router("Evaluator", router)
+
+    result = asyncio.run(engine.run_async(GraphState()))
+
+    assert order == [
+        "Researcher",
+        "Evaluator",
+        "Researcher",
+        "Evaluator",
+        "Researcher",
+        "Evaluator",
+        "Researcher",
+        "Evaluator",
+        "Failure",
+    ]
+    assert result.retry_count == 3
