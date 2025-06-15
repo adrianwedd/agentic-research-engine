@@ -21,14 +21,6 @@ from opentelemetry import trace
 
 from .state import State
 
-
-class InMemorySaver:
-    """Minimal in-memory checkpoint saver used until a persistent backend is implemented."""
-
-    def save(self, state: dict) -> None:  # pragma: no cover - placeholder
-        pass
-
-
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
