@@ -49,3 +49,19 @@ def test_supervisor_trims_query():
     gs = DummyGraphState({"query": "  spaced query \n"})
     result = agent(gs)
     assert result.data["state"].initial_query == "spaced query"
+
+
+def test_plan_yaml_roundtrip():
+    agent = SupervisorAgent()
+    plan = agent.plan_research_task(
+        "Compare Transformer and LSTM for NLP tasks with accuracy metrics"
+    )
+    yaml_text = agent.format_plan_as_yaml(plan)
+    parsed = agent.parse_plan(yaml_text)
+    assert parsed == plan
+
+
+def test_parse_plan_invalid_yaml_raises():
+    agent = SupervisorAgent()
+    with pytest.raises(ValueError):
+        agent.parse_plan("not: [valid")
