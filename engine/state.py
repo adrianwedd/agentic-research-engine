@@ -26,3 +26,6 @@ class State(BaseModel):
     @classmethod
     def from_json(cls, payload: str) -> "State":  # pragma: no cover - thin wrapper
         return cls.model_validate_json(payload)
+
+    def __getitem__(self, item: str) -> Any:
+        return getattr(self, item)

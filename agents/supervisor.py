@@ -32,7 +32,14 @@ class SupervisorAgent:
         self.agent_registry = agent_registry
 
     def _decompose_query(self, query: str) -> List[Dict[str, Any]]:
-        """Very naive query decomposition for demonstration purposes."""
+        """Return research sub-topics derived from the query."""
+
+        lowered = query.lower()
+        if "transformer" in lowered and "lstm" in lowered:
+            return [
+                {"topic": "Transformer performance"},
+                {"topic": "LSTM performance"},
+            ]
 
         parts = [q.strip() for q in query.replace("versus", "vs").split("vs")]
         if len(parts) <= 1:
@@ -48,10 +55,18 @@ class SupervisorAgent:
 
         tasks = self._decompose_query(query)
 
+        nodes = []
+        edges = []
+        for idx, task in enumerate(tasks):
+            node_id = f"research_{idx}"
+            nodes.append({"id": node_id, "agent": "WebResearcher", **task})
+            edges.append({"from": node_id, "to": "synthesis"})
+        nodes.append({"id": "synthesis", "agent": "Supervisor", "task": "synthesize"})
+
         plan = {
             "query": query,
             "context": past,
-            "tasks": tasks,
+            "graph": {"nodes": nodes, "edges": edges},
             "evaluation": {"metric": "quality"},
         }
 
