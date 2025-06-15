@@ -58,6 +58,7 @@ def test_summarize_to_state_adds_message():
 
     assert state.messages[-1]["content"] == "summary"
 
+
 def test_webresearcher_node_executes_query():
     queries: list[str] = []
 
