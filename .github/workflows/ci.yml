@@ -56,4 +56,3 @@ except Exception as e:
     print('❌ Schema validation failed:', e)
     sys.exit(1)
 PY
-EOF
