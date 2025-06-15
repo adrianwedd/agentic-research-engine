@@ -102,6 +102,21 @@ steps: []
 acceptance_criteria: []
 ```
 
+```codex-task
+id: P1-08
+title: Implement conditional edge router for dynamic workflows
+status: done
+steps: []
+acceptance_criteria: []
+```
+
+```codex-task
+id: P1-31
+title: Future orchestration engine enhancements
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-05: Define core agent action tracing schema
 
 **Goal:** Define and document a standardized OpenTelemetry tracing schema that will be used across the entire system.
