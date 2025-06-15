@@ -36,3 +36,4 @@ class ToolRegistry:
         if allowed and role not in allowed:
             raise AccessDeniedError(f"Role '{role}' cannot access tool '{name}'")
         return self._tools[name]
+

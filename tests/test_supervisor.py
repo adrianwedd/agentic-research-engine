@@ -22,3 +22,14 @@ def test_supervisor_node_updates_graph_state():
     result = agent(gs)
     assert isinstance(result.data.get("state"), State)
     assert result.data["state"].initial_query == "Example query"
+
+
+def test_plan_contains_parallel_webresearcher_nodes():
+    agent = SupervisorAgent()
+    plan = agent.plan_research_task(
+        "Compare the performance of Transformer and LSTM models"
+    )
+    nodes = plan["graph"]["nodes"]
+    topics = [n.get("topic") for n in nodes if n["agent"] == "WebResearcher"]
+    assert "Transformer performance" in topics
+    assert "LSTM performance" in topics

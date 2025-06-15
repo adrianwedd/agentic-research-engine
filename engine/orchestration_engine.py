@@ -22,6 +22,25 @@ from opentelemetry import trace
 
 from .state import State
 
+
+
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.constants import CONFIG_KEY_NODE_FINISHED
+from opentelemetry import trace
+
+from engine.state import State
+
+
+class GraphState(State):
+    """Graph state model with dictionary-style access."""
+
+    def __getitem__(self, key: str):
+        return getattr(self, key)
+
+
+# ``GraphState`` is currently an alias of ``State``. Future iterations may
+# introduce a dedicated class with additional orchestration-specific fields.
+
 GraphState = State
 
 logger = logging.getLogger(__name__)
@@ -33,7 +52,7 @@ class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
+    func: Callable[[State], Awaitable[State]] | Callable[[State], State]
     retries: int = 0
 
     async def run(self, state: State) -> State:
@@ -45,6 +64,7 @@ class Node:
                     else:
                         result = self.func(state)
                 if isinstance(result, GraphState):
+
                     return result
                 if isinstance(result, dict):
                     state.update(result)
@@ -80,15 +100,13 @@ def _build_order(edges: Iterable[tuple[str, str]]) -> Dict[str, str]:
 
 @dataclass
 class OrchestrationEngine:
-    """Core LangGraph-based orchestration engine."""
+    """Simplified orchestration engine for sequential workflows."""
 
     nodes: Dict[str, Node] = field(default_factory=dict)
     edges: list[tuple[str, str]] = field(default_factory=list)
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
-    checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
-    _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
     order: Dict[str, str] = field(init=False, default_factory=dict)
@@ -100,7 +118,7 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
+        func: Callable[[State], Awaitable[State]] | Callable[[State], State],
         *,
         retries: int = 0,
     ) -> None:
@@ -132,11 +150,77 @@ class OrchestrationEngine:
         self.routers_map = {
             start: (router, path_map) for start, router, path_map in self.routers
         }
+        # Use the engine itself as the graph executor. This allows ``run`` and
+        # ``run_async`` to delegate to ``invoke``/``ainvoke`` implemented below
+        # without requiring an external dependency at this stage.
+        self._graph = self
+
+    async def _execute_async(
+        self, state: State, on_node_finished: Callable[[str], None] | None = None
+    ) -> State:
+        """Execute nodes sequentially following edges and routers."""
+
+        node_name = self.entry
+        while node_name:
+            node = self.nodes[node_name]
+            state = await node.run(state)
+            if on_node_finished:
+                on_node_finished(node.name)
+            if node_name in self.routers_map:
+                router, path_map = self.routers_map[node_name]
+                dest = router(state)
+                if path_map and isinstance(dest, str):
+                    node_name = path_map.get(dest)
+                else:
+                    node_name = dest if isinstance(dest, str) else None
+            else:
+                node_name = self.order.get(node_name)
+        return state
+
+    async def ainvoke(
+        self, state: State, config: Dict[str, Any] | None = None
+    ) -> State:
+        on_finished = None
+        if config and (
+            cb := config.get("configurable", {}).get(CONFIG_KEY_NODE_FINISHED)
+        ):
+            on_finished = cb
+        return await self._execute_async(state, on_finished)
+
+    def invoke(self, state: State, config: Dict[str, Any] | None = None) -> State:
+        on_finished = None
+        if config and (
+            cb := config.get("configurable", {}).get(CONFIG_KEY_NODE_FINISHED)
+        ):
+            on_finished = cb
+        return asyncio.run(self._execute_async(state, on_finished))
 
     async def run_async(self, state: State, *, thread_id: str = "default") -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
         if self.entry is None:
+        if not hasattr(self, "entry") or self.entry is None:
             self.build()
+        current = self.entry
+        while current:
+            node = self.nodes[current]
+            state = await node.run(state)
+            router_data = self.routers_map.get(current)
+            if router_data:
+                router, path_map = router_data
+                dest = router(state)
+                if path_map:
+                    dest = path_map.get(dest, dest)
+                current = dest
+            else:
+                current = self.order.get(current)
+            self._on_node_finished(node.name)
+        if isinstance(state, GraphState):
+            return state
+        return GraphState.model_validate(state.model_dump())
+
+    def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
+        return asyncio.run(self.run_async(state, thread_id=thread_id))
+
         self._last_node = None
 
         node_name = self.entry
@@ -158,6 +242,28 @@ class OrchestrationEngine:
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""
         return asyncio.run(self.run_async(state, thread_id=thread_id))
+
+      config = {
+            "configurable": {
+                "thread_id": thread_id,
+                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
+            }
+        }
+        result = await self._graph.ainvoke(state, config)
+        return result
+
+    def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
+        if self._graph is None:
+            self.build()
+        self._last_node = None
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
+            }
+        }
+        result = self._graph.invoke(state, config)
+        return result
 
     def export_dot(self) -> str:
         lines = ["digraph Orchestration {"]

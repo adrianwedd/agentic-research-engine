@@ -1,4 +1,5 @@
 from agents.web_researcher import WebResearcherAgent
+from engine.orchestration_engine import GraphState
 
 
 def test_research_topic_uses_tools():
@@ -41,3 +42,45 @@ def test_research_topic_uses_tools():
     assert len(result["sources"]) == 2
     assert result["confidence"] == 0.9
     assert calls["summarize"] == 2
+
+
+def test_summarize_to_state_adds_message():
+    def summarize(text):
+        return "summary"
+
+    registry = {"web_search": lambda q: [], "summarize": summarize}
+    agent = WebResearcherAgent(registry)
+
+    from engine.state import State
+
+    state = State(data={"raw_text": "word " * 5000, "task": "topic"})
+    agent.summarize_to_state(state)
+
+    assert state.messages[-1]["content"] == "summary"
+
+def test_webresearcher_node_executes_query():
+    queries: list[str] = []
+
+    def web_search(q: str):
+        queries.append(q)
+        return []
+
+    registry = {
+        "web_search": web_search,
+        "summarize": lambda text: "",
+        "pdf_extract": None,
+        "html_scraper": None,
+        "assess_source": lambda url: 1.0,
+    }
+
+    agent = WebResearcherAgent(registry)
+    state = GraphState(
+        data={"sub_task": "find papers on Transformer architecture", "agent_id": "A"}
+    )
+    result = agent(state)
+
+    assert queries, "web_search was not called"
+    q = queries[0].lower()
+    assert "transformer architecture" in q
+    assert "academic papers" in q
+    assert "research_result" in result.data
