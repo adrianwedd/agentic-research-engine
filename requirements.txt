@@ -24,3 +24,5 @@ langsmith
 weaviate-client
 googletrans==4.0.0rc1
 openai
+datasets
+transformers
