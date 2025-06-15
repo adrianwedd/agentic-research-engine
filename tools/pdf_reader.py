@@ -12,6 +12,8 @@ import requests
 from pdfminer.pdfparser import PDFSyntaxError
 from pdfplumber.utils.exceptions import PdfminerException
 
+from .validation import validate_path_or_url
+
 
 def pdf_extract(
     path_or_url: str, *, timeout: int = 10, use_ocr: bool | None = None
@@ -29,26 +31,28 @@ def pdf_extract(
         else:
             # auto-enable OCR when available
             try:
-                import pytesseract  # type: ignore
+                import importlib
 
+                importlib.import_module("pytesseract")  # type: ignore
                 if shutil.which("tesseract"):
                     use_ocr = True
                 else:
                     use_ocr = False
             except Exception:
                 use_ocr = False
+    validated = validate_path_or_url(path_or_url)
     parsed = urlparse(path_or_url)
     if parsed.scheme in {"http", "https"}:
         try:
-            resp = requests.get(path_or_url, timeout=timeout)
+            resp = requests.get(validated, timeout=timeout)
             resp.raise_for_status()
             file_obj: str | io.BytesIO = io.BytesIO(resp.content)
         except requests.RequestException as exc:  # pragma: no cover - network errors
             raise ValueError(f"Failed to download PDF: {exc}") from exc
     else:
-        if not os.path.exists(path_or_url):
-            raise FileNotFoundError(path_or_url)
-        file_obj = path_or_url
+        if not os.path.exists(validated):
+            raise FileNotFoundError(validated)
+        file_obj = validated
 
     try:
         with pdfplumber.open(file_obj) as pdf:
