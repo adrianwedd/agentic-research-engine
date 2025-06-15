@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+import shutil
 from urllib.parse import urlparse
 
 import pdfplumber
@@ -22,11 +23,20 @@ def pdf_extract(
     ``PDF_READER_ENABLE_OCR`` environment variable controls the fallback.
     """
     if use_ocr is None:
-        use_ocr = os.getenv("PDF_READER_ENABLE_OCR", "false").lower() in {
-            "1",
-            "true",
-            "yes",
-        }
+        env_val = os.getenv("PDF_READER_ENABLE_OCR")
+        if env_val is not None:
+            use_ocr = env_val.lower() in {"1", "true", "yes"}
+        else:
+            # auto-enable OCR when available
+            try:
+                import pytesseract  # type: ignore
+
+                if shutil.which("tesseract"):
+                    use_ocr = True
+                else:
+                    use_ocr = False
+            except Exception:
+                use_ocr = False
     parsed = urlparse(path_or_url)
     if parsed.scheme in {"http", "https"}:
         try:
@@ -42,22 +52,26 @@ def pdf_extract(
 
     try:
         with pdfplumber.open(file_obj) as pdf:
-            text_parts = []
-            for page in pdf.pages:
-                page_text = page.extract_text() or ""
-                if not page_text.strip() and use_ocr:
-                    try:  # pragma: no cover - optional OCR path
-                        import pytesseract
+            text_parts = [page.extract_text() or "" for page in pdf.pages]
+            text = "\n".join(text_parts)
+            if not text.strip() and use_ocr:
+                try:  # pragma: no cover - optional OCR path
+                    import pytesseract
 
+                    text_parts = []
+                    for page in pdf.pages:
                         img = page.to_image(resolution=300).original
                         page_text = pytesseract.image_to_string(img)
-                    except Exception as exc:  # pragma: no cover - OCR failures
-                        raise ValueError(f"OCR extraction failed: {exc}") from exc
-                text_parts.append(page_text)
-            text = "\n".join(text_parts)
+                        text_parts.append(page_text)
+                    text = "\n".join(text_parts)
+                except Exception as exc:  # pragma: no cover - OCR failures
+                    raise ValueError(f"OCR extraction failed: {exc}") from exc
     except (PDFSyntaxError, PdfminerException) as exc:
         raise ValueError(f"Invalid PDF: {exc}") from exc
     except Exception as exc:  # pragma: no cover - parsing errors
+        msg = str(exc).lower()
+        if "password" in msg or "encrypt" in msg:
+            raise ValueError("Encrypted PDF: password required") from exc
         raise ValueError(f"Failed to parse PDF: {exc}") from exc
 
     if not text.strip():
