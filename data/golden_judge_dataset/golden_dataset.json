@@ -1,0 +1,462 @@
+[
+  {
+    "id": 1,
+    "report": "Synthetic research report 1 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.76,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.82,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.76,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.99,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 2,
+    "report": "Synthetic research report 2 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.86,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.97,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.89,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.83,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 3,
+    "report": "Synthetic research report 3 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.85,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.93,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.75,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.79,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 4,
+    "report": "Synthetic research report 4 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.75,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.81,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.97,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.96,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 5,
+    "report": "Synthetic research report 5 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.94,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.81,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.83,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.79,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 6,
+    "report": "Synthetic research report 6 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.95,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.77,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.84,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.85,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 7,
+    "report": "Synthetic research report 7 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.89,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.85,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.73,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.73,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 8,
+    "report": "Synthetic research report 8 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.81,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.93,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.7,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.84,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 9,
+    "report": "Synthetic research report 9 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.81,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.72,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.96,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.95,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 10,
+    "report": "Synthetic research report 10 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.94,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.73,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.78,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.91,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 11,
+    "report": "Synthetic research report 11 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.81,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.74,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.96,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.81,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 12,
+    "report": "Synthetic research report 12 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.84,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 1.0,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.8,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.9,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 13,
+    "report": "Synthetic research report 13 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.84,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.96,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.73,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.95,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 14,
+    "report": "Synthetic research report 14 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.95,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.81,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.76,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.78,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 15,
+    "report": "Synthetic research report 15 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.75,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.89,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.8,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.82,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 16,
+    "report": "Synthetic research report 16 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.8,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.77,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.78,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.9,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 17,
+    "report": "Synthetic research report 17 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.92,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.77,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.77,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.86,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 18,
+    "report": "Synthetic research report 18 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.97,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 1.0,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.76,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.92,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 19,
+    "report": "Synthetic research report 19 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.88,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.73,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.84,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.74,
+        "justification": "Well structured."
+      }
+    }
+  },
+  {
+    "id": 20,
+    "report": "Synthetic research report 20 on topic XYZ.",
+    "scores": {
+      "schema_version": "1.0",
+      "factual_accuracy": {
+        "score": 0.97,
+        "justification": "All facts cross-checked."
+      },
+      "completeness": {
+        "score": 0.73,
+        "justification": "Addresses key aspects."
+      },
+      "source_quality": {
+        "score": 0.81,
+        "justification": "Uses credible sources."
+      },
+      "coherence": {
+        "score": 0.73,
+        "justification": "Well structured."
+      }
+    }
+  }
+]
