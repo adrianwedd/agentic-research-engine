@@ -172,6 +172,14 @@ acceptance_criteria: []
 - [ ] When a final report is delivered to technical leadership
 - [ ] Then the report contains a clear recommendation for the chosen strategy, supported by performance benchmarks and qualitative analysis
 
+```codex-task
+id: P1-20
+title: Research optimal graph compilation strategies
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-09: Implement Supervisor agent for query analysis
 
 **Goal:** Implement the initial version of the Supervisor agent.
@@ -1052,6 +1060,13 @@ id: P5-02
 title: Docker-based OTel collector service
 
 title: Add rollback support for CD pipeline
+steps: []
+acceptance_criteria: []
+```
+
+```codex-task
+id: P5-03
+title: Add graph compilation benchmark script
 steps: []
 acceptance_criteria: []
 ```
