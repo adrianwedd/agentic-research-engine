@@ -5,6 +5,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 import pytest
+from PIL import Image, ImageDraw, ImageFont
 
 from tools.pdf_reader import pdf_extract
 
@@ -43,6 +44,13 @@ def _serve_dir(path: Path):
     return httpd, t
 
 
+def _make_scanned_pdf(path: Path, text: str = "OCR TEST") -> None:
+    img = Image.new("RGB", (200, 100), "white")
+    draw = ImageDraw.Draw(img)
+    draw.text((10, 40), text, fill="black", font=ImageFont.load_default())
+    img.save(path, "PDF")
+
+
 def test_pdf_extract_from_url(tmp_path):
     pdf_path = tmp_path / "hello.pdf"
     pdf_path.write_bytes(base64.b64decode(HELLO_PDF_B64))
@@ -64,11 +72,27 @@ def test_pdf_extract_no_text(tmp_path):
     assert "image-based" in str(exc.value)
 
 
+def test_pdf_extract_scanned_with_ocr(tmp_path):
+    scan = tmp_path / "scan.pdf"
+    _make_scanned_pdf(scan, "HELLO OCR")
+    text = pdf_extract(str(scan), use_ocr=True)
+    assert "HELLO" in text
+
+
 def test_pdf_extract_bad_path():
     with pytest.raises(FileNotFoundError):
         pdf_extract("/no/such/file.pdf")
 
 
+def test_pdf_extract_invalid_pdf(tmp_path):
+    bad = tmp_path / "bad.pdf"
+    bad.write_text("not a pdf")
+    with pytest.raises(ValueError) as exc:
+        pdf_extract(str(bad))
+    assert "Invalid PDF" in str(exc.value)
+
+
 def test_pdf_extract_bad_url():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as exc:
         pdf_extract("http://localhost:9/missing.pdf", timeout=1)
+    assert "Failed to download PDF" in str(exc.value)
