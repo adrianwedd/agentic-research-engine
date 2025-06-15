@@ -1,0 +1,10 @@
+{
+  "request": {
+    "headers": {"X-Role": "guest"},
+    "json": {"query": {}}
+  },
+  "response": {
+    "status": 403,
+    "body": {"error": "forbidden"}
+  }
+}

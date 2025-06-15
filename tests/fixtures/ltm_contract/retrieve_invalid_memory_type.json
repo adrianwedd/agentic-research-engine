@@ -1,0 +1,11 @@
+{
+  "request": {
+    "headers": {"X-Role": "viewer"},
+    "params": {"memory_type": "bad"},
+    "json": {"query": {}}
+  },
+  "response": {
+    "status": 400,
+    "body": {"error": "Unsupported memory type: bad"}
+  }
+}

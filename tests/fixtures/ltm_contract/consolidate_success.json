@@ -1,0 +1,17 @@
+{
+  "request": {
+    "headers": {"X-Role": "editor"},
+    "json": {
+      "record": {
+        "task_context": {"description": "Write docs"},
+        "execution_trace": {},
+        "outcome": {"success": true}
+      },
+      "memory_type": "episodic"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {"id": "*"}
+  }
+}
