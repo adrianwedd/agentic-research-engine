@@ -1,0 +1,29 @@
+name: Minimal Automation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          bash scripts/agent-setup.sh
+
+      - name: Run linters and formatters
+        run: pre-commit run --all-files
+
+      - name: Run test suite
+        run: pytest -v
