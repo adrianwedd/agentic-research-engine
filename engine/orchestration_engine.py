@@ -29,7 +29,6 @@ class InMemorySaver:
         pass
 
 
-
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
@@ -113,6 +112,7 @@ class OrchestrationEngine:
     routers: list[
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
+
     # Using ``Any`` here avoids importing optional dependencies for the dummy
     # checkpointer implementation used in tests.
     checkpointer: Any = field(default_factory=dict)

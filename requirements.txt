@@ -4,6 +4,7 @@ pydantic
 pyyaml
 requests
 pdfplumber
+beautifulsoup4
 
 opentelemetry-api
 opentelemetry-sdk
