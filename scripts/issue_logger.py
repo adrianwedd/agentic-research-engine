@@ -1,6 +1,9 @@
+import fcntl
 import json
 import os
 import sys
+import tempfile
+import time
 from datetime import datetime
 from typing import List, Optional
 
@@ -27,21 +30,56 @@ def _comments_url(issue_or_pr_url: str) -> str:
     return f"{issue_or_pr_url}/comments"
 
 
+def _request_with_retry(method: str, url: str, *, retries: int = 3, **kwargs):
+    """Perform an HTTP request with exponential backoff."""
+    backoff = 1
+    for attempt in range(retries):
+        try:
+            resp = requests.request(method, url, timeout=10, **kwargs)
+        except requests.RequestException as e:
+            err: Exception | None = e
+        else:
+            if resp.status_code in {429, 500, 502, 503, 504} or (
+                resp.status_code == 403 and "rate limit" in resp.text.lower()
+            ):
+                err = RuntimeError(f"HTTP {resp.status_code}")
+            else:
+                return resp
+        if attempt < retries - 1:
+            time.sleep(backoff)
+            backoff *= 2
+        else:
+            print(
+                f"{method.upper()} {url} failed after {retries} attempts: {err}",
+                file=sys.stderr,
+            )
+            return None
+
+
 def _store_pending_worklog(target: str, data: dict) -> None:
     os.makedirs(os.path.dirname(WORKLOG_PENDING_FILE), exist_ok=True)
-    pending = []
-    if os.path.exists(WORKLOG_PENDING_FILE):
+    lock_path = f"{WORKLOG_PENDING_FILE}.lock"
+    with open(lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        pending = []
+        if os.path.exists(WORKLOG_PENDING_FILE):
+            try:
+                with open(WORKLOG_PENDING_FILE) as f:
+                    pending = json.load(f) or []
+            except Exception:
+                pending = []
+        pending.append({"target": target, "data": data})
         try:
-            with open(WORKLOG_PENDING_FILE) as f:
-                pending = json.load(f) or []
-        except Exception:
-            pending = []
-    pending.append({"target": target, "data": data})
-    try:
-        with open(WORKLOG_PENDING_FILE, "w") as f:
-            json.dump(pending, f, indent=2)
-    except Exception as e:
-        print(f"Failed to write pending worklog: {e}", file=sys.stderr)
+            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(WORKLOG_PENDING_FILE))
+            with os.fdopen(fd, "w") as f:
+                json.dump(pending, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, WORKLOG_PENDING_FILE)
+        except Exception as e:
+            print(f"Failed to write pending worklog: {e}", file=sys.stderr)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 def create_issue(
@@ -57,10 +95,8 @@ def create_issue(
     payload = {"title": title, "body": body}
     if labels:
         payload["labels"] = labels
-    try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=10)
-    except Exception as e:
-        print(f"Failed to create issue: {e}", file=sys.stderr)
+    resp = _request_with_retry("post", url, headers=headers, json=payload)
+    if not resp:
         return ""
     if resp.status_code >= 300:
         print(f"GitHub API error {resp.status_code}: {resp.text}", file=sys.stderr)
@@ -76,10 +112,8 @@ def post_comment(issue_url: str, body: str) -> str:
 
     url = f"{issue_url}/comments"
     headers = {"Authorization": f"token {token}"}
-    try:
-        resp = requests.post(url, headers=headers, json={"body": body}, timeout=10)
-    except Exception as e:
-        print(f"Failed to post comment: {e}", file=sys.stderr)
+    resp = _request_with_retry("post", url, headers=headers, json={"body": body})
+    if not resp:
         return ""
     if resp.status_code >= 300:
         print(f"GitHub API error {resp.status_code}: {resp.text}", file=sys.stderr)
@@ -138,10 +172,8 @@ def post_worklog_comment(issue_or_pr_url: str, worklog_data: dict) -> str:
     comments_url = _comments_url(issue_or_pr_url)
     headers = {"Authorization": f"token {token}"}
 
-    try:
-        resp = requests.get(comments_url, headers=headers, timeout=10)
-    except Exception as e:
-        print(f"Failed to retrieve comments: {e}", file=sys.stderr)
+    resp = _request_with_retry("get", comments_url, headers=headers)
+    if not resp:
         _store_pending_worklog(issue_or_pr_url, worklog_data)
         return ""
     if resp.status_code >= 300:
@@ -159,28 +191,23 @@ def post_worklog_comment(issue_or_pr_url: str, worklog_data: dict) -> str:
 
     if existing:
         url = existing["url"]
-        try:
-            update = requests.patch(
-                url, headers=headers, json={"body": body}, timeout=10
-            )
-        except Exception as e:
-            print(f"Failed to update comment: {e}", file=sys.stderr)
+        update = _request_with_retry("patch", url, headers=headers, json={"body": body})
+        if not update:
             _store_pending_worklog(issue_or_pr_url, worklog_data)
             return ""
         if update.status_code >= 300:
             print(
-                f"GitHub API error {update.status_code}: {update.text}", file=sys.stderr
+                f"GitHub API error {update.status_code}: {update.text}",
+                file=sys.stderr,
             )
             _store_pending_worklog(issue_or_pr_url, worklog_data)
             return ""
         return update.json().get("html_url", "")
 
-    try:
-        create = requests.post(
-            comments_url, headers=headers, json={"body": body}, timeout=10
-        )
-    except Exception as e:
-        print(f"Failed to post comment: {e}", file=sys.stderr)
+    create = _request_with_retry(
+        "post", comments_url, headers=headers, json={"body": body}
+    )
+    if not create:
         _store_pending_worklog(issue_or_pr_url, worklog_data)
         return ""
     if create.status_code >= 300:
