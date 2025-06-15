@@ -7,18 +7,8 @@ from googletrans import Translator
 translator = Translator()
 
 SAMPLES = [
-    (
-        "Long-Term Memory Consolidation & Forgetting Research (P2-19A)\n\n"
-        "This document summarizes a research spike into lifecycle management"
-        " algorithms for the Long-Term Memory (LTM) service. The goal was to"
-        " compare advanced forgetting strategies and recommend an approach for"
-        " Phase 2 implementation."
-    ),
-    (
-        "Graph Compilation Strategies Research\n\n"
-        "A short research spike evaluated dynamic graph execution versus"
-        " ahead-of-time compilation for the orchestration engine."
-    ),
+    "Long-Term Memory Consolidation & Forgetting Research (P2-19A)\n\nThis document summarizes a research spike into lifecycle management algorithms for the Long-Term Memory (LTM) service. The goal was to compare advanced forgetting strategies and recommend an approach for Phase 2 implementation.",  # noqa: E501
+    "Graph Compilation Strategies Research\n\nA short research spike evaluated dynamic graph execution versus ahead-of-time compilation for the orchestration engine.",  # noqa: E501
 ]
 
 
