@@ -55,6 +55,11 @@ class HITLReviewServer:
                     return
                 run_id, action = parts[1], parts[2]
                 if action == "approve":
+                    self.send_response(308)
+                    self.send_header("Location", f"/tasks/{run_id}/approval")
+                    self.end_headers()
+                    return
+                if action == "approval":
                     try:
                         state, next_node = queue.pop(run_id)
                     except KeyError:
@@ -66,6 +71,11 @@ class HITLReviewServer:
                     )
                     self._send_json(200, {"result": final_state.model_dump()})
                 elif action == "reject":
+                    self.send_response(308)
+                    self.send_header("Location", f"/tasks/{run_id}/rejection")
+                    self.end_headers()
+                    return
+                elif action == "rejection":
                     try:
                         state, _ = queue.pop(run_id)
                     except KeyError:

@@ -94,9 +94,9 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
-  /consolidate:
+  /memory:
     post:
-      operationId: consolidate_consolidate_post
+      operationId: create_memory_memory_post
       parameters:
       - in: header
         name: x-role
@@ -126,9 +126,8 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Store an experience
-  /retrieve:
     get:
-      operationId: retrieve_retrieve_get
+      operationId: get_memory_memory_get
       parameters:
       - in: query
         name: memory_type

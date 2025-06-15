@@ -10,6 +10,9 @@ from .episodic_memory import EpisodicMemoryService
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
+    ("POST", "/memory"): {"editor"},
+    ("GET", "/memory"): {"viewer", "editor"},
+    # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
     ("GET", "/retrieve"): {"viewer", "editor"},
 }
@@ -78,11 +81,17 @@ class LTMServiceServer:
 
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
-                if parsed.path != "/consolidate":
+                if parsed.path == "/consolidate":
+                    # Temporary redirect to new noun-based endpoint
+                    self.send_response(308)
+                    self.send_header("Location", "/memory")
+                    self.end_headers()
+                    return
+                if parsed.path != "/memory":
                     self.send_response(404)
                     self.end_headers()
                     return
-                if not self._check_role("POST", parsed.path):
+                if not self._check_role("POST", "/memory"):
                     self._send_json(403, {"error": "forbidden"})
                     return
                 data = self._json_body()
@@ -100,11 +109,19 @@ class LTMServiceServer:
 
             def do_GET(self) -> None:
                 parsed = urlparse(self.path)
-                if parsed.path != "/retrieve":
+                if parsed.path == "/retrieve":
+                    new_path = "/memory"
+                    if parsed.query:
+                        new_path += f"?{parsed.query}"
+                    self.send_response(308)
+                    self.send_header("Location", new_path)
+                    self.end_headers()
+                    return
+                if parsed.path != "/memory":
                     self.send_response(404)
                     self.end_headers()
                     return
-                if not self._check_role("GET", parsed.path):
+                if not self._check_role("GET", "/memory"):
                     self._send_json(403, {"error": "forbidden"})
                     return
                 params = parse_qs(parsed.query)

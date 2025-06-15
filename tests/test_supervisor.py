@@ -113,7 +113,7 @@ def test_plan_uses_ltm_endpoint():
         "execution_trace": {},
         "outcome": {"success": True},
     }
-    requests.post(f"{endpoint}/consolidate", json={"record": record})
+    requests.post(f"{endpoint}/memory", json={"record": record})
 
     agent = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=1)
     plan = agent.plan_research_task("example")
@@ -158,8 +158,8 @@ def test_memories_scored_by_relevance():
         "execution_trace": {},
         "outcome": {"success": True},
     }
-    requests.post(f"{endpoint}/consolidate", json={"record": record_a})
-    requests.post(f"{endpoint}/consolidate", json={"record": record_b})
+    requests.post(f"{endpoint}/memory", json={"record": record_a})
+    requests.post(f"{endpoint}/memory", json={"record": record_b})
 
     agent = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=2)
     plan = agent.plan_research_task("example")
@@ -187,7 +187,7 @@ def test_plan_template_applied_when_enabled():
         "execution_trace": {},
         "outcome": {"success": True},
     }
-    requests.post(f"{endpoint}/consolidate", json={"record": record})
+    requests.post(f"{endpoint}/memory", json={"record": record})
 
     agent_plain = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=False)
     plain = agent_plain.plan_research_task("example")

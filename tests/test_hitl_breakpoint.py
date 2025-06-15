@@ -64,14 +64,21 @@ def test_review_server_endpoints():
     assert resp.status_code == 200
     assert "t2" in resp.json()
 
-    resp = requests.post(f"{endpoint}/tasks/t2/approve")
+    resp = requests.post(f"{endpoint}/tasks/t2/approval")
     assert resp.status_code == 200
     assert resp.json()["result"]["data"]["b"] == 2
 
+    # deprecated endpoint should redirect
+    resp = requests.post(f"{endpoint}/tasks/t2/approve")
+    assert resp.status_code == 308
+
     asyncio.run(engine.run_async(GraphState(), thread_id="t3"))
-    resp = requests.post(f"{endpoint}/tasks/t3/reject")
+    resp = requests.post(f"{endpoint}/tasks/t3/rejection")
     assert resp.status_code == 200
     assert resp.json()["status"] == "REJECTED_BY_HUMAN"
+
+    resp = requests.post(f"{endpoint}/tasks/t3/reject")
+    assert resp.status_code == 308
 
 
 def test_breakpoint_emits_state_update_span():
