@@ -18,5 +18,6 @@ opentelemetry-exporter-otlp
 langchain
 langgraph
 langsmith
+weaviate-client
 googletrans==4.0.0rc1
 openai

@@ -10,7 +10,7 @@ from typing import Dict, Iterable, List, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from .embedding_client import EmbeddingClient, EmbeddingError, SimpleEmbeddingClient
-from .vector_store import InMemoryVectorStore, VectorStore
+from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
 
 
 class StorageBackend:
@@ -51,7 +51,13 @@ class EpisodicMemoryService:
 
         self.storage = storage_backend
         self.embedding_client = embedding_client or SimpleEmbeddingClient()
-        self.vector_store = vector_store or InMemoryVectorStore()
+        if vector_store is None:
+            try:
+                self.vector_store = WeaviateVectorStore()
+            except Exception:
+                self.vector_store = InMemoryVectorStore()
+        else:
+            self.vector_store = vector_store
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2000, chunk_overlap=0
         )
