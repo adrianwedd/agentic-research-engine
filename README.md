@@ -75,18 +75,17 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    bash scripts/agent-setup.sh
    ```
 
-
-4. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
+3. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
    ```bash
    cp .env.example .env
    # Now, edit .env with your credentials
    ```
 
-5. **Launch core services:** The repository provides a `docker-compose.yml` that
+4. **Launch core services:** The repository provides a `docker-compose.yml` that
    starts an OpenTelemetry collector and Jaeger backend. Set `ENVIRONMENT` and
    `SERVICE_VERSION` in your shell to tag telemetry data, then bring the stack up:
    ```bash
-   ENVIRONMENT=dev SERVICE_VERSION=0.1.0 docker-compose up -d
+   ENVIRONMENT=dev SERVICE_VERSION=0.2.3 docker-compose up -d
    ```
 
 ## **6. Running Tests**
