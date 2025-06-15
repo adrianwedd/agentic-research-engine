@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import tempfile
@@ -19,9 +20,16 @@ def main() -> int:
         )
         return 1
 
+    root = Path(__file__).resolve().parent.parent
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join([str(root), env.get("PYTHONPATH", "")])
+
     with tempfile.NamedTemporaryFile("w+", delete=False) as tmp:
         subprocess.run(
-            [sys.executable, str(runner), "--preview"], check=True, stdout=tmp
+            [sys.executable, str(runner), "--preview"],
+            check=True,
+            stdout=tmp,
+            env=env,
         )
         tmp_path = tmp.name
 
