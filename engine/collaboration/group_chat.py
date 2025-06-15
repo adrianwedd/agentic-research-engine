@@ -12,7 +12,7 @@ from .message_protocol import ChatMessage
 
 
 class DynamicGroupChat:
-    """Simple in-memory group chat with a shared workspace."""
+    """Simple in-memory group chat with a shared workspace and scratchpad."""
 
     def __init__(self, shared_workspace: Dict[str, Any]) -> None:
         """Initialize the collaborative environment."""
@@ -21,6 +21,8 @@ class DynamicGroupChat:
         self.inboxes: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         self.turn_queue: List[str] = []
         self.roles: Dict[str, str] = {}
+        self.scratchpad: Dict[str, Any] = {}
+        self._state: State | None = None
 
     def facilitate_team_collaboration(
         self, team_composition: List[Dict[str, str] | str], task_context: Dict[str, Any]
@@ -43,6 +45,21 @@ class DynamicGroupChat:
             "roles": self.roles.copy(),
             "task_context": task_context,
         }
+
+    def bind_state(self, state: State) -> None:
+        """Attach a State instance and share its scratchpad."""
+        self._state = state
+        self.scratchpad = state.scratchpad
+
+    def write_scratchpad(self, key: str, value: Any) -> None:
+        """Write a value to the shared scratchpad and State."""
+        self.scratchpad[key] = value
+        if self._state is not None:
+            self._state.scratchpad[key] = value
+
+    def read_scratchpad(self, key: str) -> Any | None:
+        """Return an entry from the shared scratchpad."""
+        return self.scratchpad.get(key)
 
     def post_message(
         self,
@@ -105,6 +122,7 @@ class GroupChatManager:
     async def run(self, state: "State") -> "State":
         """Execute a simple round-robin chat session."""
 
+        self.chat.bind_state(state)
         self.chat.facilitate_team_collaboration(self.turn_order, state.data)
         turns = 0
         idx = 0

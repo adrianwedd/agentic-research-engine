@@ -1,6 +1,7 @@
 import pytest
 
 from engine.collaboration.group_chat import DynamicGroupChat
+from engine.state import State
 
 pytestmark = pytest.mark.core
 
@@ -21,3 +22,13 @@ def test_shared_workspace():
     chat.facilitate_team_collaboration(["A", "B"], {})
     chat.update_workspace("A", "note", "value")
     assert workspace["note"] == "value"
+
+
+def test_scratchpad_binding_and_rw():
+    state = State()
+    chat = DynamicGroupChat({})
+    chat.bind_state(state)
+    chat.facilitate_team_collaboration(["A", "B"], {})
+    chat.write_scratchpad("foo", "bar")
+    assert chat.read_scratchpad("foo") == "bar"
+    assert state.scratchpad["foo"] == "bar"

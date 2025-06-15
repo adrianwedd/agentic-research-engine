@@ -48,3 +48,20 @@ def test_directed_question_routing():
     assert order == ["A", "B"]
     conv = state.data["conversation"]
     assert any(m.get("recipient") == "B" and m.get("type") == "question" for m in conv)
+
+
+def test_group_chat_scratchpad_shared():
+    def agent_a(messages, state):
+        manager.chat.write_scratchpad("foo", "bar")
+        return "continue"
+
+    def agent_b(messages, state):
+        seen = manager.chat.read_scratchpad("foo")
+        state.update({"seen": seen})
+        return {"content": "FINISH", "type": "finish"}
+
+    manager = GroupChatManager({"A": agent_a, "B": agent_b}, max_turns=2)
+    state = asyncio.run(manager.run(State()))
+
+    assert state.scratchpad["foo"] == "bar"
+    assert state.data["seen"] == "bar"
