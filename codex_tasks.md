@@ -444,6 +444,43 @@ steps: []
 acceptance_criteria: []
 ```
 
+## Current State (Phase 2)
+
+The table below summarizes repository coverage of the Phase 2 change requests from [BLUEPRINT.md](BLUEPRINT.md).
+
+| CR | Title | Status |
+|----|-------|--------|
+| P2-01 | LTM Service API for memory operations | ⚠ Partial – `memory_type` validation, RBAC and OpenAPI spec missing |
+| P2-02 | Vector database for Episodic Memory | ⚠ Partial – uses in-memory store only |
+| P2-03 | MemoryManager agent for episodic consolidation | ✔ Implemented |
+| P2-04 | Supervisor queries Episodic LTM for plan templating | ⚠ Partial – retrieved context not used as plan template |
+| P2-05 | Evaluator agent for critique generation | ✔ Implemented |
+| P2-06 | Evaluator factual accuracy verification logic | ✔ Implemented |
+| P2-07 | Evaluator source quality assessment logic | ✔ Implemented |
+| P2-08 | Orchestration Engine CoSC feedback loop | ✔ Implemented |
+| P2-09 | Fact-checking API tool | ✔ Implemented |
+| P2-10 | QA tests for CoSC loop termination | ✔ Implemented |
+| P2-11 | LLM-as-a-Judge evaluation pipeline | ✔ Implemented |
+| P2-12 | Evaluation rubric JSON schema | ✔ Implemented |
+| P2-13 | Golden dataset for judge calibration | ✔ Implemented |
+| P2-14 | Judge calibration test suite | ✔ Implemented |
+| P2-15 | Synthetic data generation research | ✔ Implemented |
+| P2-16 | Synthetic error/correction dataset | ✔ Implemented |
+| P2-17 | Fine-tune Evaluator on correction dataset | ❌ Not Implemented |
+| P2-18 | Human-in-the-loop breakpoint | ✔ Implemented |
+| P2-19 | Memory consolidation & forgetting research | ✔ Implemented |
+| P2-20 | Basic LTM forgetting mechanism | ❌ Not Implemented |
+
+## Gap Analysis & Follow-up CRs (Phase 2)
+
+1. **CR-P2-01A: Enforce `memory_type` validation and RBAC** – update the LTM API to require valid types and apply access checks.
+2. **CR-P2-01B: Publish LTM OpenAPI documentation** – version and host a spec describing all endpoints.
+3. **CR-P2-01C: Add contract tests for LTM endpoints** – extend `tests/test_ltm_service_api.py` to cover error paths.
+4. **CR-P2-02A: Integrate persistent vector database** – replace the in-memory store with Weaviate/Milvus and update deployment scripts.
+5. **CR-P2-04A: Template Supervisor plans from retrieved episodes** – reuse high-scoring past plans when generating new ones.
+6. **CR-P2-17A: Implement Evaluator fine-tuning pipeline** – train and version the model using the synthetic dataset.
+7. **CR-P2-20A: Schedule periodic forgetting job** – prune stale episodic memories based on last-accessed timestamps.
+
 ## P2-01: Implement LTM Service API for memory operations
 
 **Goal:** Implement the public-facing API for the Long-Term Memory (LTM) service.
