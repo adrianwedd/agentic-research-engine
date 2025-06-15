@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
 from opentelemetry import trace
@@ -29,6 +30,13 @@ CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 GraphState = State
 
 logger = logging.getLogger(__name__)
+
+
+class NodeType(str, Enum):
+    """Enumeration of built-in node types."""
+
+    DEFAULT = "default"
+    HUMAN_IN_THE_LOOP_BREAKPOINT = "human_in_the_loop_breakpoint"
 
 
 class InMemorySaver:
@@ -51,6 +59,7 @@ class Node:
     name: str
     func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
     retries: int = 0
+    node_type: NodeType = NodeType.DEFAULT
 
     async def run(self, state: State) -> State:
         for attempt in range(self.retries + 1):
@@ -121,6 +130,7 @@ class OrchestrationEngine:
     # Using ``Any`` here avoids importing optional dependencies for the dummy
     # checkpointer implementation used in tests.
     checkpointer: Any = field(default_factory=dict)
+    review_queue: Any | None = None
     _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
@@ -137,8 +147,9 @@ class OrchestrationEngine:
         func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
         *,
         retries: int = 0,
+        node_type: NodeType = NodeType.DEFAULT,
     ) -> None:
-        self.nodes[name] = Node(name, func, retries)
+        self.nodes[name] = Node(name, func, retries, node_type)
 
     def add_edge(self, start: str, end: str) -> None:
         self.edges.append((start, end))
@@ -168,7 +179,9 @@ class OrchestrationEngine:
             start: (router, path_map) for start, router, path_map in self.routers
         }
 
-    async def run_async(self, state: State, *, thread_id: str = "default") -> State:
+    async def run_async(
+        self, state: State, *, thread_id: str = "default", start_at: str | None = None
+    ) -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
 
         if self.entry is None:
@@ -180,7 +193,7 @@ class OrchestrationEngine:
             except Exception:  # pragma: no cover - defensive
                 pass
 
-        node_name = self.entry
+        node_name = start_at or self.entry
         while node_name:
             node = self.nodes[node_name]
             state = await node.run(state)
@@ -202,9 +215,17 @@ class OrchestrationEngine:
                     pass
                 if path_map:
                     dest = path_map.get(dest, dest)
-                node_name = dest if isinstance(dest, str) else None
+                next_node = dest if isinstance(dest, str) else None
             else:
-                node_name = self.order.get(node_name)
+                next_node = self.order.get(node_name)
+
+            if node.node_type == NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT:
+                state.status = "PAUSED"
+                if hasattr(self.review_queue, "enqueue"):
+                    self.review_queue.enqueue(thread_id, state, next_node)
+                return state
+
+            node_name = next_node
         if self.on_complete:
             try:
                 if asyncio.iscoroutinefunction(self.on_complete):
@@ -218,6 +239,16 @@ class OrchestrationEngine:
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""
         return asyncio.run(self.run_async(state, thread_id=thread_id))
+
+    async def resume_from_queue_async(self, run_id: str) -> State:
+        if not self.review_queue:
+            raise ValueError("No review queue configured")
+        state, next_node = self.review_queue.pop(run_id)
+        state.status = None
+        return await self.run_async(state, thread_id=run_id, start_at=next_node)
+
+    def resume_from_queue(self, run_id: str) -> State:
+        return asyncio.run(self.resume_from_queue_async(run_id))
 
     def export_dot(self) -> str:
         lines = ["digraph Orchestration {"]
