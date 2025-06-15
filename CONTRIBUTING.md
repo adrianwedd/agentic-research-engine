@@ -53,34 +53,39 @@ This will apply `black`, `flake8`, and `isort` to your changes.
 
 ## Pre-PR Testing
 
-Run the full test suite before creating a pull request:
+Before opening a pull request, verify your changes locally.
+
+Run the test suite:
 
 ```bash
 pytest -q
 ```
 
-A successful run exits with status code `0`. Any failures will be printed in the
-output and must be fixed prior to submission.
+The command should exit with code `0` and display each test as `PASSED`.
+Any failures must be fixed prior to submission.
 
-After tests pass, run the pre-commit hooks on all files:
+Then execute the pre-commit hooks on all files:
 
 ```bash
 pre-commit run --all-files
 ```
 
-The hooks will format code and perform lint checks.
+This step formats the codebase and runs lint checks.
 
 ## Release Process
 
-Version bumps are performed by creating a git tag that matches the new
-`infra/helm/agent-services/Chart.yaml` version:
+1. Update `infra/helm/agent-services/Chart.yaml` with the new version.
+2. Tag the commit and push the tag:
 
-```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-```
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
 
-Push the tag to GitHub to trigger the CD workflow. A push to `main` automatically
-deploys the tagged image to the `staging` environment via `.github/workflows/cd.yml`.
-Once validated, run the `promote-production` workflow from the GitHub Actions
-UI to deploy the same image to production. Release artifacts include the
-container image and updated Helm chart.
+   Pushing the tag triggers the `.github/workflows/cd.yml` pipeline. The
+   workflow builds the container image and deploys it to the `staging`
+   environment.
+3. After verifying staging, run the `promote-production` workflow from the
+   GitHub Actions UI to deploy the same image to production.
+
+Release artifacts consist of the container image and the packaged Helm chart.
