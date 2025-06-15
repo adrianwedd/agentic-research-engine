@@ -4,7 +4,8 @@ This document defines the standardized tracing schema used throughout the system
 
 ## Versioning
 
-The schema is versioned.  The current version is **1.0** and is exposed in the library `services.tracing.tracing_schema` via `SCHEMA_VERSION`.
+The schema is versioned.  The current version is **1.1** and is exposed in the library `services.tracing.tracing_schema` via `SCHEMA_VERSION`.
+Earlier traces produced with version 1.0 remain readable via `ToolCallTrace.from_attributes`.
 
 ## Tool Call Span
 

@@ -1,6 +1,7 @@
+import importlib
 from typing import Any
 
-import tools.web_search as ws
+ws = importlib.import_module("tools.web_search")
 
 
 class DummyResponse:
