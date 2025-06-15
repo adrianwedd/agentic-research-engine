@@ -3,8 +3,8 @@ from threading import Thread
 import pytest
 import requests
 
+from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
-from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
 from services.tool_registry import AccessDeniedError, create_default_registry
 from tools.ltm_client import consolidate_memory
 

@@ -1,5 +1,6 @@
 import base64
 import functools
+import shutil
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -73,6 +74,9 @@ def test_pdf_extract_no_text(tmp_path):
 
 
 def test_pdf_extract_scanned_with_ocr(tmp_path):
+    pytest.importorskip("pytesseract")
+    if shutil.which("tesseract") is None:
+        pytest.skip("tesseract not installed")
     scan = tmp_path / "scan.pdf"
     _make_scanned_pdf(scan, "HELLO OCR")
     text = pdf_extract(str(scan), use_ocr=True)
