@@ -26,3 +26,27 @@ Useful flags:
 - `--preview` — print the resulting YAML to stdout instead of writing to `.codex/queue.yml`.
 
 The CI pipeline verifies that the queue file matches the tasks. Ensure you run the script before opening a pull request.
+
+## Branch Protection
+
+All development happens on feature branches. Direct pushes to `main` are disabled.
+Pull requests targeting `main` must have at least one approved review and pass all
+required CI status checks before they can be merged.
+
+## Pre-commit Hooks
+
+Formatting and linting are enforced with `pre-commit`. Install the tool and set
+up the git hooks after cloning:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Before submitting a pull request run:
+
+```bash
+pre-commit run --all-files
+```
+
+This will apply `black`, `flake8`, and `isort` to your changes.
