@@ -2,40 +2,9 @@ from __future__ import annotations
 
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Callable, Dict
 from urllib.parse import parse_qs, urlparse
 
-import yaml
-
-
-class AccessDeniedError(Exception):
-    """Raised when an agent lacks permission for a tool."""
-
-
-class ToolRegistry:
-    """Central registry mapping tools to agent permissions."""
-
-    def __init__(self, permissions_path: str | None = None) -> None:
-        self._tools: Dict[str, Callable] = {}
-        self.permissions: Dict[str, list[str]] = {}
-        if permissions_path:
-            self.load_permissions(permissions_path)
-
-    def load_permissions(self, path: str) -> None:
-        data = yaml.safe_load(open(path)) or {}
-        self.permissions = data.get("permissions", {})
-
-    def register_tool(self, name: str, func: Callable) -> None:
-        self._tools[name] = func
-
-    def get_tool(self, agent_role: str, tool_name: str) -> Callable:
-        allowed = self.permissions.get(agent_role, [])
-        if tool_name not in allowed:
-            raise AccessDeniedError(f"{agent_role} cannot access {tool_name}")
-        try:
-            return self._tools[tool_name]
-        except KeyError as exc:
-            raise KeyError(f"Tool not found: {tool_name}") from exc
+from . import AccessDeniedError, ToolRegistry
 
 
 class ToolRegistryServer:
