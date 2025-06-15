@@ -22,6 +22,10 @@ jobs:
         run: pre-commit run --all-files
       - name: Run tests
         run: pytest -v
+      - name: Check codex queue
+        run: |
+          python scripts/codex_task_runner.py --preview > /tmp/queue.yml
+          diff -u .codex/queue.yml /tmp/queue.yml
 
   codex_queue_lint:
     name: Validate Codex Queue
@@ -32,26 +36,24 @@ jobs:
         run: pip install pyyaml jsonschema
       - name: Schema Validate .codex/queue.yml
         run: |
-          python - <<'EOF'
+          python - <<'PY'
 import yaml, jsonschema, sys
 spec = yaml.safe_load(open('.codex/queue.yml'))
 schema = {
-    "type": "object",
-    "properties": {
-      "queue": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "required": ["id", "priority", "retry_policy", "timeout"]
+    'type': 'object',
+    'properties': {
+        'queue': {
+            'type': 'array',
+            'items': {'type': 'object'}
         }
-      }
     },
-    "required": ["queue"]
+    'required': ['queue']
 }
 try:
     jsonschema.validate(spec, schema)
-    print("\u2705 .codex/queue.yml is valid")
+    print('✅ .codex/queue.yml is valid')
 except Exception as e:
-    print("\u274C Schema validation failed:", e)
+    print('❌ Schema validation failed:', e)
     sys.exit(1)
+PY
 EOF

@@ -11,6 +11,14 @@ queue:
       max_retries: 1
       backoff_seconds: 60
     timeout: 300
+  - id: CODEX-EXAMPLE-01
+    priority: low
+    steps:
+      - do something
+    acceptance_criteria:
+      - something done
+    title: Example task
+    timeout: null
 mode: sequential
 on_block:
   explain: true
