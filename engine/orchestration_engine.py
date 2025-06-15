@@ -220,7 +220,7 @@ class OrchestrationEngine:
                 next_node = self.order.get(node_name)
 
             if node.node_type == NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT:
-                state.status = "PAUSED"
+                state.update({"status": "PAUSED"})
                 if hasattr(self.review_queue, "enqueue"):
                     self.review_queue.enqueue(thread_id, state, next_node)
                 return state
@@ -244,7 +244,7 @@ class OrchestrationEngine:
         if not self.review_queue:
             raise ValueError("No review queue configured")
         state, next_node = self.review_queue.pop(run_id)
-        state.status = None
+        state.update({"status": None})
         return await self.run_async(state, thread_id=run_id, start_at=next_node)
 
     def resume_from_queue(self, run_id: str) -> State:
