@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    ports:
+      - "16686:16686"
+      - "14250:14250"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.96.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      SERVICE_VERSION: ${SERVICE_VERSION:-0.1.0}
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      - jaeger
+    restart: unless-stopped
