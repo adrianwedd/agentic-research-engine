@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 
+import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
@@ -10,6 +11,8 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from engine.orchestration_engine import GraphState, create_orchestration_engine
+
+pytestmark = pytest.mark.core
 
 
 class InMemorySpanExporter(SpanExporter):

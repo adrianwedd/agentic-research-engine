@@ -11,6 +11,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 from tools.pdf_reader import pdf_extract
 
+pytestmark = pytest.mark.core
+
+
 HELLO_PDF_B64 = (
     "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2Jq"
     "CjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2Jq"
@@ -136,3 +139,21 @@ def test_pdf_extract_bad_url():
     with pytest.raises(ValueError) as exc:
         pdf_extract("http://localhost:9/missing.pdf", timeout=1)
     assert "Failed to download PDF" in str(exc.value)
+
+
+def test_pdf_extract_invalid_scheme():
+    with pytest.raises(ValueError) as exc:
+        pdf_extract("javascript:alert(1)")
+    assert "Invalid URL scheme" in str(exc.value)
+
+
+def test_pdf_extract_ftp_scheme():
+    with pytest.raises(ValueError):
+        pdf_extract("ftp://example.com/file.pdf")
+
+
+def test_pdf_extract_traversal(tmp_path):
+    malicious = tmp_path / ".." / "etc" / "passwd"
+    with pytest.raises(ValueError) as exc:
+        pdf_extract(str(malicious))
+    assert "directory traversal" in str(exc.value)

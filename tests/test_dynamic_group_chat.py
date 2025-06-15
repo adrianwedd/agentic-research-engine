@@ -1,4 +1,8 @@
+import pytest
+
 from engine.collaboration.group_chat import DynamicGroupChat
+
+pytestmark = pytest.mark.core
 
 
 def test_message_passing():

@@ -16,7 +16,7 @@ def consolidate_memory(
     memory_type: str = "episodic",
     endpoint: Optional[str] = None,
 ) -> str:
-    url = f"{_endpoint(endpoint)}/consolidate"
+    url = f"{_endpoint(endpoint)}/memory"
     resp = requests.post(
         url, json={"memory_type": memory_type, "record": record}, timeout=10
     )
@@ -31,7 +31,7 @@ def retrieve_memory(
     limit: int = 5,
     endpoint: Optional[str] = None,
 ) -> List[Dict]:
-    url = f"{_endpoint(endpoint)}/retrieve"
+    url = f"{_endpoint(endpoint)}/memory"
     resp = requests.get(
         url,
         params={"memory_type": memory_type, "limit": str(limit)},

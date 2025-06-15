@@ -29,11 +29,11 @@ def test_consolidate_and_retrieve(monkeypatch):
         "outcome": {"success": True},
     }
 
-    resp = requests.post(f"{endpoint}/consolidate", json={"record": record})
+    resp = requests.post(f"{endpoint}/memory", json={"record": record})
     assert resp.status_code == 201
 
     resp = requests.get(
-        f"{endpoint}/retrieve", json={"query": {"description": "Write docs"}}
+        f"{endpoint}/memory", json={"query": {"description": "Write docs"}}
     )
     assert resp.status_code == 200
     assert resp.json()["results"]
@@ -57,7 +57,7 @@ def test_invalid_memory_type_and_rbac():
 
     # invalid memory type
     resp = requests.post(
-        f"{endpoint}/consolidate",
+        f"{endpoint}/memory",
         json={"record": {}, "memory_type": "invalid"},
         headers={"X-Role": "editor"},
     )
@@ -65,7 +65,7 @@ def test_invalid_memory_type_and_rbac():
     assert "memory type" in resp.json()["error"]
 
     resp = requests.get(
-        f"{endpoint}/retrieve",
+        f"{endpoint}/memory",
         params={"memory_type": "bad"},
         headers={"X-Role": "viewer"},
         json={"query": {}},
@@ -74,13 +74,13 @@ def test_invalid_memory_type_and_rbac():
 
     # unauthorized role
     resp = requests.post(
-        f"{endpoint}/consolidate",
+        f"{endpoint}/memory",
         json={"record": {}},
         headers={"X-Role": "viewer"},
     )
     assert resp.status_code == 403
 
-    resp = requests.get(f"{endpoint}/retrieve", headers={"X-Role": "guest"})
+    resp = requests.get(f"{endpoint}/memory", headers={"X-Role": "guest"})
     assert resp.status_code == 403
 
     server.httpd.shutdown()

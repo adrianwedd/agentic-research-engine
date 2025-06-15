@@ -74,6 +74,10 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```bash
    bash scripts/agent-setup.sh
    ```
+   The setup script installs from `requirements.txt` using a
+   pinned `constraints.txt` file to avoid dependency resolution loops.
+   For a lean environment run `bash scripts/bootstrap_minimal.sh`. See
+   [docs/onboarding.md](docs/onboarding.md) for troubleshooting tips.
 
 3. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
    ```bash

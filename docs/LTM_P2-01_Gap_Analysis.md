@@ -4,8 +4,8 @@ The following table summarizes the current implementation status of the Long-Ter
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-|POST `/consolidate` accepts `memory_type` and returns **201**|✔ Implemented|Endpoint defaults to `episodic` when not specified|
-|GET `/retrieve` supports query parameters and returns stored record|✔ Implemented|`memory_type` and `limit` accepted via query string|
+|POST `/memory` accepts `memory_type` and returns **201**|✔ Implemented|Endpoint defaults to `episodic` when not specified|
+|GET `/memory` supports query parameters and returns stored record|✔ Implemented|`memory_type` and `limit` accepted via query string|
 |Incoming record schema includes `memory_type` field|✗ Missing|Record sent to `/consolidate` does not contain a `memory_type` attribute|
 |Error handling for unsupported or missing `memory_type`|⚠ Partially implemented|Unknown types raise `ValueError`; missing type silently defaults to `episodic`|
 |LTM service registered in Tool Registry with RBAC|✔ Implemented|`consolidate_memory` and `retrieve_memory` tools registered with `MemoryManager` role|

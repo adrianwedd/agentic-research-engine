@@ -1,6 +1,10 @@
 import json
 
+import pytest
+
 from scripts import dataset_curation
+
+pytestmark = pytest.mark.core
 
 
 def test_validation_flags_and_quarantines(tmp_path):

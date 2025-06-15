@@ -1,3 +1,4 @@
+
 # Security Guidelines
 
 This guide describes how to monitor RBAC failures in the Tool Registry.
@@ -26,6 +27,25 @@ Use `docker compose logs tool-registry` or your monitoring backend to search for
 
 
 This document outlines how to handle secrets and API keys for the agentic-research-engine.
+
+This document outlines security practices for the Agentic Research Engine.
+
+## Dependency Audit Schedule
+
+To monitor third-party vulnerabilities, a weekly audit runs on the first business day (Monday) of each week.
+
+1. **Update dependencies**
+   - Run `pip install --upgrade -r requirements.txt` to update packages.
+   - Commit any changes to `requirements.txt` or generated lock files.
+2. **Run the scan**
+   - Execute `pip-audit -r requirements.txt -o pip_audit_report.json`.
+   - Review the report for new vulnerabilities.
+3. **Triage findings**
+   - Open or update an issue summarizing any new CVEs and plan remediation.
+   - If no issues are found, note the successful audit in the issue tracker.
+
+Push the updates and open a pull request to trigger CI. The scheduled workflow runs `pip-audit` automatically and creates an issue if new vulnerabilities are detected.
+
 
 ## Secrets Management
 
@@ -85,3 +105,27 @@ The tools read API keys from environment variables:
 - [`tools/fact_check.py`](../tools/fact_check.py) lines 26–46
 
 Environment variable injection in CI happens in [`ci.yml`](../.github/workflows/ci.yml) starting around line 13.
+
+# Dependency Security Scanning
+
+The CI workflow includes a job named `security:dependencies` that checks project dependencies for known vulnerabilities using **pip-audit**.
+
+The job runs on every pull request and pushes to `main`. A report is generated at `security/pip_audit_report.json` and uploaded as a workflow artifact.
+
+## Interpreting the Report
+
+1. Download the artifact from the workflow run.
+2. Open `pip_audit_report.json` and inspect the listed vulnerabilities.
+3. The job fails when any vulnerability with a severity of **high** or **critical** is detected. Lower-severity issues are reported but do not block the build.
+4. Update affected packages to resolve vulnerabilities. Rerun the scan to verify.
+
+## Running Locally
+
+```bash
+pip install pip-audit
+pip-audit -r requirements.txt -f json -o security/pip_audit_report.json
+python scripts/check_pip_audit.py security/pip_audit_report.json
+```
+
+The script exits with a non-zero status if high or critical vulnerabilities are present.
+

@@ -6,12 +6,12 @@ This document catalogs the current HTTP APIs and evaluates them against common d
 
 | Service | Method & Path | Payload | Success Status | Error Format |
 |---------|---------------|---------|----------------|--------------|
-| LTM Service | `POST /consolidate` | `{memory_type, record}` JSON body | `201` | `{"error": msg}` |
-| LTM Service | `GET /retrieve` | JSON body `{query}` with query params `memory_type`, `limit` | `200` | `{"error": msg}` |
+| LTM Service | `POST /memory` | `{memory_type, record}` JSON body | `201` | `{"error": msg}` |
+| LTM Service | `GET /memory` | JSON body `{query}` with query params `memory_type`, `limit` | `200` | `{"error": msg}` |
 | Tool Registry | `GET /tool` | Query params `agent`, `name` | `200` | `{"error": msg}` on 403/404 |
 | HITL Review | `GET /tasks` | none | `200` | empty body on 404 |
-| HITL Review | `POST /tasks/<id>/approve` | none | `200` | `{"error": "not found"}` |
-| HITL Review | `POST /tasks/<id>/reject` | none | `200` | `{"error": "not found"}` |
+| HITL Review | `POST /tasks/<id>/approval` | none | `200` | `{"error": "not found"}` |
+| HITL Review | `POST /tasks/<id>/rejection` | none | `200` | `{"error": "not found"}` |
 
 ## Naming & Structure
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from fastapi import Body, FastAPI, Header, HTTPException, Query
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 try:  # Avoid heavy imports when generating docs
@@ -10,6 +11,9 @@ try:  # Avoid heavy imports when generating docs
 except Exception:  # pragma: no cover - fallback for spec generation
     ALLOWED_MEMORY_TYPES = {"episodic", "semantic", "procedural"}
     ROLE_PERMISSIONS = {
+        ("POST", "/memory"): {"editor"},
+        ("GET", "/memory"): {"viewer", "editor"},
+        # Deprecated paths kept for one release cycle
         ("POST", "/consolidate"): {"editor"},
         ("GET", "/retrieve"): {"viewer", "editor"},
     }
@@ -64,34 +68,43 @@ def create_app(service: LTMService) -> FastAPI:
         openapi_url="/docs/openapi.json",
     )
 
-    @app.post("/consolidate", summary="Store an experience")
-    async def consolidate(
+    @app.post("/memory", summary="Store an experience")
+    async def create_memory(
         req: ConsolidateRequest,
         x_role: str | None = Header(None),
     ) -> ConsolidateResponse:
         role = x_role or ""
-        if not _check_role("POST", "/consolidate", role):
+        if not _check_role("POST", "/memory", role):
             raise HTTPException(status_code=403, detail="forbidden")
         if req.memory_type not in ALLOWED_MEMORY_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported memory type")
         rec_id = service.consolidate(req.memory_type, req.record)
         return ConsolidateResponse(id=rec_id)
 
-    @app.get("/retrieve", summary="Retrieve similar experiences")
-    async def retrieve(
+    @app.post("/consolidate", include_in_schema=False)
+    async def consolidate() -> RedirectResponse:
+        return RedirectResponse(url="/memory", status_code=308)
+
+    @app.get("/memory", summary="Retrieve similar experiences")
+    async def get_memory(
         memory_type: str = Query("episodic"),
         limit: int = Query(5, ge=1, le=50),
         req: RetrieveBody = Body(default_factory=RetrieveBody),
         x_role: str | None = Header(None),
     ) -> RetrieveResponse:
         role = x_role or ""
-        if not _check_role("GET", "/retrieve", role):
+        if not _check_role("GET", "/memory", role):
             raise HTTPException(status_code=403, detail="forbidden")
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported memory type")
         query = req.query or req.task_context or {}
         results = service.retrieve(memory_type, query, limit=limit)
         return RetrieveResponse(results=results)
+
+    @app.get("/retrieve", include_in_schema=False)
+    async def retrieve(memory_type: str = Query("episodic"), limit: int = Query(5)) -> RedirectResponse:
+        query = f"memory_type={memory_type}&limit={limit}"
+        return RedirectResponse(url=f"/memory?{query}", status_code=308)
 
     return app
 

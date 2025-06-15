@@ -14,7 +14,6 @@ jsonschema==4.21.1
 pykwalify==1.8.0
 fastapi==0.110.0
 uvicorn==0.27.0
-
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
 opentelemetry-exporter-otlp==1.24.0
