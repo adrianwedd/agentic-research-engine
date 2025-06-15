@@ -7,6 +7,8 @@ import pytest
 
 from tools.html_scraper import html_scraper
 
+pytestmark = pytest.mark.core
+
 
 def _serve_dir(path: Path):
     handler = functools.partial(SimpleHTTPRequestHandler, directory=str(path))

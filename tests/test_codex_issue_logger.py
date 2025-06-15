@@ -4,10 +4,13 @@ import os
 import sys
 from unittest import mock
 
+import pytest
 import requests
 import yaml
 
 from scripts import issue_logger
+
+pytestmark = pytest.mark.core
 
 
 def test_create_issue_success():

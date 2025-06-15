@@ -11,6 +11,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 from tools.pdf_reader import pdf_extract
 
+pytestmark = pytest.mark.core
+
+
 HELLO_PDF_B64 = (
     "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2Jq"
     "CjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2Jq"

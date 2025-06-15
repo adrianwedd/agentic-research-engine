@@ -3,9 +3,12 @@ from __future__ import annotations
 """Simple in-memory Tool Registry with RBAC controls."""
 
 import os
+from datetime import datetime
 from typing import Callable, Dict, Iterable, Optional
 
 import yaml
+from opentelemetry import context, trace
+from opentelemetry.trace import NonRecordingSpan, SpanContext
 
 from tools import (
     consolidate_memory,
@@ -26,6 +29,7 @@ class ToolRegistry:
     def __init__(self) -> None:
         self._tools: Dict[str, Callable[..., object]] = {}
         self._permissions: Dict[str, set[str]] = {}
+        self._init_contexts: Dict[str, SpanContext] = {}
 
     def register_tool(
         self,
@@ -35,6 +39,22 @@ class ToolRegistry:
         allowed_roles: Optional[Iterable[str]] = None,
     ) -> None:
         """Register a tool and its allowed roles."""
+        tracer = trace.get_tracer(__name__)
+        parent_span = trace.get_current_span()
+        parent_id = (
+            parent_span.get_span_context().span_id
+            if parent_span.get_span_context().is_valid
+            else 0
+        )
+        with tracer.start_as_current_span(
+            "tool.init",
+            attributes={
+                "tool.name": name,
+                "init.timestamp": datetime.utcnow().isoformat(),
+                "parent.span_id": hex(parent_id),
+            },
+        ) as span:
+            self._init_contexts[name] = span.get_span_context()
         self._tools[name] = tool
         if allowed_roles is not None:
             self._permissions[name] = set(allowed_roles)
@@ -48,7 +68,21 @@ class ToolRegistry:
         allowed = self._permissions.get(name)
         if allowed and role not in allowed:
             raise AccessDeniedError(f"Role '{role}' cannot access tool '{name}'")
-        return self._tools[name]
+        tool = self._tools[name]
+        init_ctx = self._init_contexts.get(name)
+
+        if init_ctx is None:
+            return tool
+
+        def wrapped(*args: object, **kwargs: object) -> object:
+            ctx = trace.set_span_in_context(NonRecordingSpan(init_ctx))
+            token = context.attach(ctx)
+            try:
+                return tool(*args, **kwargs)
+            finally:
+                context.detach(token)
+
+        return wrapped
 
     def load_permissions(self, path: str) -> None:
         """Load role permissions from a YAML config."""

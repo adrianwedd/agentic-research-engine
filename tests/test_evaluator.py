@@ -1,4 +1,8 @@
+import pytest
+
 from agents.evaluator import EvaluatorAgent
+
+pytestmark = pytest.mark.core
 
 
 def test_verify_factual_accuracy_flags_unsupported():
