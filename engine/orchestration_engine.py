@@ -129,6 +129,7 @@ class OrchestrationEngine:
     routers_map: Dict[
         str, tuple[Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(init=False, default_factory=dict)
+    on_complete: Callable[[State], Awaitable[State] | State] | None = None
 
     def add_node(
         self,
@@ -204,6 +205,14 @@ class OrchestrationEngine:
                 node_name = dest if isinstance(dest, str) else None
             else:
                 node_name = self.order.get(node_name)
+        if self.on_complete:
+            try:
+                if asyncio.iscoroutinefunction(self.on_complete):
+                    state = await self.on_complete(state)
+                else:
+                    state = self.on_complete(state)
+            except Exception:  # pragma: no cover - defensive
+                logger.exception("on_complete hook failed")
         return state
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
@@ -224,7 +233,9 @@ class OrchestrationEngine:
         return "\n".join(lines)
 
 
-def create_orchestration_engine() -> OrchestrationEngine:
+def create_orchestration_engine(
+    *, memory_manager: Callable[[State], Awaitable[State] | State] | None = None
+) -> OrchestrationEngine:
     """Factory function for the core orchestration engine."""
 
-    return OrchestrationEngine()
+    return OrchestrationEngine(on_complete=memory_manager)
