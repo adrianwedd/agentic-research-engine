@@ -1,6 +1,7 @@
 import base64
 import functools
 import shutil
+import sys
 import threading
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -83,6 +84,20 @@ def test_pdf_extract_scanned_with_ocr(tmp_path):
     assert "HELLO" in text
 
 
+def test_pdf_extract_scanned_auto_ocr(tmp_path, monkeypatch):
+    scan = tmp_path / "scan_auto.pdf"
+    _make_scanned_pdf(scan, "AUTO OCR")
+
+    class DummyTess:
+        @staticmethod
+        def image_to_string(img):
+            return "AUTO OCR"
+
+    monkeypatch.setitem(sys.modules, "pytesseract", DummyTess)
+    text = pdf_extract(str(scan))
+    assert "AUTO OCR" in text
+
+
 def test_pdf_extract_bad_path():
     with pytest.raises(FileNotFoundError):
         pdf_extract("/no/such/file.pdf")
@@ -94,6 +109,27 @@ def test_pdf_extract_invalid_pdf(tmp_path):
     with pytest.raises(ValueError) as exc:
         pdf_extract(str(bad))
     assert "Invalid PDF" in str(exc.value)
+
+
+def test_pdf_extract_corrupt_pdf(tmp_path):
+    bad = tmp_path / "corrupt.pdf"
+    bad.write_bytes(b"%PDF-1.4 corrupted")
+    with pytest.raises(ValueError) as exc:
+        pdf_extract(str(bad))
+    assert "Invalid PDF" in str(exc.value)
+
+
+def test_pdf_extract_encrypted(monkeypatch):
+    class DummyExc(Exception):
+        pass
+
+    def dummy_open(*args, **kwargs):
+        raise DummyExc("encrypted")
+
+    monkeypatch.setattr(pdf_extract.__globals__["pdfplumber"], "open", dummy_open)
+    with pytest.raises(ValueError) as exc:
+        pdf_extract("encrypted.pdf")
+    assert "Encrypted PDF" in str(exc.value)
 
 
 def test_pdf_extract_bad_url():
