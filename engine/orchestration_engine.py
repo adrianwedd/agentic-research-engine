@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
+from typing import Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.constants import CONFIG_KEY_NODE_FINISHED
@@ -27,34 +27,15 @@ logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 
-class GraphState(BaseModel):
-    """Simple container for data exchanged between graph nodes."""
-
-    data: Dict[str, Any] = Field(default_factory=dict)
-
-    def update(self, other: Dict[str, Any]) -> None:
-        self.data.update(other)
-
-    def to_json(self) -> str:  # pragma: no cover - thin wrapper
-        return self.model_dump_json()
-
-    @classmethod
-    def from_json(cls, payload: str) -> "GraphState":  # pragma: no cover - thin wrapper
-        return cls.model_validate_json(payload)
-
-
 @dataclass
 class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: (
-        Callable[[GraphState], Awaitable[GraphState]]
-        | Callable[[GraphState], GraphState]
-    )
+    func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
     retries: int = 0
 
-    async def run(self, state: GraphState) -> GraphState:
+    async def run(self, state: State) -> State:
         for attempt in range(self.retries + 1):
             try:
                 with tracer.start_as_current_span(f"node:{self.name}"):
@@ -63,6 +44,7 @@ class Node:
                     else:
                         result = self.func(state)
                 if isinstance(result, GraphState):
+
                     return result
                 if isinstance(result, dict):
                     state.update(result)
@@ -77,45 +59,23 @@ class Node:
 
 
 async def parallel_subgraphs(
-    subgraphs: Sequence["OrchestrationEngine"], state: GraphState
-) -> GraphState:
+    subgraphs: Sequence["OrchestrationEngine"], state: State
+) -> State:
     """Execute multiple subgraphs concurrently and merge their state."""
 
     results = await asyncio.gather(*(sg.run_async(state) for sg in subgraphs))
-    merged = GraphState(data=state.data.copy())
+    merged = State(
+        data=state.data.copy(), messages=list(state.messages), status=state.status
+    )
     for res in results:
         merged.update(res.data)
     return merged
 
 
-def _build_graph(
-    nodes: Iterable[Node],
-    edges: Iterable[tuple[str, str]] | None = None,
-    routers: (
-        Iterable[
-            tuple[
-                str, Callable[[GraphState], str | Iterable[str]], Dict[str, str] | None
-            ]
-        ]
-        | None
-    ) = None,
-    entrypoint: str | None = None,
-    finish: str | None = None,
-) -> StateGraph:
-    builder = StateGraph(GraphState)
-    for node in nodes:
-        builder.add_node(node.name, node.run)
-    if edges:
-        for start, end in edges:
-            builder.add_edge(start, end)
-    if routers:
-        for start, router, path_map in routers:
-            builder.add_conditional_edges(start, router, path_map)
-    if entrypoint:
-        builder.set_entry_point(entrypoint)
-    if finish:
-        builder.set_finish_point(finish)
-    return builder
+def _build_order(edges: Iterable[tuple[str, str]]) -> Dict[str, str]:
+    """Convert edge list to lookup map."""
+
+    return {start: end for start, end in edges}
 
 
 @dataclass
@@ -125,7 +85,7 @@ class OrchestrationEngine:
     nodes: Dict[str, Node] = field(default_factory=dict)
     edges: list[tuple[str, str]] = field(default_factory=list)
     routers: list[
-        tuple[str, Callable[[GraphState], str | Iterable[str]], Dict[str, str] | None]
+        tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
     checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
     _graph: Optional[Any] = field(init=False, default=None)
@@ -134,10 +94,7 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: (
-            Callable[[GraphState], Awaitable[GraphState]]
-            | Callable[[GraphState], GraphState]
-        ),
+        func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
         *,
         retries: int = 0,
     ) -> None:
@@ -149,7 +106,7 @@ class OrchestrationEngine:
     def add_router(
         self,
         start: str,
-        router: Callable[[GraphState], str | Iterable[str]],
+        router: Callable[[State], str | Iterable[str]],
         path_map: Dict[str, str] | None = None,
     ) -> None:
         self.routers.append((start, router, path_map))
@@ -163,17 +120,15 @@ class OrchestrationEngine:
         self._last_node = name
 
     def build(self) -> None:
-        entry = next(iter(self.nodes)) if self.nodes else None
-        finish = list(self.nodes)[-1] if self.nodes else None
-        builder = _build_graph(
-            self.nodes.values(), self.edges, self.routers, entry, finish
-        )
-        self._graph = builder.compile(checkpointer=self.checkpointer)
+        self.entry = next(iter(self.nodes)) if self.nodes else None
+        self.order = _build_order(self.edges)
+        self.finish = list(self.nodes)[-1] if self.nodes else None
+        self.routers_map = {
+            start: (router, path_map) for start, router, path_map in self.routers
+        }
 
-    async def run_async(
-        self, state: GraphState, *, thread_id: str = "default"
-    ) -> GraphState:
-        if self._graph is None:
+    async def run_async(self, state: State, *, thread_id: str = "default") -> State:
+        if self.entry is None:
             self.build()
         self._last_node = None
         config = {
