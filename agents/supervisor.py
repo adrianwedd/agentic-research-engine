@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from jsonschema import ValidationError, validate
+from pykwalify.core import Core
 
 from tools.ltm_client import retrieve_memory
 
@@ -26,7 +26,7 @@ class State:
 
 class SupervisorAgent:
     SCHEMA_PATH = (
-        Path(__file__).resolve().parent.parent / "docs" / "supervisor_plan_schema.yaml"
+        Path(__file__).resolve().parent.parent / "schemas" / "supervisor_plan.yaml"
     )
 
     def __init__(
@@ -113,14 +113,14 @@ class SupervisorAgent:
     # Validation helpers
     # ------------------------------------------------------------------
     def validate_plan(self, plan: Dict[str, Any]) -> None:
-        """Validate a plan dictionary against the JSON schema."""
+        """Validate a plan dictionary against the YAML schema."""
 
         if not self.plan_schema:
             return
         try:
-            validate(instance=plan, schema=self.plan_schema)
-        except ValidationError as exc:
-            raise ValueError(f"plan validation error: {exc.message}") from exc
+            Core(source_data=plan, schema_data=self.plan_schema).validate()
+        except Exception as exc:
+            raise ValueError(f"plan validation error: {exc}") from exc
 
     # ------------------------------------------------------------------
     # YAML helpers

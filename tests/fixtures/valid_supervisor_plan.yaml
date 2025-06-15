@@ -1,0 +1,16 @@
+query: sample
+context: []
+graph:
+  nodes:
+    - id: research_0
+      agent: WebResearcher
+      topic: sample
+    - id: synthesis
+      agent: Supervisor
+      task: synthesize
+  edges:
+    - from: research_0
+      to: synthesis
+evaluation:
+  metric: quality
+

@@ -1,0 +1,6 @@
+query: q
+graph:
+  nodes:
+    - id: n1
+      agent: WebResearcher
+
