@@ -1,3 +1,4 @@
+from pathlib import Path
 from threading import Thread
 
 import pytest
@@ -127,3 +128,19 @@ def test_plan_handles_no_memories():
     plan = agent.plan_research_task("missing")
     assert plan["context"] == []
     server.httpd.shutdown()
+
+
+def test_valid_plan_fixture_passes_schema():
+    agent = SupervisorAgent()
+    path = Path("tests/fixtures/valid_supervisor_plan.yaml")
+    yaml_text = path.read_text(encoding="utf-8")
+    plan = agent.parse_plan(yaml_text)
+    assert plan["query"] == "sample"
+
+
+def test_invalid_plan_fixture_fails_schema():
+    agent = SupervisorAgent()
+    path = Path("tests/fixtures/invalid_supervisor_plan.yaml")
+    yaml_text = path.read_text(encoding="utf-8")
+    with pytest.raises(ValueError):
+        agent.parse_plan(yaml_text)

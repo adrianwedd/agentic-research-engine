@@ -10,6 +10,7 @@ Pillow
 beautifulsoup4
 readability-lxml
 jsonschema
+pykwalify
 
 opentelemetry-api
 opentelemetry-sdk
