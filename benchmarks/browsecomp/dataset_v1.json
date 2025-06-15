@@ -11,7 +11,7 @@
   },
   {
     "id": 3,
-    "question": "In which European city would you find the palace where Mozart's opera 'Don Giovanni' premiered in 1787?",
+    "question": "In which European city is the theatre located where Mozart's opera 'Don Giovanni' premiered in 1787?",
     "answer": "Prague"
   },
   {
@@ -96,7 +96,7 @@
   },
   {
     "id": 20,
-    "question": "What instrument is Louis Armstrong most closely associated with?",
+    "question": "Which instrument did Louis Armstrong primarily play, establishing his reputation in jazz?",
     "answer": "Trumpet"
   },
   {
@@ -131,7 +131,7 @@
   },
   {
     "id": 27,
-    "question": "What is the freezing point of water in degrees Celsius?",
+    "question": "At what temperature in degrees Celsius does pure water freeze at standard atmospheric pressure?",
     "answer": "0"
   },
   {
@@ -151,8 +151,8 @@
   },
   {
     "id": 31,
-    "question": "Which animal is considered the largest land animal?",
-    "answer": "Elephant"
+    "question": "Which species is recognized as the largest living land animal?",
+    "answer": "African bush elephant"
   },
   {
     "id": 32,
@@ -201,7 +201,7 @@
   },
   {
     "id": 41,
-    "question": "Who is the founder of Microsoft?",
+    "question": "Which Microsoft co-founder served as the company's first CEO until 2000?",
     "answer": "Bill Gates"
   },
   {
@@ -221,8 +221,8 @@
   },
   {
     "id": 45,
-    "question": "Which famous scientist is known for the law of gravity after observing a falling apple?",
-    "answer": "Isaac Newton"
+    "question": "Which 16th-century astronomer proposed a heliocentric model that placed the Sun at the center of the universe?",
+    "answer": "Nicolaus Copernicus"
   },
   {
     "id": 46,
