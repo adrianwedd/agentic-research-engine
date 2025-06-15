@@ -56,6 +56,14 @@ steps: []
 acceptance_criteria: []
 ```
 
+```codex-task
+id: P1-05
+title: Define core agent action tracing schema
+status: done
+steps: []
+acceptance_criteria: []
+```
+
 ## P1-03: Implement CD Pipeline for automated deployments
 
 **Goal:** Implement a CD pipeline that automates the deployment of all system services.
@@ -1049,11 +1057,12 @@ acceptance_criteria: []
 
 ```codex-task
 id: P5-02
+title: Integrate tracing schema with agents
+
 title: Docker-based OTel collector service
 
 title: Add rollback support for CD pipeline
 steps: []
 acceptance_criteria: []
 ```
-
 
