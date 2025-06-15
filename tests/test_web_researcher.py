@@ -41,3 +41,18 @@ def test_research_topic_uses_tools():
     assert len(result["sources"]) == 2
     assert result["confidence"] == 0.9
     assert calls["summarize"] == 2
+
+
+def test_summarize_to_state_adds_message():
+    def summarize(text):
+        return "summary"
+
+    registry = {"web_search": lambda q: [], "summarize": summarize}
+    agent = WebResearcherAgent(registry)
+
+    from engine.state import State
+
+    state = State(data={"raw_text": "word " * 5000, "task": "topic"})
+    agent.summarize_to_state(state)
+
+    assert state.messages[-1]["content"] == "summary"
