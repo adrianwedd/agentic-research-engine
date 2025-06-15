@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from services.monitoring.system_monitor import SystemMonitor
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
-from opentelemetry.sdk.trace.export import SpanExportResult, SpanExporter
+from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+
+from services.monitoring.system_monitor import SystemMonitor
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -48,4 +49,3 @@ def test_track_agent_performance_records_metrics_and_span():
     span = span_exporter.spans[0]
     assert span.attributes["agent_id"] == "agent1"
     assert span.attributes["task_completion_time"] == 2.0
-
