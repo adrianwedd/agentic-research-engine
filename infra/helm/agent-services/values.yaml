@@ -7,3 +7,4 @@ service:
   type: ClusterIP
   port: 80
 color: blue
+workerCount: 4
