@@ -2,6 +2,7 @@ permissions:
   WebResearcher:
     - web_search
     - pdf_extract
+    - html_scraper
   MemoryManager:
     - consolidate_memory
     - retrieve_memory
