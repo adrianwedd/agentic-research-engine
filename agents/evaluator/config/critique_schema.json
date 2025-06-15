@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evaluator Critique",
+  "type": "object",
+  "required": ["overall_score", "criteria_breakdown", "feedback_text"],
+  "properties": {
+    "overall_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "criteria_breakdown": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "minProperties": 1
+    },
+    "feedback_text": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
