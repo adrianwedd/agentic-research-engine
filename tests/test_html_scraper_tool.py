@@ -50,6 +50,16 @@ def test_html_scraper_bad_url():
         html_scraper("http://localhost:9/missing", timeout=1)
 
 
+def test_html_scraper_invalid_scheme():
+    with pytest.raises(ValueError):
+        html_scraper("javascript:alert(1)")
+
+
+def test_html_scraper_ftp_scheme():
+    with pytest.raises(ValueError):
+        html_scraper("ftp://example.com/")
+
+
 def test_html_scraper_dynamic_content(tmp_path):
     html = tmp_path / "dynamic.html"
     html.write_text(
@@ -66,3 +76,9 @@ def test_html_scraper_dynamic_content(tmp_path):
     finally:
         httpd.shutdown()
         t.join()
+
+
+def test_html_scraper_traversal(tmp_path):
+    path = tmp_path / ".." / "etc" / "passwd.html"
+    with pytest.raises(ValueError):
+        html_scraper(f"file://{path}")
