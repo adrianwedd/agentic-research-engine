@@ -18,10 +18,13 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.constants import CONFIG_KEY_NODE_FINISHED
 from langgraph.graph import StateGraph
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 class GraphState(BaseModel):
@@ -54,10 +57,11 @@ class Node:
     async def run(self, state: GraphState) -> GraphState:
         for attempt in range(self.retries + 1):
             try:
-                if asyncio.iscoroutinefunction(self.func):
-                    result = await self.func(state)
-                else:
-                    result = self.func(state)
+                with tracer.start_as_current_span(f"node:{self.name}"):
+                    if asyncio.iscoroutinefunction(self.func):
+                        result = await self.func(state)
+                    else:
+                        result = self.func(state)
                 if isinstance(result, GraphState):
                     return result
                 if isinstance(result, dict):
@@ -125,6 +129,7 @@ class OrchestrationEngine:
     ] = field(default_factory=list)
     checkpointer: InMemorySaver = field(default_factory=InMemorySaver)
     _graph: Optional[Any] = field(init=False, default=None)
+    _last_node: Optional[str] = field(init=False, default=None)
 
     def add_node(
         self,
@@ -149,6 +154,14 @@ class OrchestrationEngine:
     ) -> None:
         self.routers.append((start, router, path_map))
 
+    def _on_node_finished(self, name: str) -> None:
+        if self._last_node is not None and self._last_node != name:
+            with tracer.start_as_current_span(
+                "edge", attributes={"from": self._last_node, "to": name}
+            ):
+                pass
+        self._last_node = name
+
     def build(self) -> None:
         entry = next(iter(self.nodes)) if self.nodes else None
         finish = list(self.nodes)[-1] if self.nodes else None
@@ -162,14 +175,41 @@ class OrchestrationEngine:
     ) -> GraphState:
         if self._graph is None:
             self.build()
-        config = {"configurable": {"thread_id": thread_id}}
-        return await self._graph.ainvoke(state, config)
+        self._last_node = None
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
+            }
+        }
+        result = await self._graph.ainvoke(state, config)
+        return GraphState.model_validate(result)
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         if self._graph is None:
             self.build()
-        config = {"configurable": {"thread_id": thread_id}}
-        return self._graph.invoke(state, config)
+        self._last_node = None
+        config = {
+            "configurable": {
+                "thread_id": thread_id,
+                CONFIG_KEY_NODE_FINISHED: self._on_node_finished,
+            }
+        }
+        result = self._graph.invoke(state, config)
+        return GraphState.model_validate(result)
+
+    def export_dot(self) -> str:
+        lines = ["digraph Orchestration {"]
+        for name in self.nodes:
+            lines.append(f'  "{name}";')
+        for start, end in self.edges:
+            lines.append(f'  "{start}" -> "{end}";')
+        for start, _, path_map in self.routers:
+            if path_map:
+                for label, dest in path_map.items():
+                    lines.append(f'  "{start}" -> "{dest}" [label="{label}"];')
+        lines.append("}")
+        return "\n".join(lines)
 
 
 def create_orchestration_engine() -> OrchestrationEngine:
