@@ -19,8 +19,13 @@ class State:
 
 
 class SupervisorAgent:
-    def __init__(self, ltm_service, orchestration_engine, agent_registry=None):
-        """Initialize supervisor with memory and orchestration capabilities."""
+    def __init__(
+        self,
+        ltm_service: Optional[Any] = None,
+        orchestration_engine: Optional[Any] = None,
+        agent_registry: Optional[Any] = None,
+    ) -> None:
+        """Initialize supervisor with optional services."""
 
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
@@ -51,3 +56,17 @@ class SupervisorAgent:
         }
 
         return plan
+
+    def analyze_query(self, query: str) -> State:
+        """Perform initial analysis and create the workflow state."""
+
+        plan = self.plan_research_task(query)
+        return State(initial_query=query, plan=plan, context=plan.get("context", []))
+
+    def __call__(self, graph_state: Any) -> Any:
+        """Node entrypoint for the orchestration graph."""
+
+        query = graph_state.data.get("query", "")
+        state = self.analyze_query(query)
+        graph_state.update({"state": state})
+        return graph_state
