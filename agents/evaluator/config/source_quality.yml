@@ -1,0 +1,6 @@
+allowlist:
+  - jstor.org
+  - nature.com
+blocklist:
+  - clickbait.com
+  - contentfarm.biz
