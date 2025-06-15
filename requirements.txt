@@ -25,5 +25,6 @@ googletrans==4.0.2
 openai
 datasets
 transformers
+trl
 
 pytest-asyncio==0.23.6
