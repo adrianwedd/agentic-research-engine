@@ -1,8 +1,11 @@
+import io
 import json
 import os
+import sys
 from unittest import mock
 
 import requests
+import yaml
 
 from scripts import issue_logger
 
@@ -150,3 +153,40 @@ def test_store_pending_worklog_atomic(tmp_path):
     assert len(data) == 2
     assert data[0]["target"] == "t1"
     assert data[1]["target"] == "t2"
+
+
+def test_read_body_sources(tmp_path, monkeypatch):
+    p = tmp_path / "b.txt"
+    p.write_text("hello")
+    assert issue_logger._read_body(str(p)) == "hello"
+    monkeypatch.setattr(sys, "stdin", io.StringIO("bye"))
+    assert issue_logger._read_body("-") == "bye"
+
+
+def test_cli_worklog(monkeypatch, tmp_path):
+    wl_file = tmp_path / "wl.yml"
+    data = {"task_name": "t"}
+    wl_file.write_text(yaml.safe_dump(data))
+
+    called = {}
+
+    def fake(url, d):
+        called["url"] = url
+        called["data"] = d
+
+    monkeypatch.setattr(issue_logger, "post_worklog_comment", fake)
+
+    issue_logger.main(
+        [
+            "worklog",
+            "--repo",
+            "u/r",
+            "--issue",
+            "2",
+            "--worklog",
+            str(wl_file),
+        ]
+    )
+
+    assert called["url"] == f"{issue_logger.GITHUB_API}/repos/u/r/issues/2"
+    assert called["data"] == data
