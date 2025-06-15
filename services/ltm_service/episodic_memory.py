@@ -1,6 +1,7 @@
 """Episodic memory module for storing and retrieving past task experiences."""
 
 import json
+import os
 import time
 import uuid
 from collections import defaultdict
@@ -9,7 +10,12 @@ from typing import Dict, Iterable, List, Tuple
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-from .embedding_client import EmbeddingClient, EmbeddingError, SimpleEmbeddingClient
+from .embedding_client import (
+    CachedEmbeddingClient,
+    EmbeddingClient,
+    EmbeddingError,
+    SimpleEmbeddingClient,
+)
 from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
 
 
@@ -51,6 +57,10 @@ class EpisodicMemoryService:
 
         self.storage = storage_backend
         self.embedding_client = embedding_client or SimpleEmbeddingClient()
+
+        cache_size = int(os.getenv("EMBED_CACHE_SIZE", "0") or 0)
+        if cache_size > 0:
+            self.embedding_client = CachedEmbeddingClient(self.embedding_client, cache_size)
         if vector_store is None:
             try:
                 self.vector_store = WeaviateVectorStore()
