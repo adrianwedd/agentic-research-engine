@@ -29,7 +29,6 @@ CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 GraphState = State
 
 logger = logging.getLogger(__name__)
-tracer = trace.get_tracer(__name__)
 
 
 class InMemorySaver:
@@ -56,17 +55,26 @@ class Node:
     async def run(self, state: State) -> State:
         for attempt in range(self.retries + 1):
             try:
-                with tracer.start_as_current_span(f"node:{self.name}"):
+                tracer = trace.get_tracer(__name__)
+                with tracer.start_as_current_span(
+                    f"node:{self.name}",
+                    attributes={"state_in": state.model_dump_json()},
+                ) as span:
                     if asyncio.iscoroutinefunction(self.func):
                         result = await self.func(state)
                     else:
                         result = self.func(state)
-                if isinstance(result, GraphState):
-                    return result
-                if isinstance(result, dict):
-                    state.update(result)
-                    return state
-                raise ValueError("Node returned unsupported type")
+
+                    if isinstance(result, GraphState):
+                        out_state = result
+                    elif isinstance(result, dict):
+                        state.update(result)
+                        out_state = state
+                    else:
+                        raise ValueError("Node returned unsupported type")
+
+                    span.set_attribute("state_out", out_state.model_dump_json())
+                    return out_state
             except Exception as exc:  # pragma: no cover - logging path
                 logger.exception("Node %s failed on attempt %s", self.name, attempt + 1)
                 if attempt >= self.retries:
@@ -144,6 +152,7 @@ class OrchestrationEngine:
 
     def _on_node_finished(self, name: str) -> None:
         if self._last_node is not None and self._last_node != name:
+            tracer = trace.get_tracer(__name__)
             with tracer.start_as_current_span(
                 "edge", attributes={"from": self._last_node, "to": name}
             ):
@@ -184,6 +193,12 @@ class OrchestrationEngine:
             if node_name in self.routers_map:
                 router, path_map = self.routers_map[node_name]
                 dest = router(state)
+                tracer = trace.get_tracer(__name__)
+                with tracer.start_as_current_span(
+                    "route",
+                    attributes={"node": node_name, "decision": str(dest)},
+                ):
+                    pass
                 if path_map:
                     dest = path_map.get(dest, dest)
                 node_name = dest if isinstance(dest, str) else None

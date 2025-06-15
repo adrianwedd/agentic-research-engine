@@ -58,6 +58,16 @@ def test_sequential_execution_and_spans():
     span_names = [span.name for span in exporter.spans]
     assert "node:A" in span_names
     assert "node:B" in span_names
+    node_a_span = next(s for s in exporter.spans if s.name == "node:A")
+    node_b_span = next(s for s in exporter.spans if s.name == "node:B")
+    assert "state_in" in node_a_span.attributes
+    assert "state_out" in node_a_span.attributes
+    assert "state_in" in node_b_span.attributes
+    assert "state_out" in node_b_span.attributes
+    assert any(
+        s.name == "state.update" and s.attributes["action"] == "update"
+        for s in exporter.spans
+    )
     assert any(
         span.name == "edge"
         and span.attributes["from"] == "A"

@@ -26,3 +26,46 @@ Earlier traces produced with version 1.0 remain readable via `ToolCallTrace.from
 | `latency_ms`    | Latency in milliseconds of the call. |
 
 Agents are encouraged to populate token counts and latency whenever possible.
+
+## Orchestration Spans
+
+The orchestration engine records how state flows through the graph using a
+number of additional span types.
+
+### Node Span
+
+Each node execution creates a span named `node:<name>`. Two attributes capture
+the state before and after the node runs:
+
+| Attribute     | Description                                  |
+| ------------- | -------------------------------------------- |
+| `state_in`    | JSON dump of the state at node entry         |
+| `state_out`   | JSON dump of the state after the node exits  |
+
+### Edge Span
+
+Transitions between nodes are recorded with a span named `edge`.
+
+| Attribute | Description                            |
+| --------- | -------------------------------------- |
+| `from`    | Name of the node where the edge starts |
+| `to`      | Destination node name                  |
+
+### Route Decision Span
+
+When a router decides the next node, a `route` span is emitted.
+
+| Attribute   | Description                                        |
+| ----------- | -------------------------------------------------- |
+| `node`      | Name of the router node                             |
+| `decision`  | Raw routing result before any path mapping is done |
+
+### State Update Span
+
+Mutations to the shared `State` object are traced with a `state.update` span.
+
+| Attribute       | Description                                           |
+| --------------- | ----------------------------------------------------- |
+| `action`        | Either `update` or `add_message`                      |
+| `keys`          | Comma separated list of keys updated (for `update`)   |
+| `message_type`  | Included when the action is `add_message`             |
