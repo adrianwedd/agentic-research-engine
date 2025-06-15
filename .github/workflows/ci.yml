@@ -24,3 +24,19 @@ jobs:
         run: pytest -v
       - name: Check codex queue
         run: python scripts/validate_queue.py
+
+  codex-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - name: Check AGENTS.md exists
+        run: test -f AGENTS.md
+      - name: Setup environment
+        run: bash scripts/agent-setup.sh
+      - name: Run linters
+        run: pre-commit run --all-files
+      - name: Run tests
+        run: pytest -q
