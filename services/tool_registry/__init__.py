@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Iterable, Optional
 
+import yaml
+
 
 class AccessDeniedError(Exception):
     """Raised when a role tries to access an unauthorized tool."""
@@ -36,3 +38,9 @@ class ToolRegistry:
         if allowed and role not in allowed:
             raise AccessDeniedError(f"Role '{role}' cannot access tool '{name}'")
         return self._tools[name]
+
+    def load_permissions(self, path: str) -> None:
+        """Load role permissions from a YAML config."""
+        data = yaml.safe_load(open(path)) or {}
+        perms = data.get("permissions", {})
+        self._permissions = {tool: set(roles or []) for tool, roles in perms.items()}
