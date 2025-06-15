@@ -41,3 +41,58 @@ def test_post_comment_success():
     assert args[0] == 'http://example.com/1/comments'
     assert kwargs['headers']['Authorization'] == 'token t'
 
+
+def test_post_worklog_comment_create(tmp_path):
+    wl_file = tmp_path / 'pending.json'
+    with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "t"}), \
+         mock.patch.object(issue_logger, 'WORKLOG_PENDING_FILE', str(wl_file)), \
+         mock.patch.object(issue_logger.requests, 'get') as g, \
+         mock.patch.object(issue_logger.requests, 'post') as p:
+        g.return_value.status_code = 200
+        g.return_value.json.return_value = []
+        p.return_value.status_code = 201
+        p.return_value.json.return_value = {'html_url': 'http://example.com/c'}
+        url = issue_logger.post_worklog_comment('http://example.com/issues/1', {'task_name': 't', 'agent_id': 'a'})
+    assert url == 'http://example.com/c'
+    g.assert_called_once()
+    p.assert_called_once()
+    args, kwargs = p.call_args
+    assert args[0] == 'http://example.com/issues/1/comments'
+    assert kwargs['headers']['Authorization'] == 'token t'
+
+
+def test_post_worklog_comment_update():
+    existing = {'body': 'x <!-- codex-log -->', 'url': 'http://example.com/comments/1', 'html_url': 'http://example.com/c1'}
+    with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "t"}), \
+         mock.patch.object(issue_logger.requests, 'get') as g, \
+         mock.patch.object(issue_logger.requests, 'patch') as patch_req:
+        g.return_value.status_code = 200
+        g.return_value.json.return_value = [existing]
+        patch_req.return_value.status_code = 200
+        patch_req.return_value.json.return_value = {'html_url': 'http://example.com/c1'}
+        url = issue_logger.post_worklog_comment('http://example.com/issues/1', {'task_name': 't', 'agent_id': 'a'})
+    assert url == 'http://example.com/c1'
+    g.assert_called_once()
+    patch_req.assert_called_once_with('http://example.com/comments/1', headers={'Authorization': 'token t'}, json=mock.ANY, timeout=10)
+
+
+def test_post_worklog_comment_pr_url():
+    with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "t"}), \
+         mock.patch.object(issue_logger.requests, 'get') as g, \
+         mock.patch.object(issue_logger.requests, 'post') as p:
+        g.return_value.status_code = 200
+        g.return_value.json.return_value = []
+        p.return_value.status_code = 201
+        p.return_value.json.return_value = {'html_url': 'http://example.com/c'}
+        issue_logger.post_worklog_comment('http://example.com/pulls/2', {'task_name': 't', 'agent_id': 'a'})
+    g.assert_called_once_with('http://example.com/issues/2/comments', headers={'Authorization': 'token t'}, timeout=10)
+
+
+def test_post_worklog_comment_no_token(tmp_path):
+    wl_file = tmp_path / 'pending.json'
+    if 'GITHUB_TOKEN' in os.environ:
+        del os.environ['GITHUB_TOKEN']
+    with mock.patch.object(issue_logger, 'WORKLOG_PENDING_FILE', str(wl_file)):
+        issue_logger.post_worklog_comment('http://example.com/issues/1', {'task_name': 't'})
+    assert wl_file.exists()
+
