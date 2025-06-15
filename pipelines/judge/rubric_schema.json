@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Report Evaluation Rubric",
+  "type": "object",
+  "properties": {
+    "factual_accuracy": {
+      "type": "object",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "explanation": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "completeness": {
+      "type": "object",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "explanation": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "source_quality": {
+      "type": "object",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "explanation": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    },
+    "coherence": {
+      "type": "object",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "explanation": {"type": "string"}
+      },
+      "required": ["score"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "factual_accuracy",
+    "completeness",
+    "source_quality",
+    "coherence"
+  ],
+  "additionalProperties": false
+}
