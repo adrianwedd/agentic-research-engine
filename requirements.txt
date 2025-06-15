@@ -17,3 +17,4 @@ opentelemetry-exporter-otlp
 langchain
 langgraph
 langsmith
+googletrans==4.0.0rc1
