@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional
 import yaml
 from jsonschema import ValidationError, validate
 
+from tools.ltm_client import retrieve_memory
+
 
 @dataclass
 class State:
@@ -29,12 +31,17 @@ class SupervisorAgent:
 
     def __init__(
         self,
+        *,
+        ltm_endpoint: Optional[str] = None,
+        retrieval_limit: int = 5,
         ltm_service: Optional[Any] = None,
         orchestration_engine: Optional[Any] = None,
         agent_registry: Optional[Any] = None,
     ) -> None:
         """Initialize supervisor with optional services."""
 
+        self.ltm_endpoint = ltm_endpoint
+        self.retrieval_limit = retrieval_limit
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
@@ -68,8 +75,20 @@ class SupervisorAgent:
         """Decompose research query into executable subgraphs."""
 
         past = []
-        if self.ltm_service:
-            past = self.ltm_service.retrieve(query)
+        if self.ltm_endpoint:
+            try:
+                past = retrieve_memory(
+                    {"query": query},
+                    limit=self.retrieval_limit,
+                    endpoint=self.ltm_endpoint,
+                )
+            except Exception:  # pragma: no cover - network errors
+                past = []
+        elif self.ltm_service:
+            try:
+                past = self.ltm_service.retrieve(query)
+            except Exception:  # pragma: no cover - service errors
+                past = []
 
         tasks = self._decompose_query(query)
 
