@@ -1,0 +1,993 @@
+# Code Quality Audit Findings
+
+This document outlines the results of the code quality assessment.
+
+## 1. Code Style and Linting (Flake8)
+
+This section details findings from running Flake8, a Python style guide enforcement tool.
+The project uses a `.flake8` configuration file.
+
+Flake8 was executed on the repository. No style violations were reported. This could indicate clean code, or that the `.flake8` configuration file filters all potential messages. A review of the `.flake8` config file may be warranted if unexpected.
+
+## 2. Code Complexity (Radon)
+
+This section details findings from running Radon, a Python tool for computing various code metrics, including cyclomatic complexity.
+
+Radon was executed on the repository using the command `radon cc . -a -s --total-average`.
+The following is the output, showing cyclomatic complexity for various Python files and functions.
+An average complexity of A (0-5) is considered good. Higher letters (B, C, D, F) indicate increasing complexity.
+
+```
+benchmarks/graph_compilation.py
+    F 10:0 build_sample_engine - A (3)
+    F 50:0 build_hybrid_engine - A (3)
+    F 27:0 benchmark_dynamic - A (2)
+    F 38:0 benchmark_compiled - A (2)
+    F 83:0 benchmark_hybrid - A (2)
+benchmarks/ltm_pruning_benchmark.py
+    F 43:0 evaluate - B (6)
+    F 34:0 hybrid_prune - A (5)
+    F 25:0 recency_prune - A (4)
+    F 30:0 relevance_prune - A (3)
+    F 10:0 generate_data - A (2)
+benchmarks/performance/vector_search_benchmark.py
+    F 11:0 benchmark - B (6)
+    F 25:0 main - A (2)
+benchmarks/performance/run_performance_tests.py
+    F 30:0 run_load_test - A (3)
+    C 15:0 LTMUser - A (2)
+    F 70:0 main - A (1)
+    M 20:4 LTMUser.consolidate_and_retrieve - A (1)
+benchmarks/performance/run_fastapi_benchmark.py
+    F 64:0 run_load_test - A (3)
+    F 104:0 main - A (2)
+    C 44:0 APIUser - A (2)
+    M 49:4 APIUser.consolidate_and_retrieve - A (1)
+benchmarks/performance/locustfile.py
+    C 4:0 LTMUser - A (2)
+    M 8:4 LTMUser.consolidate_and_retrieve - A (1)
+scripts/train_evaluator.py
+    F 92:0 evaluate_model - A (3)
+    F 102:0 main - A (3)
+    F 23:0 prepare_datasets - A (2)
+    F 17:0 load_dataset - A (1)
+    F 35:0 build_trainer - A (1)
+    F 76:0 train_model - A (1)
+scripts/episodic_forgetting_job.py
+    F 11:0 main - A (1)
+scripts/issue_logger.py
+    F 190:0 post_worklog_comment - C (11)
+    F 155:0 _format_worklog - B (10)
+    F 35:0 _request_with_retry - B (8)
+    F 267:0 _resolve_target_url - B (6)
+    F 61:0 _store_pending_worklog - A (5)
+    F 87:0 create_issue - A (5)
+    F 110:0 post_comment - A (4)
+    F 133:0 _read_body - A (4)
+    M 256:4 CodexAgentLogger.finish - A (4)
+    F 279:0 main - A (3)
+    C 245:0 CodexAgentLogger - A (3)
+    F 18:0 _get_token - A (2)
+    F 29:0 _comments_url - A (2)
+    F 145:0 _load_worklog - A (2)
+    M 248:4 CodexAgentLogger.__init__ - A (1)
+    M 253:4 CodexAgentLogger.start - A (1)
+scripts/import_browsecomp_dataset.py
+    F 6:0 main - A (1)
+scripts/train_reward_model.py
+    F 8:0 main - A (2)
+scripts/validate_queue.py
+    F 8:0 main - A (3)
+scripts/sync_codex_tasks.py
+    F 39:0 main - B (10)
+    F 20:0 fetch_issue_ids - B (9)
+    F 12:0 load_queue_ids - B (6)
+scripts/codex_task_runner.py
+    F 19:0 parse_tasks - C (11)
+    F 68:0 merge_tasks - B (6)
+    F 86:0 main - A (5)
+    F 51:0 load_queue - A (4)
+    F 62:0 save_queue - A (1)
+scripts/generate_synthetic_examples.py
+    F 31:0 inject_typos - A (4)
+    F 45:0 main - A (2)
+    F 25:0 back_translate - A (1)
+scripts/check_guidance_loss.py
+    F 25:0 main - B (7)
+    F 14:0 load_config - B (6)
+scripts/codex_notary.py
+    F 25:0 create_issues_for_queue - B (10)
+    F 12:0 load_queue - A (5)
+    F 58:0 main - A (4)
+    F 20:0 save_queue - A (1)
+scripts/generate_comms_dataset.py
+    F 21:0 main - A (2)
+    F 13:0 openai_llm - A (1)
+scripts/train_supervisor_policy.py
+    F 7:0 main - A (1)
+scripts/generate_self_correction_dataset.py
+    F 9:0 inject_typos - A (4)
+    F 20:0 critique - A (4)
+    F 30:0 generate_examples - A (4)
+    F 48:0 main - A (1)
+scripts/ci_summary.py
+    F 7:0 coverage_percent - A (3)
+    F 18:0 tail_lines - A (2)
+    F 25:0 main - A (2)
+scripts/dataset_curation.py
+    F 16:0 validate_records - B (10)
+    F 65:0 interactive_review - A (3)
+    F 78:0 main - A (3)
+    F 58:0 sample_for_review - A (2)
+    F 48:0 save_version - A (1)
+scripts/codex_archivist.py
+    F 6:0 main - A (2)
+scripts/check_branch_protection.py
+    F 38:0 main - B (6)
+    F 20:0 fetch_rules - A (2)
+    F 32:0 validate_rules - A (2)
+scripts/teacher_data_generator.py
+    F 10:0 openai_llm - A (1)
+    F 18:0 main - A (1)
+scripts/generate_adversarial_examples.py
+    F 14:0 percentage_examples - A (2)
+    F 31:0 date_examples - A (2)
+    F 53:0 unit_examples - A (2)
+    F 75:0 fallacy_examples - A (2)
+    F 103:0 year_examples - A (2)
+    F 128:0 generate_dataset - A (1)
+    F 140:0 main - A (1)
+scripts/check_pip_audit.py
+    F 19:0 is_high - B (8)
+    F 8:0 iter_vulnerabilities - B (7)
+    F 34:0 main - A (4)
+scripts/hybrid_forgetting_job.py
+    F 11:0 main - A (1)
+services/llm_client.py
+    F 61:0 load_llm_client - A (4)
+    C 25:0 OllamaClient - A (3)
+    C 13:0 LLMClient - A (2)
+    M 28:4 OllamaClient.__init__ - A (2)
+    C 47:0 OpenAICompatibleClient - A (2)
+    M 16:4 LLMClient.__init__ - A (1)
+    M 20:4 LLMClient.invoke - A (1)
+    M 34:4 OllamaClient.invoke - A (1)
+    M 50:4 OpenAICompatibleClient.__init__ - A (1)
+    M 54:4 OpenAICompatibleClient.invoke - A (1)
+services/__init__.py
+    F 4:0 __getattr__ - A (2)
+services/reputation/app.py
+    F 48:0 create_agent - A (1)
+    F 54:0 create_task - A (1)
+    F 60:0 create_assignment - A (1)
+    F 66:0 create_evaluation - A (1)
+    F 77:0 get_reputation - A (1)
+    C 23:0 AgentCreate - A (1)
+    C 29:0 TaskCreate - A (1)
+    C 35:0 AssignmentCreate - A (1)
+    C 40:0 EvaluationCreate - A (1)
+services/reputation/service.py
+    M 77:4 ReputationService._update_reputation - B (8)
+    C 12:0 ReputationService - A (3)
+    M 50:4 ReputationService.record_evaluation - A (3)
+    M 116:4 ReputationService.get_reputation - A (2)
+    M 15:4 ReputationService.__init__ - A (1)
+    M 18:4 ReputationService.add_agent - A (1)
+    M 27:4 ReputationService.add_task - A (1)
+    M 43:4 ReputationService.assign - A (1)
+services/reputation/models.py
+    F 22:0 _uuid - A (1)
+    C 26:0 Agent - A (1)
+    C 38:0 Task - A (1)
+    C 50:0 Assignment - A (1)
+    C 63:0 Evaluation - A (1)
+    C 78:0 ReputationScore - A (1)
+services/tool_registry/__init__.py
+    F 175:0 create_default_registry - A (5)
+    M 72:4 ToolRegistry.get_tool - A (5)
+    C 36:0 ToolRegistry - A (4)
+    M 95:4 ToolRegistry.invoke - A (4)
+    M 152:4 ToolRegistry.load_permissions - A (4)
+    M 42:4 ToolRegistry.register_tool - A (3)
+    C 32:0 AccessDeniedError - A (1)
+    M 37:4 ToolRegistry.__init__ - A (1)
+services/tool_registry/registry.py
+    C 14:0 ToolRegistryServer - A (2)
+    M 17:4 ToolRegistryServer.__init__ - A (1)
+    M 25:4 ToolRegistryServer._handler - A (1)
+    M 75:4 ToolRegistryServer.serve_forever - A (1)
+services/episodic_memory/app.py
+    F 49:0 retrieve - A (3)
+    F 38:0 consolidate - A (1)
+    C 12:0 ConsolidateRequest - A (1)
+    C 18:0 ConsolidateResponse - A (1)
+    C 22:0 RetrieveBody - A (1)
+    C 27:0 RetrieveResponse - A (1)
+services/tracing/langsmith_integration.py
+    F 53:0 import_dataset - A (4)
+    C 13:4 Client - A (2)
+    C 24:0 LangSmithCheckpointer - A (2)
+    F 18:0 configure_langsmith - A (1)
+    M 14:8 Client.__init__ - A (1)
+    M 27:4 LangSmithCheckpointer.__init__ - A (1)
+    M 31:4 LangSmithCheckpointer.start - A (1)
+    M 40:4 LangSmithCheckpointer.save - A (1)
+services/tracing/metrics.py
+    F 14:0 reset_metrics - A (1)
+    F 24:0 get_metrics - A (1)
+    F 29:0 increment_metric - A (1)
+services/tracing/tracing_schema.py
+    M 29:4 ToolCallTrace.record - B (6)
+    C 16:0 ToolCallTrace - A (5)
+    M 56:4 ToolCallTrace.from_attributes - A (1)
+services/ltm_service/episodic_memory.py
+    M 180:4 EpisodicMemoryService.retrieve_similar_experiences - C (13)
+    C 94:0 EpisodicMemoryService - B (7)
+    M 244:4 EpisodicMemoryService.forget_experience - B (7)
+    M 95:4 EpisodicMemoryService.__init__ - B (6)
+    M 136:4 EpisodicMemoryService.store_experience - B (6)
+    M 286:4 EpisodicMemoryService.decay_relevance_scores - B (6)
+    M 265:4 EpisodicMemoryService.prune_stale_memories - A (5)
+    M 124:4 EpisodicMemoryService._embed_with_retry - A (4)
+    C 15:4 RecursiveCharacterTextSplitter - A (3)
+    M 22:8 RecursiveCharacterTextSplitter.split_text - A (2)
+    C 34:4 _DummyTracer - A (2)
+    C 53:0 StorageBackend - A (2)
+    C 71:0 InMemoryStorage - A (2)
+    M 89:4 InMemoryStorage.update - A (2)
+    M 18:8 RecursiveCharacterTextSplitter.__init__ - A (1)
+    M 35:8 _DummyTracer.get_tracer - A (1)
+    M 56:4 StorageBackend.save - A (1)
+    M 59:4 StorageBackend.all - A (1)
+    M 62:4 StorageBackend.delete - A (1)
+    M 65:4 StorageBackend.update - A (1)
+    M 74:4 InMemoryStorage.__init__ - A (1)
+    M 77:4 InMemoryStorage.save - A (1)
+    M 83:4 InMemoryStorage.all - A (1)
+    M 86:4 InMemoryStorage.delete - A (1)
+    M 177:4 EpisodicMemoryService._similarity - A (1)
+services/ltm_service/generate_spec.py
+    C 17:0 Dummy - A (2)
+    M 18:4 Dummy.consolidate - A (1)
+    M 21:4 Dummy.retrieve - A (1)
+services/ltm_service/embedding_client.py
+    C 23:0 SimpleEmbeddingClient - A (4)
+    M 26:4 SimpleEmbeddingClient.embed - A (3)
+    C 35:0 CachedEmbeddingClient - A (3)
+    C 14:0 EmbeddingClient - A (2)
+    M 48:4 CachedEmbeddingClient.embed - A (2)
+    C 10:0 EmbeddingError - A (1)
+    M 17:4 EmbeddingClient.embed - A (1)
+    M 38:4 CachedEmbeddingClient.__init__ - A (1)
+services/ltm_service/openapi_app.py
+    F 26:0 _check_role - A (1)
+    F 64:0 create_app - A (1)
+    C 22:4 LTMService - A (1)
+    C 31:0 ConsolidateRequest - A (1)
+    C 43:0 ConsolidateResponse - A (1)
+    C 47:0 RetrieveBody - A (1)
+    C 57:0 RetrieveResponse - A (1)
+services/ltm_service/vector_store.py
+    M 63:4 InMemoryVectorStore.query - B (7)
+    M 47:4 InMemoryVectorStore._cosine - B (6)
+    M 92:4 WeaviateVectorStore.__init__ - A (4)
+    C 35:0 InMemoryVectorStore - A (3)
+    C 89:0 WeaviateVectorStore - A (3)
+    M 126:4 WeaviateVectorStore.query - A (3)
+    C 18:0 VectorStore - A (2)
+    M 79:4 InMemoryVectorStore.all - A (2)
+    M 114:4 WeaviateVectorStore.close - A (2)
+    M 142:4 WeaviateVectorStore.delete - A (2)
+    M 21:4 VectorStore.add - A (1)
+    M 26:4 VectorStore.query - A (1)
+    M 31:4 VectorStore.delete - A (1)
+    M 38:4 InMemoryVectorStore.__init__ - A (1)
+    M 41:4 InMemoryVectorStore.add - A (1)
+    M 54:4 InMemoryVectorStore._score_item - A (1)
+    M 85:4 InMemoryVectorStore.delete - A (1)
+    M 119:4 WeaviateVectorStore.add - A (1)
+services/ltm_service/api.py
+    M 133:4 LTMService.forget - B (7)
+    C 89:0 LTMService - B (6)
+    M 100:4 LTMService.consolidate - A (5)
+    M 121:4 LTMService.retrieve - A (5)
+    C 16:4 BaseModel - A (3)
+    M 17:8 BaseModel.__init__ - A (2)
+    M 92:4 LTMService.__init__ - A (2)
+    C 148:0 LTMServiceServer - A (2)
+    F 25:4 Field - A (1)
+    M 22:8 BaseModel.model_rebuild - A (1)
+    C 28:4 ValidationError - A (1)
+    C 51:4 ConsolidateRequest - A (1)
+    C 58:4 ConsolidateRequest - A (1)
+    C 65:4 RetrieveBody - A (1)
+    C 72:4 RetrieveBody - A (1)
+    C 79:4 ForgetRequest - A (1)
+    C 85:4 ForgetRequest - A (1)
+    M 151:4 LTMServiceServer.__init__ - A (1)
+    M 157:4 LTMServiceServer._handler - A (1)
+    M 282:4 LTMServiceServer.serve_forever - A (1)
+services/ltm_service/semantic_memory.py
+    M 34:4 SemanticMemoryService.query_facts - B (9)
+    C 8:0 SemanticMemoryService - A (5)
+    M 54:4 SemanticMemoryService.forget_fact - A (4)
+    M 14:4 SemanticMemoryService.store_fact - A (2)
+    M 11:4 SemanticMemoryService.__init__ - A (1)
+services/evaluation/comm_metrics.py
+    F 36:0 _cosine - B (6)
+    F 43:0 compute_interpretability - A (5)
+    F 15:0 compute_cic - A (4)
+    F 10:0 compute_zsc_score - A (2)
+services/learning/__init__.py
+    F 13:0 __getattr__ - A (5)
+services/learning/marl_trainer.py
+    M 29:4 MARLTrainer._cosine - B (6)
+    C 12:0 MARLTrainer - A (5)
+    M 15:4 MARLTrainer.__init__ - A (3)
+    M 35:4 MARLTrainer.train - A (3)
+services/learning/ppo_policy_optimizer.py
+    C 21:0 PPOPolicyOptimizer - A (3)
+    M 24:4 PPOPolicyOptimizer.__init__ - A (3)
+    M 40:4 PPOPolicyOptimizer.update - A (2)
+    M 52:4 PPOPolicyOptimizer.save - A (2)
+services/learning/rlaif_system.py
+    M 28:4 RLAIFSystem._compute_reward - C (14)
+    C 9:0 RLAIFSystem - B (7)
+    M 63:4 RLAIFSystem.update_agent_policies - A (3)
+    M 10:4 RLAIFSystem.__init__ - A (1)
+services/learning/exceptions.py
+    C 1:0 ConfigurationError - A (1)
+services/hitl_review/queue.py
+    C 8:0 InMemoryReviewQueue - A (2)
+    M 11:4 InMemoryReviewQueue.__init__ - A (1)
+    M 14:4 InMemoryReviewQueue.enqueue - A (1)
+    M 17:4 InMemoryReviewQueue.pop - A (1)
+    M 20:4 InMemoryReviewQueue.get - A (1)
+    M 23:4 InMemoryReviewQueue.pending - A (1)
+services/hitl_review/api.py
+    C 13:0 HITLReviewServer - A (2)
+    M 16:4 HITLReviewServer.__init__ - A (1)
+    M 27:4 HITLReviewServer._handler - A (1)
+    M 92:4 HITLReviewServer.serve_forever - A (1)
+services/monitoring/system_monitor.py
+    M 71:4 SystemMonitor.track_agent_performance - B (6)
+    C 16:0 SystemMonitor - A (4)
+    M 19:4 SystemMonitor.__init__ - A (1)
+    M 64:4 SystemMonitor.from_otlp - A (1)
+services/authz/__init__.py
+    F 6:0 __getattr__ - A (2)
+services/authz/intent_authorizer.py
+    C 18:0 IntentAuthorizer - A (3)
+    M 21:4 IntentAuthorizer.__init__ - A (3)
+    M 27:4 IntentAuthorizer.from_yaml - A (2)
+    C 36:0 IntentAuthZServer - A (2)
+    M 31:4 IntentAuthorizer.allowed - A (1)
+    M 39:4 IntentAuthZServer.__init__ - A (1)
+    M 51:4 IntentAuthZServer._handler - A (1)
+    M 104:4 IntentAuthZServer.serve_forever - A (1)
+agents/manager.py
+    C 12:0 ManagerAgent - A (2)
+    M 15:4 ManagerAgent.__init__ - A (1)
+    M 23:4 ManagerAgent._plan - A (1)
+    M 36:4 ManagerAgent._wrap_agent - A (1)
+    M 48:4 ManagerAgent.run_async - A (1)
+    M 68:4 ManagerAgent.run - A (1)
+agents/supervisor.py
+    M 98:4 SupervisorAgent.plan_research_task - B (10)
+    M 170:4 SupervisorAgent.parse_plan - B (8)
+    M 60:4 SupervisorAgent._decompose_query - B (7)
+    C 21:0 SupervisorAgent - B (6)
+    M 26:4 SupervisorAgent.__init__ - B (6)
+    M 80:4 SupervisorAgent._score_memories - A (5)
+    M 185:4 SupervisorAgent.analyze_query - A (4)
+    M 152:4 SupervisorAgent.validate_plan - A (3)
+    M 208:4 SupervisorAgent.__call__ - A (3)
+    M 90:4 SupervisorAgent._merge_template - A (2)
+    M 165:4 SupervisorAgent.format_plan_as_yaml - A (1)
+agents/planner.py
+    M 69:4 PlannerAgent._allocate_tasks - B (8)
+    M 110:4 PlannerAgent.parse_plan - B (8)
+    M 41:4 PlannerAgent._decompose_query - B (6)
+    M 22:4 PlannerAgent.__init__ - A (5)
+    C 15:0 PlannerAgent - A (4)
+    M 61:4 PlannerAgent._skill_score - A (3)
+    M 123:4 PlannerAgent.validate_plan - A (3)
+    M 138:4 PlannerAgent.__call__ - A (3)
+    M 91:4 PlannerAgent.plan_research_task - A (2)
+    M 58:4 PlannerAgent._tokenize - A (1)
+    M 107:4 PlannerAgent.format_plan_as_yaml - A (1)
+    M 131:4 PlannerAgent.analyze_query - A (1)
+agents/evaluator.py
+    M 172:4 EvaluatorAgent.verify_factual_accuracy - B (9)
+    M 105:4 EvaluatorAgent._evaluate_source_quality - B (8)
+    C 21:0 EvaluatorAgent - A (5)
+    M 60:4 EvaluatorAgent._evaluate_accuracy - A (5)
+    M 146:4 EvaluatorAgent.generate_correction_feedback - A (5)
+    M 69:4 EvaluatorAgent._evaluate_completeness - A (4)
+    M 76:4 EvaluatorAgent._evaluate_bias - A (4)
+    M 83:4 EvaluatorAgent._evaluate_citations - A (4)
+    M 90:4 EvaluatorAgent._load_source_quality_config - A (4)
+    M 137:4 EvaluatorAgent.evaluate_research_output - A (3)
+    M 22:4 EvaluatorAgent.__init__ - A (2)
+agents/critique.py
+    C 18:0 Critique - A (2)
+    M 25:4 Critique.to_dict - A (1)
+    M 32:4 Critique.validate - A (1)
+agents/web_researcher.py
+    M 93:4 WebResearcherAgent.research_topic - C (13)
+    C 14:0 WebResearcherAgent - A (5)
+    M 36:4 WebResearcherAgent._summarize_for_task - A (5)
+    M 68:4 WebResearcherAgent._check_rate_limit - A (5)
+    M 77:4 WebResearcherAgent._call_with_retry - A (4)
+    M 163:4 WebResearcherAgent.__call__ - A (4)
+    M 50:4 WebResearcherAgent.summarize_to_state - A (2)
+    M 62:4 WebResearcherAgent._require_tool - A (2)
+    M 15:4 WebResearcherAgent.__init__ - A (1)
+agents/code_researcher.py
+    M 35:4 CodeResearcherAgent._check_rate_limit - A (4)
+    M 42:4 CodeResearcherAgent._call_with_retry - A (4)
+    C 12:0 CodeResearcherAgent - A (3)
+    M 57:4 CodeResearcherAgent.analyze_code - A (3)
+    M 29:4 CodeResearcherAgent._require_tool - A (2)
+    M 81:4 CodeResearcherAgent.__call__ - A (2)
+    M 15:4 CodeResearcherAgent.__init__ - A (1)
+agents/memory_manager.py
+    M 43:4 MemoryManagerAgent._extract_triples - B (6)
+    M 105:4 MemoryManagerAgent.__call__ - A (5)
+    C 14:0 MemoryManagerAgent - A (3)
+    M 17:4 MemoryManagerAgent.__init__ - A (2)
+    M 30:4 MemoryManagerAgent._quality_passed - A (1)
+    M 33:4 MemoryManagerAgent._is_novel - A (1)
+    M 36:4 MemoryManagerAgent._format_record - A (1)
+tools/validation.py
+    F 18:0 validate_path_or_url - B (8)
+    C 12:0 InputValidationError - A (1)
+tools/html_scraper.py
+    F 39:0 html_scraper - B (10)
+    F 18:0 _extract_main_text - B (7)
+tools/web_search.py
+    F 12:0 web_search - C (13)
+tools/summarizer.py
+    F 8:0 summarize_text - A (4)
+tools/code_interpreter.py
+    F 10:0 code_interpreter - A (2)
+tools/github_search.py
+    F 46:0 github_search - C (11)
+    F 12:0 _github_request - B (8)
+tools/fact_check.py
+    F 12:0 fact_check_claim - C (18)
+tools/ltm_client.py
+    F 9:0 _endpoint - A (2)
+    F 13:0 consolidate_memory - A (1)
+    F 30:0 retrieve_memory - A (1)
+tools/sandbox.py
+    F 78:0 run_python_code - A (5)
+tools/pdf_reader.py
+    F 16:0 pdf_extract - C (19)
+tools/knowledge_graph_search.py
+    F 10:0 knowledge_graph_search - A (2)
+tests/test_e2e_system.py
+    F 51:0 test_full_request_to_execution_trace - B (8)
+    F 82:0 test_foundational_benchmark_run - B (6)
+    F 100:0 test_dynamic_workflow_routing - A (3)
+    C 25:0 InMemorySpanExporter - A (2)
+    F 40:0 _make_registry - A (1)
+    M 26:4 InMemorySpanExporter.__init__ - A (1)
+    M 29:4 InMemorySpanExporter.export - A (1)
+    M 33:4 InMemorySpanExporter.shutdown - A (1)
+    M 36:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_dynamic_group_chat.py
+    F 9:0 test_message_passing - A (4)
+    F 27:0 test_scratchpad_binding_and_rw - A (3)
+    F 19:0 test_shared_workspace - A (2)
+tests/test_memory_manager_semantic.py
+    F 24:0 test_knowledge_graph_population - A (2)
+    F 14:0 _start_server - A (1)
+tests/test_ppo_policy_optimizer.py
+    F 6:0 test_ppo_policy_optimizer_step - A (3)
+tests/test_memory_manager_trigger.py
+    F 21:0 test_memory_manager_invoked_after_graph - A (2)
+    F 11:0 _start_server - A (1)
+tests/test_code_interpreter_tool.py
+    F 8:0 test_code_interpreter_print - A (4)
+    F 15:0 test_code_interpreter_result_value - A (2)
+tests/test_rlaif_system.py
+    F 30:0 test_update_agent_policies - A (4)
+    F 53:0 test_composite_reward_integration - A (4)
+    F 40:0 test_rlaif_with_ppo - A (3)
+    C 6:0 DummyRewardModel - A (2)
+    C 11:0 DummyPolicyOptimizer - A (2)
+    C 21:0 DummyCompositeReward - A (2)
+    M 7:4 DummyRewardModel.score - A (1)
+    M 12:4 DummyPolicyOptimizer.__init__ - A (1)
+    M 15:4 DummyPolicyOptimizer.update - A (1)
+    M 22:4 DummyCompositeReward.__init__ - A (1)
+    M 25:4 DummyCompositeReward.__call__ - A (1)
+tests/test_internal_issue_logger.py
+    F 11:0 test_format_agent_log - A (4)
+    F 18:0 test_post_markdown_comment_success - A (4)
+    F 31:0 test_post_markdown_comment_no_token - A (4)
+tests/test_codex_issue_logger.py
+    F 59:0 test_post_worklog_comment_create - B (7)
+    F 16:0 test_create_issue_success - B (6)
+    F 34:0 test_create_issue_no_token - A (5)
+    F 45:0 test_post_comment_success - A (5)
+    F 81:0 test_post_worklog_comment_update - A (5)
+    F 152:0 test_store_pending_worklog_atomic - A (4)
+    F 124:0 test_post_worklog_comment_no_token - A (3)
+    F 164:0 test_read_body_sources - A (3)
+    F 172:0 test_cli_worklog - A (3)
+    F 135:0 test_request_with_retry_recovers - A (2)
+    F 104:0 test_post_worklog_comment_pr_url - A (1)
+tests/test_train_evaluator.py
+    F 6:0 test_prepare_datasets - A (3)
+    F 18:0 test_metrics_file_created - A (3)
+tests/test_sandbox.py
+    F 16:0 test_network_blocked - A (3)
+    F 36:0 test_timeout_enforced - A (3)
+    F 23:0 test_network_allowed - A (2)
+tests/test_example.py
+    F 8:0 test_hello - A (2)
+tests/test_reward_model_pipeline.py
+    F 11:0 test_reward_model_training - A (5)
+    F 32:0 test_composite_reward_meaningful_vs_trivial - A (2)
+tests/test_evaluator.py
+    F 8:0 test_verify_factual_accuracy_flags_unsupported - A (3)
+    F 23:0 test_verify_factual_accuracy_accepts_supported - A (2)
+    F 34:0 test_assess_source_quality_penalizes_blocklist - A (2)
+    F 42:0 test_assess_source_quality_rewards_allowlist - A (2)
+tests/test_planner.py
+    F 34:0 test_task_allocation_uses_available_agents - A (5)
+    F 17:0 test_analyze_query_returns_state - A (3)
+    F 25:0 test_planner_node_updates_graph_state - A (3)
+    C 9:0 DummyGraphState - A (3)
+    F 50:0 test_plan_yaml_roundtrip - A (2)
+    M 10:4 DummyGraphState.__init__ - A (2)
+    M 13:4 DummyGraphState.update - A (1)
+tests/test_summarizer.py
+    F 10:0 test_summarize_empty_input_returns_empty - A (3)
+    F 4:0 test_summarize_long_text_truncates - A (2)
+tests/test_back_translation_pipeline.py
+    F 6:0 test_back_translation_pipeline - B (6)
+tests/test_cd_pipeline.py
+    F 4:0 test_service_template_uses_color_selector - A (2)
+    F 9:0 test_terraform_accepts_color_var - A (2)
+tests/test_comm_metrics.py
+    F 7:0 test_compute_zsc_score - A (3)
+    F 12:0 test_compute_cic - A (3)
+    F 20:0 test_compute_interpretability - A (2)
+tests/test_hierarchical_subgraph.py
+    F 6:0 test_subgraph_node_executes_and_returns_state - A (3)
+    F 33:0 test_subgraph_propagates_state_and_parent_resumes - A (3)
+tests/test_sync_codex_tasks.py
+    F 11:0 test_sync_detects_mismatch - A (2)
+tests/test_github_search_tool.py
+    C 10:0 DummyResponse - A (3)
+    F 27:0 test_repo_search_parses_results - A (2)
+    F 54:0 test_repo_search_rate_limit - A (2)
+    M 11:4 DummyResponse.__init__ - A (2)
+    M 19:4 DummyResponse.raise_for_status - A (2)
+    F 70:0 test_empty_query - A (1)
+    M 23:4 DummyResponse.json - A (1)
+tests/test_codex_archivist.py
+    F 7:0 test_archivist_posts_worklog - A (4)
+tests/test_llm_client.py
+    F 40:0 test_openai_client - B (6)
+    F 19:0 test_ollama_client - A (4)
+    C 7:0 DummyResponse - A (2)
+    M 8:4 DummyResponse.__init__ - A (1)
+    M 12:4 DummyResponse.raise_for_status - A (1)
+    M 15:4 DummyResponse.json - A (1)
+tests/test_vector_store_parallel.py
+    F 48:0 test_parallel_matches_serial - A (5)
+tests/test_orchestration_router.py
+    F 32:0 test_conditional_router_executes_verifier - A (4)
+    F 103:0 test_cosc_router_routes_for_retry - A (4)
+    F 154:0 test_cosc_router_stops_after_max_retries - A (3)
+    F 192:0 test_cosc_loop_terminates_after_three_retries - A (3)
+    C 17:0 InMemorySpanExporter - A (2)
+    F 85:0 test_conditional_router_invalid_status_raises - A (1)
+    M 18:4 InMemorySpanExporter.__init__ - A (1)
+    M 21:4 InMemorySpanExporter.export - A (1)
+    M 25:4 InMemorySpanExporter.shutdown - A (1)
+    M 28:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_browsecomp_harness.py
+    F 9:0 test_harness_with_perfect_agent - B (6)
+    F 26:0 test_harness_timeout_does_not_abort - A (4)
+    F 50:0 test_harness_retries_on_failure - A (3)
+tests/test_embedding_cache.py
+    F 17:0 test_cached_embedding_client_hits - A (4)
+    F 25:0 test_service_cache_integration - A (3)
+    C 7:0 CountingEmbeddingClient - A (2)
+    M 8:4 CountingEmbeddingClient.__init__ - A (1)
+    M 12:4 CountingEmbeddingClient.embed - A (1)
+tests/test_supervisor.py
+    F 49:0 test_plan_contains_parallel_webresearcher_nodes - A (5)
+    F 34:0 test_analyze_query_returns_state - A (3)
+    F 41:0 test_supervisor_node_updates_graph_state - A (3)
+    F 183:0 test_memories_scored_by_relevance - A (3)
+    F 205:0 test_plan_template_applied_when_enabled - A (3)
+    C 16:0 DummyGraphState - A (3)
+    F 67:0 test_supervisor_trims_query - A (2)
+    F 74:0 test_plan_yaml_roundtrip - A (2)
+    F 113:0 test_plan_uses_ltm_endpoint - A (2)
+    F 132:0 test_plan_uses_ltm_endpoint_authorized - A (2)
+    F 159:0 test_plan_handles_no_memories - A (2)
+    F 167:0 test_valid_plan_fixture_passes_schema - A (2)
+    M 17:4 DummyGraphState.__init__ - A (2)
+    F 24:0 _start_server - A (1)
+    F 60:0 test_invalid_query_raises_value_error - A (1)
+    F 84:0 test_parse_plan_invalid_yaml_raises - A (1)
+    F 90:0 test_parse_plan_schema_violation_raises - A (1)
+    F 106:0 test_plan_research_task_produces_valid_plan - A (1)
+    F 175:0 test_invalid_plan_fixture_fails_schema - A (1)
+    M 20:4 DummyGraphState.update - A (1)
+tests/test_system_monitor.py
+    F 25:0 test_track_agent_performance_records_metrics_and_span - B (8)
+    F 55:0 test_from_otlp_uses_env_metadata - A (4)
+    C 10:0 InMemorySpanExporter - A (2)
+    M 11:4 InMemorySpanExporter.__init__ - A (1)
+    M 14:4 InMemorySpanExporter.export - A (1)
+    M 18:4 InMemorySpanExporter.shutdown - A (1)
+    M 21:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_marl_trainer.py
+    F 7:0 test_marl_trainer_requires_guidance_loss - A (2)
+tests/test_memory_manager_gating.py
+    F 19:0 test_quality_gate_blocks_consolidation - A (2)
+    F 29:0 test_novelty_gate_blocks_duplicates - A (2)
+    F 49:0 test_high_quality_novel_memory_consolidated - A (2)
+    F 9:0 _start_server - A (1)
+tests/test_hitl_breakpoint.py
+    F 57:0 test_review_server_endpoints - B (9)
+    F 45:0 test_breakpoint_pauses_and_resumes - A (5)
+    F 84:0 test_breakpoint_emits_state_update_span - A (2)
+    F 14:0 _build_engine - A (1)
+    F 38:0 _start_server - A (1)
+tests/test_phase2_e2e.py
+    F 115:0 test_judge_pipeline_calibration - B (7)
+    F 24:0 test_learn_and_recall_cycle - A (5)
+    F 51:0 test_critique_and_correct_cycle - A (3)
+    F 87:0 test_critique_loop_terminates_after_max_retries - A (2)
+    F 14:0 _start_server - A (1)
+tests/test_web_researcher.py
+    F 9:0 test_research_topic_uses_tools - A (5)
+    F 66:0 test_webresearcher_node_executes_query - A (5)
+    F 119:0 test_webresearcher_prefers_knowledge_graph - A (4)
+    F 51:0 test_summarize_to_state_adds_message - A (2)
+    F 94:0 test_research_topic_retries_and_errors - A (2)
+tests/test_security_scan.py
+    F 17:0 test_detect_high_vulnerability - A (2)
+tests/test_web_search_tool.py
+    F 21:0 test_web_search_parses_results - A (2)
+    F 40:0 test_web_search_retries_and_errors - A (2)
+    C 9:0 DummyResponse - A (2)
+    F 55:0 test_web_search_empty_query - A (1)
+    M 10:4 DummyResponse.__init__ - A (1)
+    M 14:4 DummyResponse.raise_for_status - A (1)
+    M 17:4 DummyResponse.json - A (1)
+tests/test_ltm_service_api.py
+    F 55:0 test_invalid_memory_type_and_rbac - B (6)
+    F 89:0 test_schema_validation_and_forget - B (6)
+    F 22:0 test_consolidate_and_retrieve - A (5)
+    F 12:0 _start_server - A (1)
+tests/test_episodic_memory.py
+    F 12:0 test_store_and_retrieve - A (5)
+    F 35:0 test_embedding_and_vector_storage - A (4)
+    F 77:0 test_weaviate_vector_store - A (4)
+    F 63:0 test_embedding_retry - A (3)
+    C 51:0 FlakyEmbeddingClient - A (3)
+    F 94:0 test_retrieve_boosts_relevance - A (2)
+    M 56:4 FlakyEmbeddingClient.embed - A (2)
+    M 52:4 FlakyEmbeddingClient.__init__ - A (1)
+tests/test_codex_notary.py
+    F 9:0 test_create_issue_updates_queue - A (5)
+tests/test_otel_collector_config.py
+    F 9:0 test_processors_configured - C (11)
+    F 31:0 test_pipeline_uses_processors - A (3)
+    F 4:0 load_config - A (1)
+tests/test_pdf_reader_tool.py
+    F 80:0 test_pdf_extract_scanned_with_ocr - A (3)
+    F 59:0 test_pdf_extract_from_url - A (2)
+    F 72:0 test_pdf_extract_no_text - A (2)
+    F 90:0 test_pdf_extract_scanned_auto_ocr - A (2)
+    F 109:0 test_pdf_extract_invalid_pdf - A (2)
+    F 117:0 test_pdf_extract_corrupt_pdf - A (2)
+    F 125:0 test_pdf_extract_encrypted - A (2)
+    F 138:0 test_pdf_extract_bad_url - A (2)
+    F 144:0 test_pdf_extract_invalid_scheme - A (2)
+    F 155:0 test_pdf_extract_traversal - A (2)
+    F 43:0 _serve_dir - A (1)
+    F 52:0 _make_scanned_pdf - A (1)
+    F 104:0 test_pdf_extract_bad_path - A (1)
+    F 150:0 test_pdf_extract_ftp_scheme - A (1)
+tests/test_forgetting_job.py
+    F 62:0 test_prune_stale_memories - A (5)
+    F 101:0 test_decay_relevance_soft_delete - A (3)
+    C 47:0 InMemorySpanExporter - A (2)
+    M 48:4 InMemorySpanExporter.__init__ - A (1)
+    M 51:4 InMemorySpanExporter.export - A (1)
+    M 55:4 InMemorySpanExporter.shutdown - A (1)
+    M 58:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_fact_check_tool.py
+    F 21:0 test_fact_check_parses_response - A (3)
+    F 47:0 test_fact_check_retries_and_errors - A (2)
+    C 9:0 DummyResponse - A (2)
+    M 10:4 DummyResponse.__init__ - A (1)
+    M 14:4 DummyResponse.raise_for_status - A (1)
+    M 17:4 DummyResponse.json - A (1)
+tests/test_group_chat_manager.py
+    F 11:0 test_group_chat_manager_message_passing - A (3)
+    F 29:0 test_directed_question_routing - A (3)
+    F 53:0 test_group_chat_scratchpad_shared - A (3)
+tests/test_comm_dataset_pipeline.py
+    F 6:0 test_dataset_generation - A (4)
+tests/test_tool_registry.py
+    F 50:0 test_registry_server_permissions - A (5)
+    F 103:0 test_tool_init_span_and_propagation - A (4)
+    F 130:0 test_tool_invocation_audit_logged - A (4)
+    F 146:0 test_tool_invocation_audit_blocked - A (3)
+    F 40:0 test_registry_authorization - A (2)
+    F 78:0 test_registry_server_logs_denied_access - A (2)
+    C 19:0 InMemorySpanExporter - A (2)
+    F 36:0 dummy_tool - A (1)
+    M 20:4 InMemorySpanExporter.__init__ - A (1)
+    M 23:4 InMemorySpanExporter.export - A (1)
+    M 27:4 InMemorySpanExporter.shutdown - A (1)
+    M 30:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_manager_agent.py
+    F 10:0 test_manager_agent_delegates_tasks_sequentially - A (5)
+tests/test_critique_schema.py
+    F 10:0 test_schema_file_fields - A (5)
+    F 25:0 test_critique_validation_passes - A (1)
+    F 34:0 test_critique_validation_fails - A (1)
+tests/test_state.py
+    F 38:0 test_state_propagates_between_nodes - A (4)
+    F 60:0 test_parallel_updates_preserve_history - A (4)
+    F 9:0 test_state_scratchpad_roundtrip_and_default - A (3)
+    F 25:0 test_state_history_and_roundtrip - A (3)
+    F 18:0 test_state_serialization_roundtrip - A (2)
+    F 88:0 test_scratchpad_passthrough_when_unused - A (2)
+tests/test_intent_authz.py
+    F 25:0 test_deny_out_of_intent_tool_call - A (3)
+    F 10:0 dummy_tool - A (1)
+    F 14:0 _start_server - A (1)
+tests/test_teacher_pipeline.py
+    F 22:0 test_pipeline_diverse_error_types - A (5)
+    F 6:0 test_generate_example_valid - A (2)
+tests/conftest.py
+    F 1:0 pytest_collection_modifyitems - A (5)
+tests/test_judge_rubric_schema.py
+    F 12:0 test_schema_is_valid - A (2)
+    F 7:0 load_schema - A (1)
+    F 27:0 test_sample_validates - A (1)
+tests/test_async_concurrency.py
+    F 12:0 test_concurrent_retrieves_under_latency - A (4)
+tests/test_scratchpad_collab.py
+    F 9:0 test_shared_scratchpad_persistence_between_agents - B (8)
+tests/test_marl_trainer_guidance_logging.py
+    F 6:0 test_guidance_loss_logging - A (2)
+tests/test_message_protocol_edge_cases.py
+    F 13:0 test_lost_message_triggers_retry - A (3)
+    F 53:0 test_out_of_order_message_delivery - A (2)
+    F 66:0 test_malformed_message_rejected - A (1)
+tests/test_judge_calibration.py
+    F 7:0 cohen_kappa - C (12)
+    F 25:0 test_judge_calibration_mean_kappa_above_threshold - B (7)
+tests/test_tracing_schema.py
+    F 32:0 test_web_search_tool_emits_trace_span - C (11)
+    F 66:0 test_parse_old_schema_version - A (4)
+    C 15:0 InMemorySpanExporter - A (2)
+    M 16:4 InMemorySpanExporter.__init__ - A (1)
+    M 19:4 InMemorySpanExporter.export - A (1)
+    M 23:4 InMemorySpanExporter.shutdown - A (1)
+    M 26:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_orchestration_engine.py
+    F 34:0 test_sequential_execution_and_spans - C (16)
+    F 107:0 test_typed_edges_routing_and_lookup - A (4)
+    F 84:0 test_export_dot_outputs_valid_graph - A (2)
+    C 19:0 InMemorySpanExporter - A (2)
+    M 20:4 InMemorySpanExporter.__init__ - A (1)
+    M 23:4 InMemorySpanExporter.export - A (1)
+    M 27:4 InMemorySpanExporter.shutdown - A (1)
+    M 30:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_code_researcher.py
+    F 9:0 test_analyze_code_invokes_interpreter - A (3)
+    F 23:0 test_node_updates_state - A (2)
+tests/test_langsmith_integration.py
+    F 29:0 test_import_dataset_creates_examples - A (3)
+    F 36:0 test_orchestration_checkpointer_logs_runs - A (2)
+    C 7:0 DummyClient - A (2)
+    M 8:4 DummyClient.__init__ - A (1)
+    M 14:4 DummyClient.has_dataset - A (1)
+    M 17:4 DummyClient.create_dataset - A (1)
+    M 21:4 DummyClient.create_example - A (1)
+    M 25:4 DummyClient.create_run - A (1)
+tests/test_supervisor_policy_trainer.py
+    F 8:0 test_supervisor_policy_trainer - A (3)
+tests/test_metrics_logging.py
+    F 35:0 test_task_span_contains_metrics - C (12)
+    C 18:0 InMemorySpanExporter - A (2)
+    M 19:4 InMemorySpanExporter.__init__ - A (1)
+    M 22:4 InMemorySpanExporter.export - A (1)
+    M 26:4 InMemorySpanExporter.shutdown - A (1)
+    M 29:4 InMemorySpanExporter.force_flush - A (1)
+tests/test_judge_pipeline.py
+    F 4:0 test_pipeline_evaluates_and_persists - A (4)
+    F 32:0 test_pipeline_retries_on_failure - A (3)
+tests/test_ltm_contract.py
+    F 30:0 _assert_contract - B (6)
+    F 14:0 _start_server - A (1)
+    F 24:0 _load_case - A (1)
+    F 41:0 ltm_endpoint - A (1)
+    F 47:0 test_consolidate_success_contract - A (1)
+    F 67:0 test_consolidate_missing_record_contract - A (1)
+    F 77:0 test_consolidate_invalid_memory_type_contract - A (1)
+    F 87:0 test_consolidate_invalid_role_contract - A (1)
+    F 97:0 test_retrieve_invalid_memory_type_contract - A (1)
+    F 108:0 test_retrieve_invalid_role_contract - A (1)
+tests/test_dataset_curation.py
+    F 10:0 test_validation_flags_and_quarantines - A (4)
+    F 30:0 test_versioning_creates_output - A (3)
+tests/test_reputation_service.py
+    F 15:0 test_reputation_aggregation - A (2)
+    F 8:0 setup_service - A (1)
+tests/test_html_scraper_tool.py
+    F 22:0 test_html_scraper_extracts_main_text - A (4)
+    F 65:0 test_html_scraper_dynamic_content - A (2)
+    F 13:0 _serve_dir - A (1)
+    F 50:0 test_html_scraper_bad_url - A (1)
+    F 55:0 test_html_scraper_invalid_scheme - A (1)
+    F 60:0 test_html_scraper_ftp_scheme - A (1)
+    F 84:0 test_html_scraper_traversal - A (1)
+tests/benchmarks/integration_harness.py
+    M 51:4 IntegrationTestHarness.run - C (18)
+    C 17:0 IntegrationTestHarness - B (9)
+    M 20:4 IntegrationTestHarness.__init__ - A (4)
+    F 144:0 main - A (1)
+    M 46:4 IntegrationTestHarness._execute_with_timeout - A (1)
+tests/benchmarks/browsecomp_evaluator.py
+    M 27:4 BrowseCompEvaluator.run_benchmark_suite - B (7)
+    C 11:0 BrowseCompEvaluator - A (5)
+    M 20:4 BrowseCompEvaluator._call_agent - A (4)
+    M 14:4 BrowseCompEvaluator.__init__ - A (1)
+engine/routing.py
+    F 13:0 make_status_router - A (1)
+    F 42:0 make_edge_type_router - A (1)
+    F 59:0 make_cosc_router - A (1)
+    C 9:0 RoutingError - A (1)
+engine/state.py
+    C 9:0 State - A (2)
+    M 20:4 State.update - A (1)
+    M 34:4 State.add_message - A (1)
+    M 48:4 State.to_json - A (1)
+    M 52:4 State.from_json - A (1)
+    M 55:4 State.__getitem__ - A (1)
+engine/orchestration_engine.py
+    M 245:4 OrchestrationEngine.run_async - D (26)
+    C 74:0 Node - C (11)
+    M 86:4 Node.run - B (10)
+    M 368:4 OrchestrationEngine.export_dot - B (7)
+    M 222:4 OrchestrationEngine._on_node_finished - B (6)
+    M 354:4 OrchestrationEngine.get_edges - B (6)
+    C 172:0 OrchestrationEngine - A (5)
+    M 237:4 OrchestrationEngine.build - A (4)
+    F 136:0 parallel_subgraphs - A (3)
+    F 156:0 _build_order - A (3)
+    C 47:0 InMemorySaver - A (2)
+    M 344:4 OrchestrationEngine.resume_from_queue_async - A (2)
+    F 60:0 _merge_states - A (1)
+    F 383:0 create_orchestration_engine - A (1)
+    C 38:0 NodeType - A (1)
+    M 50:4 InMemorySaver.__init__ - A (1)
+    M 53:4 InMemorySaver.save - A (1)
+    M 56:4 InMemorySaver.load - A (1)
+    C 128:0 Edge - A (1)
+    M 195:4 OrchestrationEngine.add_node - A (1)
+    M 205:4 OrchestrationEngine.add_subgraph - A (1)
+    M 211:4 OrchestrationEngine.add_edge - A (1)
+    M 214:4 OrchestrationEngine.add_router - A (1)
+    M 340:4 OrchestrationEngine.run - A (1)
+    M 351:4 OrchestrationEngine.resume_from_queue - A (1)
+engine/collaboration/group_chat.py
+    M 123:4 GroupChatManager.run - C (11)
+    C 102:0 GroupChatManager - B (8)
+    M 27:4 DynamicGroupChat.facilitate_team_collaboration - A (4)
+    M 64:4 DynamicGroupChat.post_message - A (4)
+    C 14:0 DynamicGroupChat - A (3)
+    M 54:4 DynamicGroupChat.write_scratchpad - A (2)
+    M 87:4 DynamicGroupChat.get_messages - A (2)
+    M 105:4 GroupChatManager.__init__ - A (2)
+    M 17:4 DynamicGroupChat.__init__ - A (1)
+    M 49:4 DynamicGroupChat.bind_state - A (1)
+    M 60:4 DynamicGroupChat.read_scratchpad - A (1)
+    M 92:4 DynamicGroupChat.update_workspace - A (1)
+    M 97:4 DynamicGroupChat.resolve_conflicts - A (1)
+engine/collaboration/message_protocol.py
+    C 11:0 ChatMessage - A (1)
+src/example.py
+    F 1:0 hello - A (1)
+agentic_index_cli/task_daemon.py
+    M 20:4 TaskDaemon._load_tasks - A (5)
+    M 27:4 TaskDaemon.poll_once - A (5)
+    C 10:0 TaskDaemon - A (4)
+    M 38:4 TaskDaemon.run - A (2)
+    M 13:4 TaskDaemon.__init__ - A (1)
+agentic_index_cli/internal/issue_logger.py
+    F 9:0 format_agent_log - A (3)
+    F 24:0 post_markdown_comment - A (3)
+pipelines/teacher/pipeline.py
+    M 49:4 TeacherDataPipeline.run - A (4)
+    C 10:0 TeacherDataPipeline - A (3)
+    M 35:4 TeacherDataPipeline.generate_example - A (3)
+    M 13:4 TeacherDataPipeline.__init__ - A (1)
+    M 20:4 TeacherDataPipeline._build_prompt - A (1)
+    M 32:4 TeacherDataPipeline._call_llm - A (1)
+pipelines/back_translation/pipeline.py
+    M 28:4 BackTranslationPipeline.augment_records - A (5)
+    M 54:4 BackTranslationPipeline._load_records - A (5)
+    C 11:0 BackTranslationPipeline - A (4)
+    M 18:4 BackTranslationPipeline._back_translate - A (3)
+    M 63:4 BackTranslationPipeline._save_records - A (2)
+    M 14:4 BackTranslationPipeline.__init__ - A (1)
+    M 48:4 BackTranslationPipeline.augment_file - A (1)
+pipelines/judge/pipeline.py
+    M 59:4 JudgePipeline.evaluate - A (3)
+    C 12:0 JudgePipeline - A (2)
+    M 15:4 JudgePipeline.__init__ - A (1)
+    M 29:4 JudgePipeline._ensure_db - A (1)
+    M 39:4 JudgePipeline.close - A (1)
+    M 42:4 JudgePipeline._build_prompt - A (1)
+    M 56:4 JudgePipeline._call_llm - A (1)
+pipelines/judge/tests/test_judge_contract.py
+    F 17:0 test_judge_pipeline_contracts - A (4)
+    F 10:0 _load_cases - A (2)
+pipelines/reward_model/composite_reward.py
+    C 42:0 CompositeRewardFunction - A (3)
+    M 45:4 CompositeRewardFunction.__init__ - A (3)
+    M 66:4 CompositeRewardFunction.__call__ - A (3)
+    C 12:0 LinearPreferenceModel - A (2)
+    M 15:4 LinearPreferenceModel.__init__ - A (1)
+    M 20:4 LinearPreferenceModel.from_file - A (1)
+    M 24:4 LinearPreferenceModel.score - A (1)
+    C 31:0 CompositeRewardConfig - A (1)
+    M 61:4 CompositeRewardFunction.semantic_distance - A (1)
+pipelines/reward_model/pipeline.py
+    M 17:4 RewardModelTrainer.load_data - A (5)
+    M 33:4 RewardModelTrainer.train_model - A (5)
+    C 10:0 RewardModelTrainer - A (3)
+    M 26:4 RewardModelTrainer.preprocess - A (3)
+    M 45:4 RewardModelTrainer.evaluate_model - A (2)
+    M 13:4 RewardModelTrainer.__init__ - A (1)
+    M 51:4 RewardModelTrainer.save_model - A (1)
+    M 57:4 RewardModelTrainer.run - A (1)
+pipelines/supervisor_policy/pipeline.py
+    C 30:0 SupervisorPolicyTrainer - A (4)
+    M 48:4 SupervisorPolicyTrainer.load_data - A (4)
+    M 54:4 SupervisorPolicyTrainer.run - A (3)
+    C 16:0 RewardModel - A (2)
+    F 10:0 _load_learning_modules - A (1)
+    M 19:4 RewardModel.__init__ - A (1)
+    M 23:4 RewardModel.score - A (1)
+    M 33:4 SupervisorPolicyTrainer.__init__ - A (1)
+pipelines/langground_dataset/pipeline.py
+    M 26:4 CommunicationDatasetPipeline.run - A (3)
+    C 8:0 CommunicationDatasetPipeline - A (2)
+    M 11:4 CommunicationDatasetPipeline.__init__ - A (1)
+    M 18:4 CommunicationDatasetPipeline._build_prompt - A (1)
+    M 21:4 CommunicationDatasetPipeline.generate_record - A (1)
+
+793 blocks (classes, functions, methods) analyzed.
+Average complexity: A (2.85750315258512)
+```
+
+## 3. Manual Code Review Notes
+
+This section includes observations from a manual review of the codebase, focusing on structure, naming conventions, and folder organization.
+
+*   *(Manual review findings to be added based on overall project structure and common patterns observed during the audit. For now, noting that the project appears generally well-structured with clear separation of concerns in directories like `agents/`, `services/`, `pipelines/`, `engine/`, etc. Naming conventions seem to follow Python standards (e.g., PEP 8).)*
+
+## 4. Recommendations
+
+*   Address reported Flake8 violations to improve code consistency and maintainability.
+*   Review files/functions with high cyclomatic complexity identified by Radon to see if they can be refactored for better clarity and testability.
+*   *(Further recommendations will be added based on the findings above.)*
