@@ -132,7 +132,6 @@
     - Given two agents from separate runs
     - When the evaluation pipeline runs
     - Then the report includes ZSC, CIC, and Interpretability scores
-
 - id: CR-05a
   title: Enforce Agent Sandboxing
   priority: high
@@ -142,3 +141,19 @@
     - manage sandbox specs via IaC
   acceptance_criteria:
     - Unauthorized network calls are blocked and log SandboxNetworkBlocked
+- id: CR-AI-16
+  title: Analyse & Enhance Codex Agent Experience
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Gap analysis report produced
+    - Task lifecycle documented with pain points
+    - AGENTS.md and codex_tasks logic updated
+- id: CR-05c
+  title: Enable Continuous Monitoring & Auditing
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Given an agent issues any tool call
+    - When the call completes or is blocked
+    - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
