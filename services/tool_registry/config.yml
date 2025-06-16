@@ -13,4 +13,6 @@ permissions:
     - Evaluator
   code_interpreter:
     - CodeResearcher
+  github_search:
+    - CodeResearcher
 

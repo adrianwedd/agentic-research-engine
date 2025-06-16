@@ -5,3 +5,11 @@
   steps:
   - do something
   title: Example task
+- id: P3-19
+  title: Implement a GitHub Search API tool
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Given a query for a specific open-source library
+    - When the GitHub Search tool is called with the query
+    - Then it returns a list of relevant repository URLs and descriptions
