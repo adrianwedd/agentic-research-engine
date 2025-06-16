@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import datetime
 import json
 import logging
-from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -46,7 +46,9 @@ class ToolRegistryServer:
                     logger.warning(
                         json.dumps(
                             {
-                                "timestamp": datetime.utcnow().isoformat(),
+                                "timestamp": datetime.datetime.now(
+                                    datetime.UTC
+                                ).isoformat(),
                                 "role": role,
                                 "tool": name,
                                 "client_ip": self.client_address[0],

@@ -1,6 +1,6 @@
 import argparse
+import datetime
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import Tuple
 
@@ -113,7 +113,10 @@ def main() -> None:
     parser.add_argument("--out-root", type=Path, default=Path("models/evaluator"))
     args = parser.parse_args()
 
-    version = args.version or f"evaluator-{datetime.utcnow().strftime('%Y%m%d')}"
+    version = (
+        args.version
+        or f"evaluator-{datetime.datetime.now(datetime.UTC).strftime('%Y%m%d')}"
+    )
     out_dir = args.out_root / version
 
     train_ds, eval_ds = prepare_datasets(args.data_path, args.test_split)

@@ -1,11 +1,11 @@
 import argparse
+import datetime
 import fcntl
 import json
 import os
 import sys
 import tempfile
 import time
-from datetime import datetime
 from typing import List, Optional
 
 import requests
@@ -250,14 +250,14 @@ class CodexAgentLogger:
         self.started: Optional[str] = None
 
     def start(self) -> None:
-        self.started = datetime.utcnow().isoformat()
+        self.started = datetime.datetime.now(datetime.UTC).isoformat()
 
     def finish(self, worklog: dict) -> None:
         worklog = dict(worklog)
         worklog.setdefault("agent_id", self.agent_id)
         if self.started and "started" not in worklog:
             worklog["started"] = self.started
-        worklog.setdefault("finished", datetime.utcnow().isoformat())
+        worklog.setdefault("finished", datetime.datetime.now(datetime.UTC).isoformat())
         url = post_worklog_comment(self.target_url, worklog)
         if not url:
             print("Worklog comment failed; stored for retry", file=sys.stderr)

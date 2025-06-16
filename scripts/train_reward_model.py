@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime
+import datetime
 from pathlib import Path
 
 from pipelines.reward_model import RewardModelTrainer
@@ -12,7 +12,9 @@ def main() -> None:
     parser.add_argument("--version", default=None)
     args = parser.parse_args()
 
-    version = args.version or datetime.utcnow().strftime("reward-%Y%m%d_%H%M%S")
+    version = args.version or datetime.datetime.now(datetime.UTC).strftime(
+        "reward-%Y%m%d_%H%M%S"
+    )
     out_dir = args.out_root / version
 
     trainer = RewardModelTrainer(args.data_path, out_dir)
