@@ -97,6 +97,7 @@ The system we are building is fundamentally a graph, managing the flow of state 
 | P3-19 | Implement a GitHub Search API tool | 3 | Core Agents | Feature | 2 pts | P1-13 | BE |
 | P3-20 | Research emergent communication protocols in group chat | 3 | Collaboration | Research | 8 pts | P3-01 | ML |
 | P3-21 | Develop QA tests for race conditions in group chat | 3 | Collaboration | QA | 5 pts | P3-01 | QA |
+| CR-05 | Development of a Robust Security & Governance Subsystem | 3 | Security | Infra | 13 pts | None | Security/Ops |
 | P4-01 | Implement Procedural Memory module in LTM Service | 4 | Performance Tuning | Feature | 5 pts | P2-01 | BE |
 | P4-02 | Instrument agents to identify and store successful tool sequences | 4 | Performance Tuning | Feature | 5 pts | P4-01 | ML |
 | P4-03 | Enhance agents to query and execute stored procedures | 4 | Performance Tuning | Feature | 5 pts | P4-01 | ML |
@@ -1765,6 +1766,47 @@ This group of CRs expands the system's capabilities by introducing new, speciali
 **Implementation Notes**
 
 * This can be implemented by adding a "knowledge graph search" tool to the agents' permitted tool list and instructing them in their system prompts to prefer it for factual queries.
+
+### **4.4. Epic: Security & Governance**
+
+This epic establishes a dedicated security engineering workstream to ensure the system is secure by design rather than relying on reactive measures.
+
+#### **CR-05 – Development of a Robust Security & Governance Subsystem**
+
+|  |  |
+| :---- | :---- |
+| **Phase** | 3 |
+| **Epic** | Security |
+| **Category** | Infra |
+| **Effort** | 13 pts |
+| **Owner Hint** | Security/Ops |
+| **Dependencies** | None |
+
+**Strategic Rationale** The initial risk assessment in P3-20 is insufficient to address the novel threats posed by autonomous agents. Proactive security measures are required to mitigate risks such as covert data exfiltration and unauthorized actions.
+
+**Detailed Description** Establish a comprehensive security and governance subsystem built on three pillars:
+
+1. **Robust Agent Sandboxing:** All agents must run in tightly isolated environments (e.g., gVisor or Firecracker microVMs) with network access denied by default.
+2. **Intent-Based Authorization:** Implement dynamic access controls that authorize tool use based on the agent's current task intent rather than static roles.
+3. **Continuous Monitoring and Auditing:** Continuously log and audit all inter-agent communications and actions in a structured, human-readable format.
+
+**Refined Acceptance Criteria**
+`Feature: Security-by-Design for Agentic Systems`
+
+  `Scenario: Unauthorized network call from sandbox`
+    `Given an agent is executing within its sandbox`
+    `When its code attempts to open a network socket to an unauthorized external IP address`
+    `Then the sandbox environment blocks the call`
+    `And a high-priority security alert is logged`
+
+  `Scenario: Tool invocation outside task intent`
+    `Given an agent is executing a task with the intent "analyze_code"`
+    `When the agent attempts to invoke the "send_email" tool`
+    `Then the Intent-Based Authorization system denies the request and logs the violation`
+
+**Implementation Notes**
+
+* Treat sandbox configuration as infrastructure-as-code and enable detailed audit logging.
 
 ## **Part V: Phase 4 \- Production Hardening and Specialization**
 
