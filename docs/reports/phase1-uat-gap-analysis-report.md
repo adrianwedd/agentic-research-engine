@@ -29,7 +29,7 @@ This report compares the repository implementation against the Phase 1 change r
 | P1-17 | BrowseComp dataset | `benchmarks/browsecomp_v1.json` | ✓ |
 | P1-18 | Integration-test harness | `tests/test_browsecomp_harness.py` | ✓ |
 | P1-19 | Unit test framework & coverage | `.github/workflows/ci.yml`, `tests/` | ⚠ Partial |
-| P1-20 | Graph compilation research | `docs/graph_compilation_research.md` | ✓ |
+| P1-20 | Graph compilation research | `docs/research/2025-graph-compilation.md` | ✓ |
 
 ## Identified Gaps
 
