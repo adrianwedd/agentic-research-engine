@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -39,6 +40,8 @@ class SemanticMemoryService:
     ) -> List[Dict[str, Any]]:
         results = []
         for fact in self._facts:
+            if fact.get("deleted_at"):
+                continue
             if subject and fact["subject"] != subject:
                 continue
             if predicate and fact["predicate"] != predicate:
@@ -47,3 +50,14 @@ class SemanticMemoryService:
                 continue
             results.append(fact)
         return results
+
+    def forget_fact(self, fact_id: str, *, hard: bool = False) -> bool:
+        for fact in list(self._facts):
+            if fact["id"] != fact_id:
+                continue
+            if hard:
+                self._facts.remove(fact)
+            else:
+                fact["deleted_at"] = time.time()
+            return True
+        return False
