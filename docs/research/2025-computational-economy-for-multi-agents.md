@@ -1,6 +1,9 @@
 
 # **An Internal Economy for Computational Resource Allocation in Multi-Agent Systems**
 
+> **Status:** Proposed for future development. This document outlines a potential
+> architecture for resource allocation using an internal economy.
+
 ## **Part I: Foundations of Computational Economies in Multi-Agent Systems**
 
 The development of sophisticated multi-agent systems (MAS), particularly those powered by Large Language Models (LLMs), presents a paradigm shift in automated problem-solving. However, this power comes at a significant computational cost, a challenge that necessitates a move beyond static cost-mitigation techniques toward dynamic, intelligent resource management. This report outlines a comprehensive framework for implementing an internal "economy" for computational resource allocation within a multi-agent research system. By modeling the system as a micro-economy, where agents are economic actors, computational resources are goods, and tasks are market opportunities, we can introduce powerful levers for controlling operational costs and formally navigating the trade-off between expenditure and the quality of research outcomes.
