@@ -1,0 +1,23 @@
+{{- if .Values.forgetting.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: episodic-forgetting-job
+spec:
+  schedule: "{{ .Values.forgetting.schedule }}"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: forgetting
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            command: ["python", "scripts/episodic_forgetting_job.py"]
+            env:
+            - name: LTM_TTL_DAYS
+              value: "{{ .Values.forgetting.ttlDays }}"
+{{- end }}
