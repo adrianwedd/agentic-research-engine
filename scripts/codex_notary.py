@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 from typing import List
 
@@ -23,13 +22,6 @@ def save_queue(path: str, tasks: List[dict]) -> None:
         yaml.safe_dump(tasks, f, sort_keys=False)
 
 
-def _issue_number_from_url(url: str) -> int | None:
-    m = re.search(r"/issues/(\d+)", url)
-    if m:
-        return int(m.group(1))
-    return None
-
-
 def create_issues_for_queue(queue_path: str, repo: str) -> int:
     tasks = load_queue(queue_path)
     changed = False
@@ -48,16 +40,15 @@ def create_issues_for_queue(queue_path: str, repo: str) -> int:
             labels.append(f"phase:{t['phase']}")
         if t.get("epic"):
             labels.append(f"epic:{t['epic']}")
-        url = issue_logger.create_issue(title, body, repo, labels=labels)
-        if not url:
+        result = issue_logger.create_issue(title, body, repo, labels=labels)
+        if not result:
             print(f"Failed to create issue for {t.get('id')}", file=sys.stderr)
             return 1
-        num = _issue_number_from_url(url)
-        if num:
-            t["issue_id"] = num
+        if result.get("number"):
+            t["issue_id"] = int(result["number"])
             changed = True
         else:
-            print(f"Could not parse issue number from {url}", file=sys.stderr)
+            print(f"Issue creation response missing number: {result}", file=sys.stderr)
             return 1
     if changed:
         save_queue(queue_path, tasks)

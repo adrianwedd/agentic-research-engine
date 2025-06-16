@@ -1322,3 +1322,40 @@ steps: []
 acceptance_criteria:
   - RL training uses Ray RLlib and NVIDIA Isaac Lab
 ```
+
+```codex-task
+id: CODEX-CR-COLLECT-02
+issue: TBD
+title: Consolidate scattered change-request suggestions
+priority: low
+steps: []
+acceptance_criteria:
+  - docs/change-requests.md aggregates suggestions by topic
+  - codex_tasks.md references this issue
+```
+```codex-task
+id: CODEX-CR-PROPAGATE-04
+issue: TBD
+title: Retrospectively propagate Codex tasks via branch and PR inspection
+status: in_progress
+steps:
+  - enumerate repo PR history
+  - cross-reference with codex_tasks.md
+  - create missing issues and tasks
+acceptance_criteria:
+  - each PR linked to an issue
+  - codex_tasks.md updated with retrospective entries
+  - governing issue records execution logs
+```
+
+```codex-task
+id: CODEX-CR-RATIONALISE-03
+issue: TBD
+title: Rationalise overlap between change_requests.md and codex_tasks.md
+priority: low
+steps: []
+acceptance_criteria:
+  - Overlapping entries are consolidated in codex_tasks.md
+  - docs/change-requests.md notes consolidation date
+  - Issue link is recorded here
+```

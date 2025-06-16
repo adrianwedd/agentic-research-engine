@@ -18,7 +18,7 @@ def test_create_issue_updates_queue(tmp_path):
     def fake_create_issue(title, body, repo, labels=None):
         called["title"] = title
         called["labels"] = labels
-        return "https://api.github.com/repos/u/r/issues/42"
+        return {"url": "https://api.github.com/repos/u/r/issues/42", "number": 42}
 
     with mock.patch.dict(
         os.environ, {"GITHUB_REPOSITORY": "u/r", "GITHUB_TOKEN": "t"}

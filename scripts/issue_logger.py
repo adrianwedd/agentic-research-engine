@@ -86,11 +86,11 @@ def _store_pending_worklog(target: str, data: dict) -> None:
 
 def create_issue(
     title: str, body: str, repo: str, labels: List[str] | None = None
-) -> str:
-    """Create a GitHub issue and return its URL."""
+) -> dict | None:
+    """Create a GitHub issue and return its metadata."""
     token = _get_token()
     if not token:
-        return ""
+        return None
 
     url = f"{GITHUB_API}/repos/{repo}/issues"
     headers = {"Authorization": f"token {token}"}
@@ -99,11 +99,12 @@ def create_issue(
         payload["labels"] = labels
     resp = _request_with_retry("post", url, headers=headers, json=payload)
     if not resp:
-        return ""
+        return None
     if resp.status_code >= 300:
         print(f"GitHub API error {resp.status_code}: {resp.text}", file=sys.stderr)
-        return ""
-    return resp.json().get("html_url", "")
+        return None
+    data = resp.json()
+    return {"url": data.get("html_url", ""), "number": data.get("number")}
 
 
 def post_comment(issue_url: str, body: str) -> str:

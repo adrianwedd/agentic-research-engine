@@ -103,9 +103,9 @@ def main():
                     + yaml.safe_dump(task)
                 )
                 repo = task.get("repo", "")
-                url = create_issue(task["title"], body, repo, task.get("labels", []))
-                if url:
-                    print(f"Created issue for {task['id']}: {url}")
+                result = create_issue(task["title"], body, repo, task.get("labels", []))
+                if result:
+                    print(f"Created issue for {task['id']}: {result['url']}")
 
 
 if __name__ == "__main__":
