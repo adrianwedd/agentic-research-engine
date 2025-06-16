@@ -1248,3 +1248,16 @@ acceptance_criteria: []
 ```
 
 
+```codex-task
+id: P2-04B
+title: Supervisor plan recall does not shorten workflow
+status: todo
+notes: Plan templates must be enabled to benefit from episodic recall.
+steps:
+  - Investigate Supervisor merging logic
+  - Add regression test for plan length reduction
+acceptance_criteria:
+  - Given a recalled plan template exists
+  - When a similar query is submitted
+  - Then the resulting plan has fewer nodes than the baseline
+```
