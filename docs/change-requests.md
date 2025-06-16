@@ -8,7 +8,7 @@ This document aggregates improvement notes and change requests across reports an
 - **Typed Edge Support** – extend the orchestration engine `add_edge` API to accept metadata such as labels【F:docs/reports/phase2-architecture-health-report.md†L59-L62】 (priority: low)
 - **Enforce Tool Registry Use** – route all tool calls through `services.tool_registry` for RBAC compliance【F:docs/reports/phase2-architecture-health-report.md†L63-L66】 (priority: low)
 - **Harden Evaluation Pipeline** – add contract tests and CI hooks for the judge pipeline【F:docs/reports/phase2-architecture-health-report.md†L67-L70】 (priority: low)
-- **Fix State Propagation from Hierarchical Subgraphs** – ensure subgraph results propagate to parent graphs and add tests【F:docs/reports/p3_gap_analysis.md†L34-L40】 (priority: low)
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Fix State Propagation from Hierarchical Subgraphs -->
 - **Implement Concurrency Stress Tests** – simulate simultaneous scratchpad writes to verify locking behavior【F:docs/reports/p3_gap_analysis.md†L41-L44】 (priority: low)
 
 ## Memory
@@ -16,13 +16,13 @@ This document aggregates improvement notes and change requests across reports an
 - **Cache Frequently Used Embeddings** – add an LRU cache in `EmbeddingClient` to avoid duplicate work【F:docs/reports/phase2-performance-bottlenecks-report.md†L14-L20】 (priority: low)
 - **Switch to Async HTTP Framework** – replace `HTTPServer` with `FastAPI`/`uvicorn` for parallel requests【F:docs/reports/phase2-performance-bottlenecks-report.md†L14-L22】 (priority: low)
 - **Parallelize Vector Store Operations** – use a worker pool for similarity search to scale on multi-core hosts【F:docs/reports/phase2-performance-bottlenecks-report.md†L14-L23】 (priority: low)
-- **Enforce `memory_type` Parameter Validation** – validate and authorize memory operations in LTM API【F:docs/reports/phase2-ltm-api-gap-report.md†L18-L25】 (priority: low)
-- **Add Contract Tests for LTM API** – extend `tests/test_ltm_service_api.py` with schema checks【F:docs/reports/phase2-ltm-api-gap-report.md†L26-L31】 (priority: low)
-- **Document LTM OpenAPI Spec** – provide a versioned spec for LTM endpoints【F:docs/reports/phase2-ltm-api-gap-report.md†L32-L36】 (priority: low)
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Enforce `memory_type` Parameter Validation -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Add Contract Tests for LTM API -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Document LTM OpenAPI Spec -->
 - **Extend `/retrieve` Query Flexibility** – support filtering by `memory_type` and keywords【F:docs/reports/phase2-ltm-api-gap-report.md†L34-L37】 (priority: low)
-- **Schedule Periodic Forgetting Job** – integrate `scripts/episodic_forgetting_job.py` for pruning stale memories【F:docs/reports/p2_gap_analysis.md†L44-L48】 (priority: low)
-- **Align Semantic LTM with Graph DB Spec** – replace in-memory store with Neo4j or document alternate approach【F:docs/reports/p3_gap_analysis.md†L38-L40】 (priority: low)
-- **Improve MemoryManager Relation Extraction** – enhance `_extract_triples` for complex relationships and add tests【F:docs/reports/p3_gap_analysis.md†L41-L43】 (priority: low)
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Schedule Periodic Forgetting Job -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Align Semantic LTM with Graph DB Spec -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Improve MemoryManager Relation Extraction -->
 
 ## API & Security
 
@@ -45,12 +45,12 @@ This document aggregates improvement notes and change requests across reports an
 
 ## Testing & Tooling
 
-- **Enforce Branch Protection** – block direct pushes to `main` and require CI checks before merge【F:docs/reports/phase1-gap-analysis-report.md†L35-L39】 (priority: low)
-- **Enforce Coverage Threshold in CI** – require ≥80% coverage in the workflow【F:docs/reports/phase1-gap-analysis-report.md†L39-L42】【F:docs/reports/phase1-uat-gap-analysis-report.md†L44-L49】 (priority: low)
-- **Expand Tracing of State Transitions** – instrument orchestration edges following `tracing_schema.md`【F:docs/reports/phase1-gap-analysis-report.md†L42-L44】 (priority: low)
-- **Validate Supervisor Plan Output** – add strict schema validation for YAML plans【F:docs/reports/phase1-gap-analysis-report.md†L44-L46】 (priority: low)
-- **Harden PDF Reader Wrapper** – improve OCR fallback and error handling【F:docs/reports/phase1-gap-analysis-report.md†L46-L48】 (priority: low)
-- **Enhance Integration Harness** – add timeout configurability and partial failure handling【F:docs/reports/phase1-gap-analysis-report.md†L48-L50】 (priority: low)
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Enforce Branch Protection -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Enforce Coverage Threshold in CI -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Expand Tracing of State Transitions -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Validate Supervisor Plan Output -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Harden PDF Reader Wrapper -->
+<!-- Consolidated into codex_tasks.md on 2025-06-16: Enhance Integration Harness -->
 - **Document Branch Protection Rules** – describe required settings in contributing guide【F:docs/reports/phase1-revalidation-gap-analysis.md†L36-L38】 (priority: low)
 - **Align CD Pipeline with Rainbow Deployment** – update scripts or document rationale【F:docs/reports/phase1-revalidation-gap-analysis.md†L38-L40】 (priority: low)
 - **Improve HTML Scraper Reliability** – evaluate `trafilatura` or headless browser approach【F:docs/reports/phase1-revalidation-gap-analysis.md†L40-L42】 (priority: low)

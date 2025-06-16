@@ -1,10 +1,6 @@
 import pytest
 
-from services.evaluation import (
-    compute_zsc_score,
-    compute_cic,
-    compute_interpretability,
-)
+from services.evaluation import compute_cic, compute_interpretability, compute_zsc_score
 from services.ltm_service import SimpleEmbeddingClient
 
 
