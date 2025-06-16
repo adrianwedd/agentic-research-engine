@@ -1347,3 +1347,15 @@ acceptance_criteria:
   - codex_tasks.md updated with retrospective entries
   - governing issue records execution logs
 ```
+
+```codex-task
+id: CODEX-CR-RATIONALISE-03
+issue: TBD
+title: Rationalise overlap between change_requests.md and codex_tasks.md
+priority: low
+steps: []
+acceptance_criteria:
+  - Overlapping entries are consolidated in codex_tasks.md
+  - docs/change-requests.md notes consolidation date
+  - Issue link is recorded here
+```
