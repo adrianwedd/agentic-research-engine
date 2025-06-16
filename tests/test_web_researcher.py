@@ -114,3 +114,31 @@ def test_research_topic_retries_and_errors():
         agent.research_topic("topic", {})
 
     assert len(calls) == 2
+
+
+def test_webresearcher_prefers_knowledge_graph():
+    calls: list[str] = []
+
+    def kg_search(query: dict) -> list:
+        calls.append("kg")
+        return [{"subject": "France", "predicate": "HAS_CAPITAL", "object": "Paris"}]
+
+    def web_search(q: str) -> list:
+        calls.append("web")
+        return []
+
+    registry = {
+        "web_search": web_search,
+        "knowledge_graph_search": kg_search,
+        "pdf_extract": None,
+        "html_scraper": None,
+        "summarize": lambda text: "",
+        "assess_source": lambda url: 1.0,
+    }
+
+    agent = WebResearcherAgent(registry)
+    result = agent.research_topic("capital of France", {})
+
+    assert calls[0] == "kg"
+    assert "web" not in calls
+    assert result["facts"][0]["object"] == "Paris"
