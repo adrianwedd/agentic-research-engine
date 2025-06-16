@@ -1,6 +1,10 @@
 
 # **Analysis and Recommendations for the Evolution of Multi-Agent Communication Protocols**
 
+> **Status:** The recommendations of this document were adopted in
+> [ADR-003](../architecture/llm_grounded_guided_evolution.md). Fully emergent
+> protocols are deprecated in favor of LLM-Grounded Guided Evolution.
+
 ## **Executive Summary and Strategic Recommendations**
 
 ### **1.1. Overview**

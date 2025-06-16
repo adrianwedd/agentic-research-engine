@@ -1,6 +1,10 @@
 
 # **A Research Report on Emergent Communication Protocols for Multi-Agent Collaboration**
 
+> **Deprecated:** Development of fully emergent communication protocols has been discontinued.
+> The project now exclusively follows the LLM-Grounded Guided Evolution paradigm.
+> See [ADR-003](../architecture/llm_grounded_guided_evolution.md) for details.
+
 ## **Executive Summary**
 
 This report presents a comprehensive research analysis into the feasibility and design of emergent communication (EC) protocols for multi-agent systems, as mandated by the research spike P3-20. The strategic objective is to transcend hard-coded interaction patterns by enabling artificial intelligence (AI) agents to learn their own efficient, task-specific languages, thereby unlocking significant performance improvements in collaborative tasks. The investigation focuses on two primary deliverables: a detailed proof-of-concept (PoC) design for a reinforcement learning environment to train these protocols, and a rigorous comparative analysis of the trade-offs between fully emergent and guided evolution approaches.
@@ -51,7 +55,7 @@ Once training is complete, the system switches to **decentralized execution**. T
 
 The ambition to create agents that learn their own language can be approached from two distinct philosophical and technical standpoints: allowing a protocol to emerge entirely from scratch or guiding its evolution with predefined constraints and biases. This section analyzes these two paradigms and their associated trade-offs.
 
-### **Paradigm 1: Fully Emergent Protocols (Learning from Scratch)**
+### **Paradigm 1: Fully Emergent Protocols (Learning from Scratch) – DEPRECATED**
 
 In the fully emergent paradigm, agents begin as a *tabula rasa* with no predefined communication protocol. The language emerges *de novo*, driven solely by the agents' interactions with each other and the environment as they work to maximize a shared task reward.1 The protocol is a purely emergent property of this process.
 
