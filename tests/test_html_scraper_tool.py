@@ -73,11 +73,12 @@ def test_html_scraper_dynamic_content(tmp_path):
     httpd, t = _serve_dir(tmp_path)
     try:
         url = f"http://localhost:{httpd.server_port}/dynamic.html"
-        with pytest.raises(ValueError):
-            html_scraper(url)
+        text = html_scraper(url)
     finally:
         httpd.shutdown()
         t.join()
+
+    assert "Hi" in text
 
 
 def test_html_scraper_traversal(tmp_path):
