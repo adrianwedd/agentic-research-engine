@@ -10,6 +10,10 @@ from scripts.issue_logger import create_issue
 
 BLOCK_RE = re.compile(r"```codex-task\n(.*?)\n```", re.DOTALL)
 REQUIRED_FIELDS = {"id", "title", "priority", "steps", "acceptance_criteria"}
+OPTIONAL_VALIDATORS = {
+    "timeout": lambda v: isinstance(v, (int, float)) and v > 0,
+    "retries": lambda v: isinstance(v, int) and v >= 0,
+}
 
 
 def parse_tasks(md_text: str) -> List[Dict[str, Any]]:
@@ -29,6 +33,13 @@ def parse_tasks(md_text: str) -> List[Dict[str, Any]]:
         if missing:
             print(f"Missing fields {missing} in task {data.get('id')}", file=sys.stderr)
             continue
+        for key, check in OPTIONAL_VALIDATORS.items():
+            if key in data and not check(data[key]):
+                print(
+                    f"Invalid value for {key} in task {data.get('id')}",
+                    file=sys.stderr,
+                )
+                continue
         if data["id"] in seen_ids:
             print(f"Duplicate ID {data['id']} found; skipping", file=sys.stderr)
             continue

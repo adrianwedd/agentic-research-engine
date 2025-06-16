@@ -50,3 +50,21 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 - The `Codex Archivist` workflow posts agent logs to the issue once it is closed.
 - Both workflows expect `issue_logger.create_issue` to return `{url, number}` and
   rely on the stored `issue_id` for traceability.
+
+## Codex Task Templates
+- Define tasks in `codex_tasks.md` using fenced blocks tagged `codex-task`.
+- Required fields: `id`, `title`, `priority`, `steps`, `acceptance_criteria`.
+- Optional metadata like `timeout` or `retries` is validated by `codex_task_runner.py`.
+- After editing tasks, run `python scripts/codex_task_runner.py` to update `.codex/queue.yml`.
+- Use `python scripts/sync_codex_tasks.py` to ensure the queue matches open issues.
+
+Example:
+```codex-task
+id: CR-EXAMPLE-01
+title: Example enhancement
+priority: low
+steps:
+  - describe work
+acceptance_criteria:
+  - outcome documented
+```

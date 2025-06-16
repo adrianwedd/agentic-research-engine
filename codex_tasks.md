@@ -1359,3 +1359,16 @@ acceptance_criteria:
   - docs/change-requests.md notes consolidation date
   - Issue link is recorded here
 ```
+```codex-task
+id: CR-AI-16
+title: Analyse & Enhance Codex Agent Experience
+priority: medium
+steps:
+  - Audit AGENTS.md against runtime behaviors
+  - Trace task lifecycle from queue to completion
+  - Propose doc updates and logic refinements
+acceptance_criteria:
+  - Gap analysis report produced
+  - Task flow diagram with pain points
+  - AGENTS.md and codex_tasks updated with examples and new metadata support
+```
