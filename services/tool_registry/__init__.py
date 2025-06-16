@@ -2,8 +2,8 @@ from __future__ import annotations
 
 """Simple in-memory Tool Registry with RBAC controls."""
 
+import datetime
 import os
-from datetime import datetime
 from typing import Callable, Dict, Iterable, Optional
 
 import yaml
@@ -53,7 +53,7 @@ class ToolRegistry:
             "tool.init",
             attributes={
                 "tool.name": name,
-                "init.timestamp": datetime.utcnow().isoformat(),
+                "init.timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                 "parent.span_id": hex(parent_id),
             },
         ) as span:

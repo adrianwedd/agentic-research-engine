@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import time
-from datetime import datetime
 from typing import Any, Dict, Iterable
 
 
@@ -65,5 +65,7 @@ class BrowseCompEvaluator:
             "pass_rate": passed / len(results) if results else 0.0,
             "results": results,
         }
-        self.history.append({"timestamp": datetime.utcnow().isoformat(), **summary})
+        self.history.append(
+            {"timestamp": datetime.datetime.now(datetime.UTC).isoformat(), **summary}
+        )
         return summary

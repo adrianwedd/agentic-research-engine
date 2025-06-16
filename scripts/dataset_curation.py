@@ -1,7 +1,7 @@
 import argparse
+import datetime
 import json
 import random
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -46,7 +46,7 @@ def validate_records(records: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
 
 
 def save_version(records: List[Dict], out_dir: Path) -> str:
-    version_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    version_id = datetime.datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
     version_path = out_dir / version_id
     version_path.mkdir(parents=True, exist_ok=True)
     (version_path / "dataset.json").write_text(
