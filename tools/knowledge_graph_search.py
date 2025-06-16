@@ -13,5 +13,6 @@ def knowledge_graph_search(
     """Return facts matching ``query`` from semantic memory."""
     if not isinstance(query, dict):
         raise ValueError("query must be a dictionary")
-    return retrieve_memory(query, memory_type="semantic", limit=limit, endpoint=endpoint)
-
+    return retrieve_memory(
+        query, memory_type="semantic", limit=limit, endpoint=endpoint
+    )
