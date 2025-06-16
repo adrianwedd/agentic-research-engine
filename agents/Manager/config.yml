@@ -1,0 +1,4 @@
+agent_name: "Manager"
+role: "Task orchestrator"
+max_retries: 0
+rbac: []

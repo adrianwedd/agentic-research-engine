@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from services.ltm_service import SimpleEmbeddingClient
 
