@@ -96,3 +96,22 @@ def test_prune_stale_memories():
     assert id_old not in dict(storage.all())
     assert id_new in dict(storage.all())
     assert exporter.spans
+
+
+def test_decay_relevance_soft_delete():
+    storage = InMemoryStorage()
+    vector_store = InMemoryVectorStore()
+    service = EpisodicMemoryService(storage, vector_store=vector_store)
+
+    rec_id = service.store_experience({}, {}, {})
+    storage.update(
+        rec_id,
+        {
+            "last_accessed_timestamp": time.time() - 31 * 24 * 3600,
+            "relevance_score": 0.05,
+        },
+    )
+
+    pruned = service.decay_relevance_scores(decay_rate=0.9, threshold=0.1)
+    assert pruned == 1
+    assert storage._data[rec_id].get("deleted_at")

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
@@ -63,6 +64,7 @@ class Node:
         Callable[[State, Dict[str, Any]], Awaitable[State]]
         | Callable[[State, Dict[str, Any]], State]
     )
+
     retries: int = 0
     node_type: NodeType = NodeType.DEFAULT
 
@@ -227,25 +229,30 @@ class OrchestrationEngine:
     ) -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
 
-        if self.entry is None:
-            self.build()
-        self._last_node = None
-        if hasattr(self.checkpointer, "start"):
-            try:
-                self.checkpointer.start(thread_id, state)
-            except Exception:  # pragma: no cover - defensive
-                pass
-
-        node_name = start_at or self.entry
-        while node_name:
-            node = self.nodes[node_name]
-            state = await node.run(state)
-            if hasattr(self.checkpointer, "save"):
+        tracer = trace.get_tracer(__name__)
+        start_time = time.perf_counter()
+        with tracer.start_as_current_span(
+            "task", attributes={"thread_id": thread_id}
+        ) as task_span:
+            if self.entry is None:
+                self.build()
+            self._last_node = None
+            if hasattr(self.checkpointer, "start"):
                 try:
-                    self.checkpointer.save(thread_id, node_name, state)
+                    self.checkpointer.start(thread_id, state)
                 except Exception:  # pragma: no cover - defensive
                     pass
-            self._on_node_finished(node_name)
+
+            node_name = start_at or self.entry
+            while node_name:
+                node = self.nodes[node_name]
+                state = await node.run(state)
+                if hasattr(self.checkpointer, "save"):
+                    try:
+                        self.checkpointer.save(thread_id, node_name, state)
+                    except Exception:  # pragma: no cover - defensive
+                        pass
+                self._on_node_finished(node_name)
 
             if node_name in self.routers_map:
                 router, path_map = self.routers_map[node_name]
@@ -277,6 +284,25 @@ class OrchestrationEngine:
                     state = self.on_complete(state)
             except Exception:  # pragma: no cover - defensive
                 logger.exception("on_complete hook failed")
+
+        duration = time.perf_counter() - start_time
+        conv = state.data.get("conversation", [])
+        total_messages = len(conv) if isinstance(conv, list) else 0
+        latencies = [
+            conv[i + 1]["timestamp"] - conv[i]["timestamp"]
+            for i in range(len(conv) - 1)
+            if isinstance(conv[i], dict)
+            and isinstance(conv[i + 1], dict)
+            and "timestamp" in conv[i]
+            and "timestamp" in conv[i + 1]
+        ]
+        avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
+        action_rate = (len(state.history) / duration) if duration > 0 else 0.0
+
+        task_span.set_attribute("total_messages_sent", total_messages)
+        task_span.set_attribute("average_message_latency", avg_latency)
+        task_span.set_attribute("action_advancement_rate", action_rate)
+
         return state
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
