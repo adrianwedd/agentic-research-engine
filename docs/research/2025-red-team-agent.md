@@ -1,3 +1,4 @@
+> **Note:** This research outlines a potential future development.
 
 # **A Framework for Continuous Adversarial Auditing via a Specialized "Red Team" Agent**
 
