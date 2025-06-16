@@ -28,7 +28,7 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
-  tests:
+  integration:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,7 +116,7 @@ jobs:
         if: steps.run-judge.outputs.exitcode != '0'
         run: exit 1
 
-  codex-sanity:
+  core:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -140,7 +140,7 @@ jobs:
       - name: Run linters
         run: pre-commit run --all-files
       - name: Run tests
-        run: pytest -q
+        run: bash scripts/run_core_tests.sh
 
 
   security-dependencies:
