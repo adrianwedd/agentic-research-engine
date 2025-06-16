@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import io
 import os
-import shutil
 from urllib.parse import urlparse
 
 import pdfplumber
 import requests
 from pdfminer.pdfparser import PDFSyntaxError
-from pdfplumber.utils.exceptions import PdfminerException
 
 from .validation import validate_path_or_url
 
@@ -29,15 +27,12 @@ def pdf_extract(
         if env_val is not None:
             use_ocr = env_val.lower() in {"1", "true", "yes"}
         else:
-            # auto-enable OCR when available
+            # auto-enable OCR when pytesseract is importable
             try:
                 import importlib
 
                 importlib.import_module("pytesseract")  # type: ignore
-                if shutil.which("tesseract"):
-                    use_ocr = True
-                else:
-                    use_ocr = False
+                use_ocr = True
             except Exception:
                 use_ocr = False
     validated = validate_path_or_url(path_or_url)
@@ -50,8 +45,6 @@ def pdf_extract(
         except requests.RequestException as exc:  # pragma: no cover - network errors
             raise ValueError(f"Failed to download PDF: {exc}") from exc
     else:
-        if not os.path.exists(validated):
-            raise FileNotFoundError(validated)
         file_obj = validated
 
     try:
@@ -68,9 +61,11 @@ def pdf_extract(
                         page_text = pytesseract.image_to_string(img)
                         text_parts.append(page_text)
                     text = "\n".join(text_parts)
-                except Exception as exc:  # pragma: no cover - OCR failures
-                    raise ValueError(f"OCR extraction failed: {exc}") from exc
-    except (PDFSyntaxError, PdfminerException) as exc:
+                except Exception:  # pragma: no cover - OCR failures
+                    use_ocr = False
+    except FileNotFoundError as exc:
+        raise FileNotFoundError(validated) from exc
+    except PDFSyntaxError as exc:
         raise ValueError(f"Invalid PDF: {exc}") from exc
     except Exception as exc:  # pragma: no cover - parsing errors
         msg = str(exc).lower()

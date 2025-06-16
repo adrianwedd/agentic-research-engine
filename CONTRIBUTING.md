@@ -33,6 +33,17 @@ All development happens on feature branches. Direct pushes to `main` are disable
 Pull requests targeting `main` must have at least one approved review and pass all
 required CI status checks before they can be merged.
 
+## Environment Setup
+
+Create a virtual environment or use the repository's devcontainer before installing dependencies:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+bash scripts/agent-setup.sh
+```
+
+The setup script installs CPU-only PyTorch by default. Optional packages like `langsmith` and `trl` can be installed separately.
+
 ## Pre-commit Hooks
 
 Formatting and linting are enforced with `pre-commit`. Install the tool and set

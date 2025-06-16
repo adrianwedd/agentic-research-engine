@@ -8,8 +8,38 @@ from collections import defaultdict
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List, Tuple
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from opentelemetry import trace
+try:  # pragma: no cover - optional dependency
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+except Exception:  # pragma: no cover - fallback
+
+    class RecursiveCharacterTextSplitter:  # type: ignore
+        """Fallback splitter that chunks text without dependencies."""
+
+        def __init__(self, chunk_size: int = 2000, chunk_overlap: int = 0) -> None:
+            self.chunk_size = chunk_size
+            self.chunk_overlap = chunk_overlap
+
+        def split_text(self, text: str) -> List[str]:
+            return [
+                text[i : i + self.chunk_size]
+                for i in range(0, len(text), self.chunk_size)
+            ]
+
+
+try:  # pragma: no cover - optional dependency
+    from opentelemetry import trace
+except Exception:  # pragma: no cover - fallback
+    import contextlib
+
+    class _DummyTracer:
+        def get_tracer(self, *_, **__):  # type: ignore[override]
+            class _Span:
+                def start_as_current_span(self, *a, **kw):  # type: ignore[override]
+                    return contextlib.nullcontext()
+
+            return _Span()
+
+    trace = _DummyTracer()  # type: ignore
 
 from .embedding_client import (
     CachedEmbeddingClient,

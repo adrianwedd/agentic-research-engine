@@ -45,6 +45,10 @@ def validate_path_or_url(target: str, allowed_schemes: set[str] | None = None) -
         return target
 
     path = unquote(parsed.path) if scheme == "file" else target
+    if ".." in Path(path).parts:
+        raise InputValidationError(
+            "Invalid path: directory traversal detected (HTTP 400)"
+        )
     normalized = os.path.normpath(path)
     if ".." in Path(normalized).parts:
         raise InputValidationError(
