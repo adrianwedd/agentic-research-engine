@@ -15,17 +15,34 @@ import resource
 import socket
 import sys
 
+ALLOWED_HOSTS = {allowed_hosts}
+
 # Apply resource limits
 resource.setrlimit(resource.RLIMIT_CPU, ({timeout}, {timeout}))
 resource.setrlimit(resource.RLIMIT_AS, ({memory}, {memory}))
 
-# Disable all network access
-class _BlockedSocket(socket.socket):
-    def __new__(cls, *args, **kwargs):
-        raise OSError('network access disabled')
+# Enforce optional network allowlist
+_orig_connect = socket.socket.connect
 
-socket.socket = _BlockedSocket  # type: ignore[assignment]
-socket.create_connection = lambda *a, **k: (_ for _ in ()).throw(OSError('network access disabled'))
+def _patched_connect(self, address):
+    host = address[0]
+    try:
+        ip = socket.gethostbyname(host)
+    except Exception:
+        ip = host
+    if ALLOWED_HOSTS is None or ip not in ALLOWED_HOSTS:
+        print("SandboxNetworkBlocked", file=sys.stderr)
+        raise OSError(f"network access to {{ip}} blocked")
+    return _orig_connect(self, address)
+
+socket.socket.connect = _patched_connect  # type: ignore[assignment]
+
+def _create_connection(address, *args, **kwargs):
+    s = socket.socket()
+    _patched_connect(s, address)
+    return s
+
+socket.create_connection = _create_connection
 
 result_file = sys.argv[1]
 code_file = sys.argv[2]
@@ -64,8 +81,24 @@ def run_python_code(
     args: List[str] | None = None,
     timeout: int = 5,
     memory_limit_mb: int = 128,
+    allowed_hosts: List[str] | None = None,
 ) -> dict:
-    """Execute ``code`` inside a restricted subprocess."""
+    """Execute ``code`` inside a restricted subprocess.
+
+    Parameters
+    ----------
+    code:
+        Python code to execute.
+    args:
+        Optional command-line arguments passed to the code.
+    timeout:
+        CPU time limit in seconds.
+    memory_limit_mb:
+        Maximum memory usage in megabytes.
+    allowed_hosts:
+        Optional list of IP addresses that the code is permitted to
+        access. ``None`` disables all network access.
+    """
     if not isinstance(code, str):
         raise ValueError("code must be a string")
 
@@ -79,7 +112,9 @@ def run_python_code(
             f.write(code)
         with open(wrapper_path, "w") as f:
             script = _WRAPPER_TEMPLATE.format(
-                timeout=timeout, memory=memory_limit_mb * 1024 * 1024
+                timeout=timeout,
+                memory=memory_limit_mb * 1024 * 1024,
+                allowed_hosts=repr(allowed_hosts),
             )
             f.write(textwrap.dedent(script))
 

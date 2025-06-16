@@ -17,7 +17,20 @@ def test_network_blocked():
     code = "import urllib.request\nurllib.request.urlopen('http://example.com')"
     result = run_python_code(code, timeout=2)
     assert result["returncode"] != 0
-    assert "network access disabled" in result["stderr"]
+    assert "SandboxNetworkBlocked" in result["stderr"]
+
+
+def test_network_allowed():
+    code = (
+        "import socket\n"
+        "s=socket.socket();\n"
+        "try:\n"
+        "    s.connect(('127.0.0.1', 80))\n"
+        "except Exception as e:\n"
+        "    print(e)"
+    )
+    result = run_python_code(code, timeout=2, allowed_hosts=["127.0.0.1"])
+    assert "SandboxNetworkBlocked" not in result["stderr"]
 
 
 def test_timeout_enforced():

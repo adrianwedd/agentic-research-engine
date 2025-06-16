@@ -132,6 +132,15 @@
     - Given two agents from separate runs
     - When the evaluation pipeline runs
     - Then the report includes ZSC, CIC, and Interpretability scores
+- id: CR-05a
+  title: Enforce Agent Sandboxing
+  priority: high
+  steps:
+    - containerize agents with gVisor or Firecracker
+    - deny all network egress by default
+    - manage sandbox specs via IaC
+  acceptance_criteria:
+    - Unauthorized network calls are blocked and log SandboxNetworkBlocked
 - id: CR-AI-16
   title: Analyse & Enhance Codex Agent Experience
   priority: medium
