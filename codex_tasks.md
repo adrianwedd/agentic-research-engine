@@ -1333,6 +1333,20 @@ acceptance_criteria:
   - docs/change-requests.md aggregates suggestions by topic
   - codex_tasks.md references this issue
 ```
+```codex-task
+id: CODEX-CR-PROPAGATE-04
+issue: TBD
+title: Retrospectively propagate Codex tasks via branch and PR inspection
+status: in_progress
+steps:
+  - enumerate repo PR history
+  - cross-reference with codex_tasks.md
+  - create missing issues and tasks
+acceptance_criteria:
+  - each PR linked to an issue
+  - codex_tasks.md updated with retrospective entries
+  - governing issue records execution logs
+```
 
 ```codex-task
 id: CODEX-CR-RATIONALISE-03
