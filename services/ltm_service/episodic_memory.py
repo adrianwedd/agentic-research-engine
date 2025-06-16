@@ -76,7 +76,9 @@ class EpisodicMemoryService:
 
         cache_size = int(os.getenv("EMBED_CACHE_SIZE", "0") or 0)
         if cache_size > 0:
-            self.embedding_client = CachedEmbeddingClient(self.embedding_client, cache_size)
+            self.embedding_client = CachedEmbeddingClient(
+                self.embedding_client, cache_size
+            )
         if vector_store is None:
             try:
                 self.vector_store = WeaviateVectorStore()
@@ -106,11 +108,14 @@ class EpisodicMemoryService:
     ) -> str:
         """Store complete task experience for future reference."""
 
+        now = time.time()
         experience = {
             "task_context": task_context,
             "execution_trace": execution_trace,
             "outcome": outcome,
-            "last_accessed": time.time(),
+            "last_accessed": now,
+            "last_accessed_timestamp": now,
+            "relevance_score": 1.0,
         }
         categories = set(task_context.get("tags", []))
         cat = task_context.get("category")
@@ -149,23 +154,42 @@ class EpisodicMemoryService:
         query_text = json.dumps(current_task, sort_keys=True)
 
         # Prefer vector search if available
+        boost = float(os.getenv("LTM_RELEVANCE_BOOST", "0.1"))
         if self.vector_store:
             vector = self._embed_with_retry([query_text])[0]
             results = []
             for rec in self.vector_store.query(vector, limit):
                 stored = dict(self.storage._data.get(rec["id"], {}))
+                if stored.get("deleted_at"):
+                    continue
                 stored.update(rec)
-                self.storage.update(rec["id"], {"last_accessed": time.time()})
+                self.storage.update(
+                    rec["id"],
+                    {
+                        "last_accessed": time.time(),
+                        "last_accessed_timestamp": time.time(),
+                        "relevance_score": stored.get("relevance_score", 1.0) + boost,
+                    },
+                )
                 results.append(stored)
         else:
             results = []
             for _, rec in self.storage.all():
+                if rec.get("deleted_at"):
+                    continue
                 context_text = json.dumps(rec.get("task_context", {}), sort_keys=True)
                 score = self._similarity(query_text, context_text)
                 rec = rec.copy()
                 rec["similarity"] = score
                 if rec.get("id"):
-                    self.storage.update(rec["id"], {"last_accessed": time.time()})
+                    self.storage.update(
+                        rec["id"],
+                        {
+                            "last_accessed": time.time(),
+                            "last_accessed_timestamp": time.time(),
+                            "relevance_score": rec.get("relevance_score", 1.0) + boost,
+                        },
+                    )
                 results.append(rec)
 
         for rec in results:
@@ -204,6 +228,39 @@ class EpisodicMemoryService:
                 pruned += 1
         with tracer.start_as_current_span(
             "ltm.prune", attributes={"pruned_count": pruned}
+        ):
+            pass
+        return pruned
+
+    def decay_relevance_scores(
+        self,
+        *,
+        decay_rate: float = 0.99,
+        threshold: float = 0.1,
+    ) -> int:
+        """Apply time-based decay and soft-delete stale memories."""
+        now = time.time()
+        pruned = 0
+        for rec_id, rec in list(self.storage.all()):
+            if rec.get("deleted_at"):
+                continue
+            last = rec.get("last_accessed_timestamp", rec.get("last_accessed", now))
+            score = float(rec.get("relevance_score", 1.0))
+            elapsed_days = (now - last) / 86400
+            new_score = score * (decay_rate**elapsed_days)
+            updates = {"relevance_score": new_score}
+            if new_score < threshold:
+                updates["deleted_at"] = now
+                if hasattr(self.vector_store, "delete"):
+                    try:
+                        self.vector_store.delete(rec_id)
+                    except Exception:
+                        pass
+                pruned += 1
+            self.storage.update(rec_id, updates)
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "ltm.decay", attributes={"pruned_count": pruned}
         ):
             pass
         return pruned
