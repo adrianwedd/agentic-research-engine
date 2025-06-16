@@ -33,4 +33,6 @@ tenacity==8.2.3
 datasets==3.6.0
 lxml_html_clean==0.4.2
 trafilatura==2.0.0
+SQLAlchemy==2.0.29
+asyncpg==0.29.0
 
