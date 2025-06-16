@@ -24,6 +24,8 @@ Earlier traces produced with version 1.0 remain readable via `ToolCallTrace.from
 | `input_tokens`  | Optional token count for the input.  |
 | `output_tokens` | Optional token count for the output. |
 | `latency_ms`    | Latency in milliseconds of the call. |
+| `intent`        | Optional intent associated with the call. |
+| `unauthorized_call` | Boolean flag if access was denied. |
 
 Agents are encouraged to populate token counts and latency whenever possible.
 

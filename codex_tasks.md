@@ -1359,3 +1359,14 @@ acceptance_criteria:
   - docs/change-requests.md notes consolidation date
   - Issue link is recorded here
 ```
+
+```codex-task
+id: CR-05c
+title: Enable Continuous Monitoring & Auditing
+priority: medium
+steps: []
+acceptance_criteria:
+  - Given an agent issues any tool call
+  - When the call completes or is blocked
+  - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
+```

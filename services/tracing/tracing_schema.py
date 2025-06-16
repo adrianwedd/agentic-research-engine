@@ -22,6 +22,8 @@ class ToolCallTrace:
     input_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
     latency_ms: Optional[float] = None
+    intent: Optional[str] = None
+    unauthorized_call: Optional[bool] = None
     schema_version: str = SCHEMA_VERSION
 
     def record(self) -> None:
@@ -34,6 +36,8 @@ class ToolCallTrace:
                 "agent_role": self.agent_role,
                 "tool_name": self.tool_name,
                 "tool_input": str(self.tool_input),
+                "intent": self.intent or "",
+                "unauthorized_call": bool(self.unauthorized_call),
             },
         ) as span:
             if self.tool_output is not None:
@@ -61,5 +65,7 @@ class ToolCallTrace:
             input_tokens=attrs.get("input_tokens"),
             output_tokens=attrs.get("output_tokens"),
             latency_ms=attrs.get("latency_ms"),
+            intent=attrs.get("intent"),
+            unauthorized_call=attrs.get("unauthorized_call"),
             schema_version=version,
         )
