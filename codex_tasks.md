@@ -1383,3 +1383,24 @@ acceptance_criteria:
   - When the call completes or is blocked
   - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
 ```
+
+```codex-task
+id: CR-05b
+title: Diagnose and Resolve Persistent Pytest Slowness and Environment Failures
+priority: high
+steps:
+  - Investigate root causes of pytest runtime exceeding 4 minutes (e.g. test order, env bottlenecks)
+  - Profile test performance using pytest-benchmark or similar tools
+  - Identify tests or fixtures causing blocking or hanging behavior
+  - Verify container runtime configuration (CPU/memory limits, I/O contention, tmpfs)
+  - Explore CI/runtime flags to bypass or expedite slow test suites
+  - Optionally isolate integration tests and run unit tests separately in CI
+  - Improve pytest logging and feedback when test output is redirected or lost
+  - Validate sandbox compatibility with patched socket layer in multiprocessing contexts
+acceptance_criteria:
+  - All tests complete reliably in under 2 minutes in containerized dev environment
+  - Container logs include complete output of test sessions, even with redirection
+  - No persistent silent failures (e.g., empty pytest.log or ps hangs)
+  - Sandbox test logic passes consistently and avoids serialization failures
+  - Pre-commit test hooks complete reliably within expected execution bounds
+```

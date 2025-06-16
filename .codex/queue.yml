@@ -1,159 +1,206 @@
-- id: CR-P2-01A
+- acceptance_criteria:
+  - forgetting route deletes a record
+  - invalid bodies return 422
+  id: CR-P2-01A
+  priority: high
+  steps: []
   title: Harden LTM Service API with Forgetting Endpoint
+- acceptance_criteria:
+  - semantic facts stored as nodes with relationships
+  id: P3-15
   priority: high
-  steps: []
-  acceptance_criteria:
-    - forgetting route deletes a record
-    - invalid bodies return 422
-
-- id: P3-15
+  steps:
+  - connect LTM service to Neo4j
   title: Integrate graph database for Semantic LTM
+- acceptance_criteria:
+  - Given a verified report containing a relationship statement
+  - When the MemoryManager processes the report
+  - Then the corresponding nodes and relationship are stored in Semantic LTM
+  id: P3-16
   priority: high
-  steps:
-    - connect LTM service to Neo4j
-  acceptance_criteria:
-    - semantic facts stored as nodes with relationships
-
-- id: P3-16
+  steps: []
   title: Enhance MemoryManager to extract entities for knowledge graph
+- acceptance_criteria:
+  - Given the MemoryManager processes complex text
+  - When relation extraction completes
+  - Then multiple distinct triples are returned
+  id: CR-P3-16A
   priority: high
   steps: []
-  acceptance_criteria:
-    - Given a verified report containing a relationship statement
-    - When the MemoryManager processes the report
-    - Then the corresponding nodes and relationship are stored in Semantic LTM
-
-- id: CR-P3-16A
   title: Improve MemoryManager Relation Extraction
-  priority: high
+- acceptance_criteria:
+  - Given a query for a specific open-source library
+  - When the GitHub Search tool is called with the query
+  - Then it returns a list of relevant repository URLs and descriptions
+  id: P3-19
+  priority: medium
   steps: []
-  acceptance_criteria:
-    - Given the MemoryManager processes complex text
-    - When relation extraction completes
-    - Then multiple distinct triples are returned
-
-- id: P3-19
   title: Implement a GitHub Search API tool
+- acceptance_criteria:
+  - Given LLM_PROVIDER="ollama" the client sends requests to the local server
+  - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured
+    cloud endpoint
+  - Changing environment variables switches models without code changes
+  id: CR-DEV-01
   priority: medium
   steps: []
-  acceptance_criteria:
-    - Given a query for a specific open-source library
-    - When the GitHub Search tool is called with the query
-    - Then it returns a list of relevant repository URLs and descriptions
-
-- id: CR-DEV-01
   title: Implement Pluggable LLM Client for Local and Cloud Model Support
-  priority: medium
+- acceptance_criteria:
+  - pip-audit -r requirements.txt exits with code 0
+  - pip install -r requirements.txt installs torch 2.2.2 CPU build
+  id: CR-BUG-02
+  priority: high
   steps: []
-  acceptance_criteria:
-    - Given LLM_PROVIDER="ollama" the client sends requests to the local server
-    - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured cloud endpoint
-    - Changing environment variables switches models without code changes
-
-- id: CR-BUG-02
   title: Fix PyTorch Dependency Resolution in requirements.txt
+- acceptance_criteria:
+  - Subgraph final state merges into parent scratchpad
+  - Parent graph resumes after subgraph completion
+  id: CR-P3-03A
   priority: high
   steps: []
-  acceptance_criteria:
-    - pip-audit -r requirements.txt exits with code 0
-    - pip install -r requirements.txt installs torch 2.2.2 CPU build
-- id: CR-P3-03A
   title: Fix State Propagation from Hierarchical Subgraphs to Parent
+- acceptance_criteria:
+  - trainer raises ConfigurationError if guidance_loss missing
+  - CI fails for configs without guidance_loss
+  - deprecated emergent files removed
+  id: CR-ADR-003-IMPL
   priority: high
-  steps: []
-  acceptance_criteria:
-    - Subgraph final state merges into parent scratchpad
-    - Parent graph resumes after subgraph completion
-- id: CR-ADR-003-IMPL
+  steps:
+  - make guidance_loss mandatory in trainers
+  - remove deprecated emergent protocols
+  - add CI check for guidance_loss in configs
   title: Enforce LLM-Grounded Communication Paradigm in Training Pipeline
-  priority: high
-  steps:
-    - make guidance_loss mandatory in trainers
-    - remove deprecated emergent protocols
-    - add CI check for guidance_loss in configs
-  acceptance_criteria:
-    - trainer raises ConfigurationError if guidance_loss missing
-    - CI fails for configs without guidance_loss
-    - deprecated emergent files removed
-- id: CR-001
+- acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  id: CR-001
+  priority: medium
+  steps: []
   title: SkillLibrary-based MemoryManager overhaul
+- acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+  id: CR-002
   priority: medium
   steps: []
-  acceptance_criteria:
-    - MemoryManager stores skills with policy, embedding and metadata
-
-- id: CR-002
   title: Unsupervised SkillDiscoveryModule
+- acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+  id: CR-003
   priority: medium
   steps: []
-  acceptance_criteria:
-    - URL discovers disentangled skills for the SkillLibrary
-
-- id: CR-003
   title: LLM-guided semantic skill decomposition
+- acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+  id: CR-004
   priority: medium
   steps: []
-  acceptance_criteria:
-    - LLM-generated sub-tasks and rewards stored in skill metadata
-
-- id: CR-004
   title: Hierarchical Policy Executor
+- acceptance_criteria:
+  - New skills added without overwriting existing ones
+  id: CR-005
   priority: medium
   steps: []
-  acceptance_criteria:
-    - Manager selects goals and Worker executes skills via HRL
-
-- id: CR-005
   title: Lifelong skill generalization support
+- acceptance_criteria:
+  - RL training uses Ray RLlib and NVIDIA Isaac Lab
+  id: CR-006
   priority: medium
   steps: []
-  acceptance_criteria:
-    - New skills added without overwriting existing ones
-
-- id: CR-006
   title: Adopt RLlib and Isaac Lab tooling
-  priority: medium
-  steps: []
-  acceptance_criteria:
-    - RL training uses Ray RLlib and NVIDIA Isaac Lab
-
-- id: CR-02
-  title: Detailed Implementation of the LLM-Based Auxiliary Guidance Loss
+- acceptance_criteria:
+  - dataset generation pipeline outputs at least 1000 mappings
+  - training logs show policy_loss and guidance_loss at each step
+  id: CR-02
   priority: high
   steps: []
-  acceptance_criteria:
-    - dataset generation pipeline outputs at least 1000 mappings
-    - training logs show policy_loss and guidance_loss at each step
-- id: CR-03
-  title: Enhancement of the Evaluation Framework to Include ZSC, CIC, and Interpretability Metrics
+  title: Detailed Implementation of the LLM-Based Auxiliary Guidance Loss
+- acceptance_criteria:
+  - Given two agents from separate runs
+  - When the evaluation pipeline runs
+  - Then the report includes ZSC, CIC, and Interpretability scores
+  id: CR-03
   priority: medium
   steps: []
-  acceptance_criteria:
-    - Given two agents from separate runs
-    - When the evaluation pipeline runs
-    - Then the report includes ZSC, CIC, and Interpretability scores
-- id: CR-05a
-  title: Enforce Agent Sandboxing
+  title: Enhancement of the Evaluation Framework to Include ZSC, CIC, and Interpretability
+    Metrics
+- acceptance_criteria:
+  - Unauthorized network calls are blocked and log SandboxNetworkBlocked
+  id: CR-05a
   priority: high
   steps:
-    - containerize agents with gVisor or Firecracker
-    - deny all network egress by default
-    - manage sandbox specs via IaC
-  acceptance_criteria:
-    - Unauthorized network calls are blocked and log SandboxNetworkBlocked
-- id: CR-AI-16
+  - containerize agents with gVisor or Firecracker
+  - deny all network egress by default
+  - manage sandbox specs via IaC
+  title: Enforce Agent Sandboxing
+- acceptance_criteria:
+  - Gap analysis report produced
+  - Task lifecycle documented with pain points
+  - AGENTS.md and codex_tasks logic updated
+  id: CR-AI-16
+  priority: medium
+  steps: []
   title: Analyse & Enhance Codex Agent Experience
+- acceptance_criteria:
+  - Given an agent issues any tool call
+  - When the call completes or is blocked
+  - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
+  id: CR-05c
   priority: medium
   steps: []
-  acceptance_criteria:
-    - Gap analysis report produced
-    - Task lifecycle documented with pain points
-    - AGENTS.md and codex_tasks logic updated
-- id: CR-05c
   title: Enable Continuous Monitoring & Auditing
+- acceptance_criteria:
+  - something done
+  id: CODEX-EXAMPLE-01
+  priority: low
+  steps:
+  - do something
+  title: Example task
+- acceptance_criteria:
+  - Given a recalled plan template exists
+  - When a similar query is submitted
+  - Then the resulting plan has fewer nodes than the baseline
+  id: P3-TEST-01
+  notes: '`services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated
+    in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware
+    timestamps.'
   priority: medium
+  status: open
+  steps:
+  - Investigate Supervisor merging logic
+  - Add regression test for plan length reduction
+  title: Replace deprecated utcnow usage
+- acceptance_criteria:
+  - docs/change-requests.md aggregates suggestions by topic
+  - codex_tasks.md references this issue
+  id: CODEX-CR-COLLECT-02
+  issue: TBD
+  priority: low
   steps: []
-  acceptance_criteria:
-    - Given an agent issues any tool call
-    - When the call completes or is blocked
-    - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
+  title: Consolidate scattered change-request suggestions
+- acceptance_criteria:
+  - Overlapping entries are consolidated in codex_tasks.md
+  - docs/change-requests.md notes consolidation date
+  - Issue link is recorded here
+  id: CODEX-CR-RATIONALISE-03
+  issue: TBD
+  priority: low
+  steps: []
+  title: Rationalise overlap between change_requests.md and codex_tasks.md
+- acceptance_criteria:
+  - All tests complete reliably in under 2 minutes in containerized dev environment
+  - Container logs include complete output of test sessions, even with redirection
+  - No persistent silent failures (e.g., empty pytest.log or ps hangs)
+  - Sandbox test logic passes consistently and avoids serialization failures
+  - Pre-commit test hooks complete reliably within expected execution bounds
+  id: CR-05b
+  priority: high
+  steps:
+  - Investigate root causes of pytest runtime exceeding 4 minutes (e.g. test order,
+    env bottlenecks)
+  - Profile test performance using pytest-benchmark or similar tools
+  - Identify tests or fixtures causing blocking or hanging behavior
+  - Verify container runtime configuration (CPU/memory limits, I/O contention, tmpfs)
+  - Explore CI/runtime flags to bypass or expedite slow test suites
+  - Optionally isolate integration tests and run unit tests separately in CI
+  - Improve pytest logging and feedback when test output is redirected or lost
+  - Validate sandbox compatibility with patched socket layer in multiprocessing contexts
+  title: Diagnose and Resolve Persistent Pytest Slowness and Environment Failures
