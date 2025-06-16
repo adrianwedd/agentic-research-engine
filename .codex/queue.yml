@@ -124,3 +124,11 @@
   acceptance_criteria:
     - dataset generation pipeline outputs at least 1000 mappings
     - training logs show policy_loss and guidance_loss at each step
+- id: CR-03
+  title: Enhancement of the Evaluation Framework to Include ZSC, CIC, and Interpretability Metrics
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Given two agents from separate runs
+    - When the evaluation pipeline runs
+    - Then the report includes ZSC, CIC, and Interpretability scores
