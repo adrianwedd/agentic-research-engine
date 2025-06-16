@@ -1322,3 +1322,14 @@ steps: []
 acceptance_criteria:
   - RL training uses Ray RLlib and NVIDIA Isaac Lab
 ```
+
+```codex-task
+id: CODEX-CR-COLLECT-02
+issue: TBD
+title: Consolidate scattered change-request suggestions
+priority: low
+steps: []
+acceptance_criteria:
+  - docs/change-requests.md aggregates suggestions by topic
+  - codex_tasks.md references this issue
+```
