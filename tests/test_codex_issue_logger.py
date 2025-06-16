@@ -16,10 +16,13 @@ pytestmark = pytest.mark.core
 def test_create_issue_success():
     with mock.patch.object(issue_logger.requests, "request") as m:
         m.return_value.status_code = 201
-        m.return_value.json.return_value = {"html_url": "http://example.com/1"}
+        m.return_value.json.return_value = {
+            "html_url": "http://example.com/1",
+            "number": 42,
+        }
         with mock.patch.dict(os.environ, {"GITHUB_TOKEN": "t"}):
-            url = issue_logger.create_issue("t", "b", "u/r", labels=["l"])
-        assert url == "http://example.com/1"
+            result = issue_logger.create_issue("t", "b", "u/r", labels=["l"])
+        assert result == {"url": "http://example.com/1", "number": 42}
         m.assert_called_once()
         args, kwargs = m.call_args
         assert args[0] == "post"
@@ -32,8 +35,8 @@ def test_create_issue_no_token(capsys):
     if "GITHUB_TOKEN" in os.environ:
         del os.environ["GITHUB_TOKEN"]
     with mock.patch.object(issue_logger.requests, "request") as m:
-        url = issue_logger.create_issue("t", "b", "u/r")
-    assert url == ""
+        result = issue_logger.create_issue("t", "b", "u/r")
+    assert result is None
     assert not m.called
     err = capsys.readouterr().err
     assert "GITHUB_TOKEN" in err
