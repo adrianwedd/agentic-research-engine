@@ -70,6 +70,12 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    cd agentic-research-engine
    ```
 
+   It's recommended to work inside a virtual environment or
+   the provided devcontainer:
+   ```bash
+   python -m venv .venv && source .venv/bin/activate
+   ```
+
 2. **Install dependencies and tools:**
    ```bash
    bash scripts/agent-setup.sh
@@ -78,6 +84,11 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    pinned `constraints.txt` file to avoid dependency resolution loops.
    It pulls the CPU-only PyTorch wheels so you don't need CUDA
    drivers for local testing.
+   Optional features like LangSmith integration and TRL-based policy
+   optimization can be installed later:
+   ```bash
+   pip install langsmith trl
+   ```
    For a lean environment run `bash scripts/bootstrap_minimal.sh`. See
    [docs/onboarding.md](docs/onboarding.md) for troubleshooting tips.
 

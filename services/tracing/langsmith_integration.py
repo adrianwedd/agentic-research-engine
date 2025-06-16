@@ -6,7 +6,13 @@ import json
 import os
 from typing import Any
 
-from langsmith import Client
+try:  # pragma: no cover - optional dependency
+    from langsmith import Client
+except Exception:  # pragma: no cover - fallback
+
+    class Client:  # type: ignore
+        def __init__(self, *args, **kwargs) -> None:
+            raise ImportError("langsmith package is required")
 
 
 def configure_langsmith(project_name: str) -> None:
