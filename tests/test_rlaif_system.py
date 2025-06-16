@@ -18,6 +18,15 @@ class DummyPolicyOptimizer:
         return -reward
 
 
+class DummyCompositeReward:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, prompt, out1, out2):
+        self.calls.append((prompt, out1, out2))
+        return float(len(out2) - len(out1))
+
+
 def test_update_agent_policies():
     rlaif = RLAIFSystem(DummyRewardModel(), DummyPolicyOptimizer())
     batch = [{"quality": 1.0}, {"quality": 0.5}]
@@ -40,3 +49,18 @@ def test_rlaif_with_ppo(tmp_path):
     assert "average_reward" in metrics
     assert (tmp_path / "policy" / "config.json").exists()
 
+
+def test_composite_reward_integration():
+    reward_model = DummyCompositeReward()
+    optimizer = DummyPolicyOptimizer()
+    rlaif = RLAIFSystem(reward_model, optimizer)
+    traj = {
+        "original_problem": "Q",
+        "flawed_output": "bad",
+        "corrected_solution": "good answer",
+    }
+    expected_reward = len("good answer") - len("bad")
+    metrics = rlaif.update_agent_policies([traj])
+    assert metrics["average_reward"] == expected_reward
+    assert reward_model.calls == [("Q", "bad", "good answer")]
+    assert optimizer.updates == [(traj, expected_reward)]
