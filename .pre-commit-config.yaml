@@ -18,3 +18,9 @@ repos:
         entry: scripts/check_tool_imports.py
         language: python
         types: [python]
+      - id: guidance-loss-check
+        name: ensure guidance_loss present in training configs
+        entry: scripts/check_guidance_loss.py
+        language: python
+        pass_filenames: false
+        additional_dependencies: [PyYAML]
