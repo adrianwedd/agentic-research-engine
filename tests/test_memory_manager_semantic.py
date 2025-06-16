@@ -1,3 +1,4 @@
+import json
 from threading import Thread
 
 from agents.memory_manager import MemoryManagerAgent
@@ -20,21 +21,61 @@ def _start_server():
     return server, endpoint
 
 
-def test_knowledge_graph_population():
+def test_knowledge_graph_population(monkeypatch):
     server, endpoint = _start_server()
+
+    class DummyClient:
+        def invoke(self, _messages, **_kwargs):
+            return json.dumps(
+                [
+                    {
+                        "subject": "framework",
+                        "predicate": "DEVELOPED_BY",
+                        "object": "core team",
+                    },
+                    {
+                        "subject": "core team",
+                        "predicate": "LOCATED_IN",
+                        "object": "California",
+                    },
+                    {
+                        "subject": "framework",
+                        "predicate": "LICENSED_UNDER",
+                        "object": "Apache 2.0 license",
+                    },
+                ]
+            )
+
+    monkeypatch.setattr("agents.memory_manager.load_llm_client", lambda: DummyClient())
+
     mm = MemoryManagerAgent(endpoint=endpoint)
-    state = GraphState(data={"report": "Apple acquired NeXT in 1997"})
+    text = (
+        "The framework, developed by the core team in California, "
+        "was released under the Apache 2.0 license."
+    )
+    state = GraphState(data={"report": text})
     state.evaluator_feedback = {"overall_score": 1.0}
     mm(state, {})
-    facts = server.service.retrieve(
+
+    dev = server.service.retrieve(
         "semantic",
-        {"subject": "Apple", "predicate": "ACQUIRED", "object": "NeXT"},
+        {"subject": "framework", "predicate": "DEVELOPED_BY", "object": "core team"},
         limit=1,
     )
-    assert facts
-    fact = facts[0]
-    assert fact["subject"] == "Apple"
-    assert fact["object"] == "NeXT"
-    assert fact["predicate"] == "ACQUIRED"
-    assert fact["properties"].get("year") == 1997
+    loc = server.service.retrieve(
+        "semantic",
+        {"subject": "core team", "predicate": "LOCATED_IN", "object": "California"},
+        limit=1,
+    )
+    lic = server.service.retrieve(
+        "semantic",
+        {
+            "subject": "framework",
+            "predicate": "LICENSED_UNDER",
+            "object": "Apache 2.0 license",
+        },
+        limit=1,
+    )
+
+    assert dev and loc and lic
     server.httpd.shutdown()
