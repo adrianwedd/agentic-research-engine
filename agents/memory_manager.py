@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+import re
+from typing import Any, Dict, List, Optional
 
 from engine.state import State
 from services.tool_registry import ToolRegistry, create_default_registry
@@ -38,6 +39,27 @@ class MemoryManagerAgent:
             "outcome": {"status": state.status},
         }
 
+    def _extract_triples(self, state: State) -> List[Dict[str, Any]]:
+        """Very simple pattern-based relation extraction for demo purposes."""
+        text = state.data.get("report", "")
+        if not isinstance(text, str):
+            return []
+        triples: List[Dict[str, Any]] = []
+        pattern = re.compile(
+            r"(?P<subject>[A-Z][A-Za-z0-9& ]+) acquired (?P<object>[A-Z][A-Za-z0-9& ]+) in (?P<year>\d{4})",
+            re.IGNORECASE,
+        )
+        for match in pattern.finditer(text):
+            triples.append(
+                {
+                    "subject": match.group("subject"),
+                    "predicate": "ACQUIRED",
+                    "object": match.group("object"),
+                    "properties": {"year": int(match.group("year"))},
+                }
+            )
+        return triples
+
     def __call__(self, state: State, scratchpad: Dict[str, Any]) -> State:
         record = self._format_record(state)
         if not self._quality_passed(state):
@@ -53,6 +75,14 @@ class MemoryManagerAgent:
                 record,
                 endpoint=self.endpoint,
             )
+            for triple in self._extract_triples(state):
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "consolidate_memory",
+                    triple,
+                    memory_type="semantic",
+                    endpoint=self.endpoint,
+                )
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state

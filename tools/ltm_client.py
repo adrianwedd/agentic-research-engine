@@ -18,7 +18,10 @@ def consolidate_memory(
 ) -> str:
     url = f"{_endpoint(endpoint)}/memory"
     resp = requests.post(
-        url, json={"memory_type": memory_type, "record": record}, timeout=10
+        url,
+        json={"memory_type": memory_type, "record": record},
+        headers={"X-Role": "editor"},
+        timeout=10,
     )
     resp.raise_for_status()
     return resp.json().get("id", "")
@@ -36,6 +39,7 @@ def retrieve_memory(
         url,
         params={"memory_type": memory_type, "limit": str(limit)},
         json={"query": query},
+        headers={"X-Role": "viewer"},
         timeout=10,
     )
     resp.raise_for_status()
