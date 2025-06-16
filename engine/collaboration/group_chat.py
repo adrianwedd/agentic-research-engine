@@ -8,10 +8,11 @@ from collections import defaultdict
 from typing import Any, Awaitable, Callable, DefaultDict, Dict, List, Optional
 
 from ..state import State
+from .message_protocol import ChatMessage
 
 
 class DynamicGroupChat:
-    """Simple in-memory group chat with a shared workspace."""
+    """Simple in-memory group chat with a shared workspace and scratchpad."""
 
     def __init__(self, shared_workspace: Dict[str, Any]) -> None:
         """Initialize the collaborative environment."""
@@ -20,6 +21,8 @@ class DynamicGroupChat:
         self.inboxes: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(list)
         self.turn_queue: List[str] = []
         self.roles: Dict[str, str] = {}
+        self.scratchpad: Dict[str, Any] = {}
+        self._state: State | None = None
 
     def facilitate_team_collaboration(
         self, team_composition: List[Dict[str, str] | str], task_context: Dict[str, Any]
@@ -43,6 +46,21 @@ class DynamicGroupChat:
             "task_context": task_context,
         }
 
+    def bind_state(self, state: State) -> None:
+        """Attach a State instance and share its scratchpad."""
+        self._state = state
+        self.scratchpad = state.scratchpad
+
+    def write_scratchpad(self, key: str, value: Any) -> None:
+        """Write a value to the shared scratchpad and State."""
+        self.scratchpad[key] = value
+        if self._state is not None:
+            self._state.scratchpad[key] = value
+
+    def read_scratchpad(self, key: str) -> Any | None:
+        """Return an entry from the shared scratchpad."""
+        return self.scratchpad.get(key)
+
     def post_message(
         self,
         sender: str,
@@ -52,12 +70,12 @@ class DynamicGroupChat:
         recipient: Optional[str] = None,
     ) -> None:
         """Send a message to the chat."""
-        msg = {
-            "sender": sender,
-            "content": content,
-            "type": message_type,
-            "recipient": recipient,
-        }
+        msg = ChatMessage(
+            sender=sender,
+            content=content,
+            type=message_type,
+            recipient=recipient,
+        ).model_dump()
         self.message_history.append(msg)
         if recipient:
             self.inboxes[recipient].append(msg)
@@ -69,7 +87,7 @@ class DynamicGroupChat:
     def get_messages(self, agent_id: str) -> List[Dict[str, Any]]:
         """Return and clear the pending messages for the agent."""
         msgs = self.inboxes.pop(agent_id, [])
-        return msgs
+        return [ChatMessage.model_validate(m).model_dump() for m in msgs]
 
     def update_workspace(self, agent_id: str, key: str, value: Any) -> None:
         """Update the shared workspace if permitted."""
@@ -104,10 +122,12 @@ class GroupChatManager:
     async def run(self, state: "State") -> "State":
         """Execute a simple round-robin chat session."""
 
+        self.chat.bind_state(state)
         self.chat.facilitate_team_collaboration(self.turn_order, state.data)
         turns = 0
+        idx = 0
         while turns < self.max_turns:
-            agent_id = self.turn_order[turns % len(self.turn_order)]
+            agent_id = self.turn_order[idx]
             agent_fn = self.agents[agent_id]
             incoming = self.chat.get_messages(agent_id)
             if asyncio.iscoroutinefunction(agent_fn):
@@ -128,12 +148,24 @@ class GroupChatManager:
                     agent_id, content, message_type=msg_type, recipient=recipient
                 )
                 state.add_message(
-                    {"sender": agent_id, "content": content, "type": msg_type}
+                    {
+                        "sender": agent_id,
+                        "content": content,
+                        "type": msg_type,
+                        "recipient": recipient,
+                    }
                 )
                 if msg_type == "finish" or content.strip().upper() == "FINISH":
                     break
 
             turns += 1
+            if result and isinstance(result, dict) and result.get("recipient"):
+                try:
+                    idx = self.turn_order.index(result["recipient"])
+                except ValueError:
+                    idx = (idx + 1) % len(self.turn_order)
+            else:
+                idx = (idx + 1) % len(self.turn_order)
 
         state.update({"conversation": self.chat.message_history})
         return state

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Dict, List, Optional
 
 from fastapi import Body, FastAPI, Header, HTTPException, Query
@@ -78,7 +79,11 @@ def create_app(service: LTMService) -> FastAPI:
             raise HTTPException(status_code=403, detail="forbidden")
         if req.memory_type not in ALLOWED_MEMORY_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported memory type")
-        rec_id = service.consolidate(req.memory_type, req.record)
+        rec_id = await asyncio.to_thread(
+            service.consolidate,
+            req.memory_type,
+            req.record,
+        )
         return ConsolidateResponse(id=rec_id)
 
     @app.post("/consolidate", include_in_schema=False)
@@ -98,11 +103,18 @@ def create_app(service: LTMService) -> FastAPI:
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise HTTPException(status_code=400, detail="Unsupported memory type")
         query = req.query or req.task_context or {}
-        results = service.retrieve(memory_type, query, limit=limit)
+        results = await asyncio.to_thread(
+            service.retrieve,
+            memory_type,
+            query,
+            limit=limit,
+        )
         return RetrieveResponse(results=results)
 
     @app.get("/retrieve", include_in_schema=False)
-    async def retrieve(memory_type: str = Query("episodic"), limit: int = Query(5)) -> RedirectResponse:
+    async def retrieve(
+        memory_type: str = Query("episodic"), limit: int = Query(5)
+    ) -> RedirectResponse:
         query = f"memory_type={memory_type}&limit={limit}"
         return RedirectResponse(url=f"/memory?{query}", status_code=308)
 
@@ -110,8 +122,9 @@ def create_app(service: LTMService) -> FastAPI:
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    from .episodic_memory import EpisodicMemoryService, InMemoryStorage
     import uvicorn
+
+    from .episodic_memory import EpisodicMemoryService, InMemoryStorage
 
     service = LTMService(EpisodicMemoryService(InMemoryStorage()))
     uvicorn.run(create_app(service), host="0.0.0.0", port=8081)

@@ -21,5 +21,8 @@ langchain==0.1.15
 langgraph==0.0.24
 langsmith==0.1.18
 weaviate-client==3.26.7
-# Optional heavy dependencies removed for tests
+googletrans==4.0.2
+openai==1.3.5
+trl==0.7.10
+pytest-asyncio==0.23.6
 

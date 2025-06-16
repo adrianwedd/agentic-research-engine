@@ -3,7 +3,9 @@ from __future__ import annotations
 """In-memory vector store for episodic memory tests."""
 
 import math
+import os
 import uuid
+from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, Iterable, List, Tuple
 
 try:  # pragma: no cover - optional dependency
@@ -41,20 +43,35 @@ class InMemoryVectorStore(VectorStore):
         self._data[vec_id] = (vector, metadata)
         return vec_id
 
-    def query(self, vector: List[float], limit: int = 5) -> List[Dict]:
-        def cosine(a: List[float], b: List[float]) -> float:
-            dot = sum(x * y for x, y in zip(a, b))
-            norm_a = math.sqrt(sum(x * x for x in a))
-            norm_b = math.sqrt(sum(x * x for x in b))
-            return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+    @staticmethod
+    def _cosine(a: List[float], b: List[float]) -> float:
+        dot = sum(x * y for x, y in zip(a, b))
+        norm_a = math.sqrt(sum(x * x for x in a))
+        norm_b = math.sqrt(sum(x * x for x in b))
+        return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
 
+    @staticmethod
+    def _score_item(args: Tuple[List[float], Tuple[str, Tuple[List[float], Dict]]]):
+        vector, item = args
+        vec_id, (vec, meta) = item
+        score = InMemoryVectorStore._cosine(vector, vec)
+        rec = dict(meta)
+        rec.setdefault("id", vec_id)
+        rec["similarity"] = score
+        return score, rec
+
+    def query(self, vector: List[float], limit: int = 5) -> List[Dict]:
         scored = []
-        for vec_id, (vec, meta) in self._data.items():
-            score = cosine(vector, vec)
-            rec = dict(meta)
-            rec.setdefault("id", vec_id)
-            rec["similarity"] = score
-            scored.append((score, rec))
+        items = list(self._data.items())
+        workers = int(os.getenv("VECTOR_SEARCH_WORKERS", "1") or 1)
+        if workers > 1 and items:
+            with ProcessPoolExecutor(max_workers=workers) as ex:
+                scored = list(
+                    ex.map(self._score_item, [(vector, item) for item in items])
+                )
+        else:
+            for item in items:
+                scored.append(self._score_item((vector, item)))
 
         scored.sort(key=lambda x: x[0], reverse=True)
         return [rec for _, rec in scored[:limit]]

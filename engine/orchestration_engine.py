@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
@@ -38,6 +39,7 @@ class NodeType(str, Enum):
     DEFAULT = "default"
     HUMAN_IN_THE_LOOP_BREAKPOINT = "human_in_the_loop_breakpoint"
     GROUP_CHAT_MANAGER = "group_chat_manager"
+    SUBGRAPH = "subgraph"
 
 
 class InMemorySaver:
@@ -58,7 +60,7 @@ class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: (Callable[[State], Awaitable[State]] | Callable[[State], State])
+    func: Callable[[State], Awaitable[State]] | Callable[[State], State]
     retries: int = 0
     node_type: NodeType = NodeType.DEFAULT
 
@@ -70,7 +72,14 @@ class Node:
                     f"node:{self.name}",
                     attributes={"state_in": state.model_dump_json()},
                 ) as span:
-                    if asyncio.iscoroutinefunction(self.func):
+                    if self.node_type == NodeType.SUBGRAPH:
+                        if isinstance(self.func, OrchestrationEngine):
+                            result = await self.func.run_async(state)
+                        else:
+                            raise TypeError(
+                                "subgraph node must be an OrchestrationEngine"
+                            )
+                    elif asyncio.iscoroutinefunction(self.func):
                         result = await self.func(state)
                     else:
                         result = self.func(state)
@@ -112,6 +121,7 @@ async def parallel_subgraphs(
         data=state.data.copy(),
         messages=list(state.messages),
         history=list(state.history),
+        scratchpad=state.scratchpad.copy(),
         status=state.status,
     )
     for res in results:
@@ -122,7 +132,7 @@ async def parallel_subgraphs(
 
 
 def _build_order(
-    edges: Iterable[Edge | tuple[str, str, str | None] | tuple[str, str]]
+    edges: Iterable[Edge | tuple[str, str, str | None] | tuple[str, str]],
 ) -> Dict[str, str]:
     """Convert edge list to lookup map."""
 
@@ -163,12 +173,18 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: (Callable[[State], Awaitable[State]] | Callable[[State], State]),
+        func: Callable[[State], Awaitable[State]] | Callable[[State], State],
         *,
         retries: int = 0,
         node_type: NodeType = NodeType.DEFAULT,
     ) -> None:
         self.nodes[name] = Node(name, func, retries, node_type)
+
+    def add_subgraph(
+        self, name: str, subgraph: "OrchestrationEngine", *, retries: int = 0
+    ) -> None:
+        """Add a subgraph node that runs another :class:`OrchestrationEngine`."""
+        self.nodes[name] = Node(name, subgraph, retries, NodeType.SUBGRAPH)
 
     def add_edge(self, start: str, end: str, *, edge_type: str | None = None) -> None:
         self.edges.append(Edge(start=start, end=end, edge_type=edge_type))
@@ -209,25 +225,30 @@ class OrchestrationEngine:
     ) -> State:
         """Execute the graph asynchronously in a simple sequential manner."""
 
-        if self.entry is None:
-            self.build()
-        self._last_node = None
-        if hasattr(self.checkpointer, "start"):
-            try:
-                self.checkpointer.start(thread_id, state)
-            except Exception:  # pragma: no cover - defensive
-                pass
-
-        node_name = start_at or self.entry
-        while node_name:
-            node = self.nodes[node_name]
-            state = await node.run(state)
-            if hasattr(self.checkpointer, "save"):
+        tracer = trace.get_tracer(__name__)
+        start_time = time.perf_counter()
+        with tracer.start_as_current_span(
+            "task", attributes={"thread_id": thread_id}
+        ) as task_span:
+            if self.entry is None:
+                self.build()
+            self._last_node = None
+            if hasattr(self.checkpointer, "start"):
                 try:
-                    self.checkpointer.save(thread_id, node_name, state)
+                    self.checkpointer.start(thread_id, state)
                 except Exception:  # pragma: no cover - defensive
                     pass
-            self._on_node_finished(node_name)
+
+            node_name = start_at or self.entry
+            while node_name:
+                node = self.nodes[node_name]
+                state = await node.run(state)
+                if hasattr(self.checkpointer, "save"):
+                    try:
+                        self.checkpointer.save(thread_id, node_name, state)
+                    except Exception:  # pragma: no cover - defensive
+                        pass
+                self._on_node_finished(node_name)
 
             if node_name in self.routers_map:
                 router, path_map = self.routers_map[node_name]
@@ -259,6 +280,25 @@ class OrchestrationEngine:
                     state = self.on_complete(state)
             except Exception:  # pragma: no cover - defensive
                 logger.exception("on_complete hook failed")
+
+        duration = time.perf_counter() - start_time
+        conv = state.data.get("conversation", [])
+        total_messages = len(conv) if isinstance(conv, list) else 0
+        latencies = [
+            conv[i + 1]["timestamp"] - conv[i]["timestamp"]
+            for i in range(len(conv) - 1)
+            if isinstance(conv[i], dict)
+            and isinstance(conv[i + 1], dict)
+            and "timestamp" in conv[i]
+            and "timestamp" in conv[i + 1]
+        ]
+        avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
+        action_rate = (len(state.history) / duration) if duration > 0 else 0.0
+
+        task_span.set_attribute("total_messages_sent", total_messages)
+        task_span.set_attribute("average_message_latency", avg_latency)
+        task_span.set_attribute("action_advancement_rate", action_rate)
+
         return state
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:

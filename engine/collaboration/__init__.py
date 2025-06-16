@@ -1,3 +1,4 @@
 from .group_chat import DynamicGroupChat, GroupChatManager
+from .message_protocol import ChatMessage
 
-__all__ = ["DynamicGroupChat", "GroupChatManager"]
+__all__ = ["DynamicGroupChat", "GroupChatManager", "ChatMessage"]

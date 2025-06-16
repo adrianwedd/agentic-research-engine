@@ -33,5 +33,17 @@ services:
       - jaeger
     restart: unless-stopped
 
+  episodic-memory:
+    build: .
+    image: agentic/research-engine:latest
+    command: uvicorn services.episodic_memory.app:app --host 0.0.0.0 --port 8081 --workers ${WORKER_COUNT:-4}
+    environment:
+      WORKER_COUNT: ${WORKER_COUNT:-4}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - otel-collector
+      - weaviate
+
 volumes:
   weaviate_data:

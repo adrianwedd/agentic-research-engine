@@ -22,5 +22,11 @@ spec:
       containers:
       - name: agent-services
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command: ["sh", "-c"]
+        args:
+          - uvicorn services.episodic_memory.app:app --host 0.0.0.0 --port 80 --workers ${WORKER_COUNT}
         ports:
         - containerPort: 80
+        env:
+          - name: WORKER_COUNT
+            value: "{{ .Values.workerCount }}"
