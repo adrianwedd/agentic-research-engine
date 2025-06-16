@@ -140,3 +140,11 @@
     - Gap analysis report produced
     - Task lifecycle documented with pain points
     - AGENTS.md and codex_tasks logic updated
+- id: CR-05c
+  title: Enable Continuous Monitoring & Auditing
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Given an agent issues any tool call
+    - When the call completes or is blocked
+    - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome

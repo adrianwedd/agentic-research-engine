@@ -24,3 +24,4 @@ This ledger tracks open change requests across the project. Each entry lists the
 | CR-004 | Hierarchical Policy Executor | Open |
 | CR-005 | Lifelong skill generalization support | Open |
 | CR-006 | Adopt RLlib and Isaac Lab tooling | Open |
+| CR-05c | Enable Continuous Monitoring & Auditing | Open |

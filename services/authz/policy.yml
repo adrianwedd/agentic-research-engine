@@ -1,0 +1,5 @@
+intents:
+  generate_report:
+    - retrieve_memory
+  modify_users:
+    - modify_user
