@@ -21,6 +21,8 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
 from opentelemetry import trace
 
+from services.tracing import get_metrics, reset_metrics
+
 from .state import State
 
 CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
@@ -231,6 +233,7 @@ class OrchestrationEngine:
 
         tracer = trace.get_tracer(__name__)
         start_time = time.perf_counter()
+        reset_metrics()
         with tracer.start_as_current_span(
             "task", attributes={"thread_id": thread_id}
         ) as task_span:
@@ -288,6 +291,11 @@ class OrchestrationEngine:
         duration = time.perf_counter() - start_time
         conv = state.data.get("conversation", [])
         total_messages = len(conv) if isinstance(conv, list) else 0
+        communication_tokens = (
+            sum(len(str(m.get("content", "")).split()) for m in conv)
+            if isinstance(conv, list)
+            else 0
+        )
         latencies = [
             conv[i + 1]["timestamp"] - conv[i]["timestamp"]
             for i in range(len(conv) - 1)
@@ -298,10 +306,18 @@ class OrchestrationEngine:
         ]
         avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
         action_rate = (len(state.history) / duration) if duration > 0 else 0.0
+        metrics = get_metrics()
+        tokens = metrics.get("total_tokens_consumed", 0.0)
+        tool_calls = metrics.get("tool_call_count", 0.0)
+        self_corrections = float(state.retry_count)
 
         task_span.set_attribute("total_messages_sent", total_messages)
         task_span.set_attribute("average_message_latency", avg_latency)
         task_span.set_attribute("action_advancement_rate", action_rate)
+        task_span.set_attribute("total_tokens_consumed", tokens)
+        task_span.set_attribute("tool_call_count", tool_calls)
+        task_span.set_attribute("self_correction_loops", self_corrections)
+        task_span.set_attribute("communication_overhead", communication_tokens)
 
         return state
 

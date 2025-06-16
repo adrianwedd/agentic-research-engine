@@ -7,6 +7,8 @@ from typing import Any, Optional
 
 from opentelemetry import trace
 
+from . import increment_metric
+
 SCHEMA_VERSION = "1.1"
 
 
@@ -38,10 +40,13 @@ class ToolCallTrace:
                 span.set_attribute("tool_output", str(self.tool_output))
             if self.input_tokens is not None:
                 span.set_attribute("input_tokens", self.input_tokens)
+                increment_metric("total_tokens_consumed", float(self.input_tokens))
             if self.output_tokens is not None:
                 span.set_attribute("output_tokens", self.output_tokens)
+                increment_metric("total_tokens_consumed", float(self.output_tokens))
             if self.latency_ms is not None:
                 span.set_attribute("latency_ms", self.latency_ms)
+            increment_metric("tool_call_count", 1.0)
 
     @classmethod
     def from_attributes(cls, attrs: dict[str, Any]) -> "ToolCallTrace":

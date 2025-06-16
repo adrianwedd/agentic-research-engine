@@ -53,3 +53,7 @@ def test_task_span_contains_metrics():
     assert "total_messages_sent" in task_span.attributes
     assert "average_message_latency" in task_span.attributes
     assert "action_advancement_rate" in task_span.attributes
+    assert "total_tokens_consumed" in task_span.attributes
+    assert "tool_call_count" in task_span.attributes
+    assert "self_correction_loops" in task_span.attributes
+    assert "communication_overhead" in task_span.attributes
