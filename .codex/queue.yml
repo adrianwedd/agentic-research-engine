@@ -40,3 +40,10 @@
     - Given LLM_PROVIDER="ollama" the client sends requests to the local server
     - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured cloud endpoint
     - Changing environment variables switches models without code changes
+- id: CR-P3-03A
+  title: Fix State Propagation from Hierarchical Subgraphs to Parent
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - Subgraph final state merges into parent scratchpad
+    - Parent graph resumes after subgraph completion

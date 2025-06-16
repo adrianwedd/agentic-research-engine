@@ -57,6 +57,19 @@ class InMemorySaver:
         return self._data.get(run_id)
 
 
+def _merge_states(parent: State, child: State) -> State:
+    """Merge child state into parent state and return the updated parent."""
+
+    parent.update(child.data)
+    parent.messages.extend(child.messages)
+    parent.history.extend(child.history)
+    parent.scratchpad.update(child.scratchpad)
+    parent.status = child.status
+    parent.evaluator_feedback = child.evaluator_feedback
+    parent.retry_count = child.retry_count
+    return parent
+
+
 @dataclass
 class Node:
     """Representation of a node in the workflow graph."""
@@ -91,7 +104,10 @@ class Node:
                         result = self.func(state, state.scratchpad)
 
                     if isinstance(result, GraphState):
-                        out_state = result
+                        if self.node_type == NodeType.SUBGRAPH:
+                            out_state = _merge_states(state, result)
+                        else:
+                            out_state = result
                     elif isinstance(result, dict):
                         state.update(result)
                         out_state = state
