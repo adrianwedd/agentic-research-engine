@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
-import re
 from typing import Any, Dict, List, Optional
 
 from engine.state import State
+from services import load_llm_client
 from services.tool_registry import ToolRegistry, create_default_registry
 
 logger = logging.getLogger(__name__)
@@ -40,25 +41,66 @@ class MemoryManagerAgent:
         }
 
     def _extract_triples(self, state: State) -> List[Dict[str, Any]]:
-        """Very simple pattern-based relation extraction for demo purposes."""
+        """Extract knowledge triples from ``state.data['report']`` using an LLM."""
         text = state.data.get("report", "")
         if not isinstance(text, str):
             return []
-        triples: List[Dict[str, Any]] = []
-        pattern = re.compile(
-            r"(?P<subject>[A-Z][A-Za-z0-9& ]+) acquired (?P<object>[A-Z][A-Za-z0-9& ]+) in (?P<year>\d{4})",
-            re.IGNORECASE,
+        client = load_llm_client()
+        system_msg = (
+            "You are a knowledge extraction engine. "
+            "Extract all factual relationships as JSON array of objects "
+            "with 'subject', 'predicate', 'object' and optional 'properties'."
         )
-        for match in pattern.finditer(text):
-            triples.append(
-                {
-                    "subject": match.group("subject"),
-                    "predicate": "ACQUIRED",
-                    "object": match.group("object"),
-                    "properties": {"year": int(match.group("year"))},
-                }
-            )
-        return triples
+        examples = [
+            (
+                "Apple acquired NeXT in 1997.",
+                [
+                    {
+                        "subject": "Apple",
+                        "predicate": "ACQUIRED",
+                        "object": "NeXT",
+                        "properties": {"year": 1997},
+                    }
+                ],
+            ),
+            (
+                "The framework, developed by the core team in California, was released under the Apache 2.0 license.",
+                [
+                    {
+                        "subject": "framework",
+                        "predicate": "DEVELOPED_BY",
+                        "object": "core team",
+                    },
+                    {
+                        "subject": "core team",
+                        "predicate": "LOCATED_IN",
+                        "object": "California",
+                    },
+                    {
+                        "subject": "framework",
+                        "predicate": "LICENSED_UNDER",
+                        "object": "Apache 2.0 license",
+                    },
+                ],
+            ),
+        ]
+        messages = [{"role": "system", "content": system_msg}]
+        for ex_text, triples in examples:
+            messages.append({"role": "user", "content": ex_text})
+            messages.append({"role": "assistant", "content": json.dumps(triples)})
+        messages.append({"role": "user", "content": text})
+
+        try:
+            resp = client.invoke(messages)
+            data = json.loads(resp)
+            triples: List[Dict[str, Any]] = []
+            for item in data:
+                if isinstance(item, dict):
+                    triples.append(item)
+            return triples
+        except Exception:  # pragma: no cover - log only
+            logger.exception("LLM relation extraction failed")
+            return []
 
     def __call__(self, state: State, scratchpad: Dict[str, Any]) -> State:
         record = self._format_record(state)

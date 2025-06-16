@@ -23,6 +23,15 @@
     - When the MemoryManager processes the report
     - Then the corresponding nodes and relationship are stored in Semantic LTM
 
+- id: CR-P3-16A
+  title: Improve MemoryManager Relation Extraction
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - Given the MemoryManager processes complex text
+    - When relation extraction completes
+    - Then multiple distinct triples are returned
+
 - id: P3-19
   title: Implement a GitHub Search API tool
   priority: medium
