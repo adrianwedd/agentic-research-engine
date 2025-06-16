@@ -264,6 +264,17 @@ Finally, it is worth considering the ultimate trajectory of this research. The c
 
 SkillLibrary not as a discrete collection of policies, but as a learned, continuous manifold in a high-dimensional "skill space." An agent could then generate entirely new, nuanced skills on the fly by interpolating between existing skills, extrapolating from them, or applying learned "skill modifier" operators within this latent space. This would transform the procedural memory from a library that is simply added to, into a true generative nexus of behavior—a system that can invent novel solutions rather than just composing existing ones. This represents the ultimate fulfillment of the research proposal's vision and a significant step towards more creative and adaptable artificial intelligence.
 
+### **Future Development**
+
+Based on this research, the following change requests have been logged for implementation:
+
+* **CR-001** – Overhaul the `MemoryManager` with a modular SkillLibrary storing policies, embeddings, and metadata.
+* **CR-002** – Add a `SkillDiscoveryModule` for unsupervised, disentangled skill learning.
+* **CR-003** – Integrate LLM-guided semantic decomposition to generate sub-tasks and reward functions.
+* **CR-004** – Implement a hierarchical policy executor for skill composition.
+* **CR-005** – Enhance generalization and lifelong learning by training across diverse contexts and freezing learned skills.
+* **CR-006** – Adopt Ray RLlib and NVIDIA Isaac Lab for scalable RL and simulation tooling.
+
 #### **Works cited**
 
 1. Understanding AI Memory: A Deep Dive into the Cognitive Layers of Service Automation, accessed on June 16, 2025, [https://techsee.com/blog/understanding-ai-memory-a-deep-dive-into-the-cognitive-layers-of-service-automation/](https://techsee.com/blog/understanding-ai-memory-a-deep-dive-into-the-cognitive-layers-of-service-automation/)  
