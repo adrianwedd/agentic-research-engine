@@ -1248,3 +1248,11 @@ acceptance_criteria: []
 ```
 
 
+```codex-task
+id: P3-TEST-01
+title: Replace deprecated utcnow usage
+status: open
+priority: medium
+notes: |
+  `services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware timestamps.
+```
