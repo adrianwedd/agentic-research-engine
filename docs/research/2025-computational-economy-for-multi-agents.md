@@ -309,6 +309,53 @@ The ultimate vision for this internal economy extends beyond simple resource man
 * **Market-Driven Innovation:** The economic incentives will drive innovation. If a particular external tool is consistently expensive, the system will be financially motivated to find or even autonomously develop a cheaper alternative. This aligns with advanced agentic concepts like autonomous tool creation 43, where the system improves its own capabilities in response to environmental (in this case, economic) pressures.  
 * **Dynamic Governance and Self-Regulation:** The highest level of maturity is a system that can reflect on and refine its own market structure. The CEO and Auditor agents, armed with comprehensive data on system performance, could be trained to propose and test changes to the market rules themselves—adjusting the pricing models, modifying the auction selection criteria, or altering the reward function. This creates a complete feedback loop, where the micro-level interactions of agents inform the macro-level structure of the economy, which in turn shapes future agent behavior. This two-way feedback between microstructure and macrostructure is the defining characteristic of a complex adaptive system, transforming the MAS from a tool that is merely managed into one that is truly self-optimizing.6
 
+### **Future Development**
+
+Based on the analysis above, the following change requests have been logged for potential implementation:
+
+| ID | Category | Change Request | Description |
+|---|---|---|---|
+| **Foundation & Core Concepts** ||| |
+| F-01 | Agent Schema | Define "Economic Actor" properties for agents | Extend the base agent schema to include properties for tracking its current budget balance, profit/loss, and performance history. This makes the agent an economic actor.[1, 2] |
+| F-02 | System | Implement a query-level "Computational Budget" | Introduce a system-level property for each research query that defines the total capital (budget) available for the entire task.[3, 4] |
+| F-03 | System | Implement a "Reward Model" interface | Create a standardized API endpoint or service interface for a Reward Model. Initially, this can be a stub that returns a placeholder score, but it defines how the system will quantify the "quality" of the final output.[5, 6, 7] |
+| F-04 | System | Establish a central "Ledger" for resource transactions | Implement an immutable, append-only log to record every resource-consuming action (LLM call, tool use) by any agent, including its cost. This provides a full audit trail of expenditures.[8, 9] |
+| **Cost Modeling** ||| |
+| C-01 | Cost Model | Create a "Price Oracle" service | Develop a centralized service that agents must query to get the real-time cost of any action before execution. This service will be the single source of truth for all costs.[10] |
+| C-02 | Cost Model | Implement static cost for LLM calls | In the Price Oracle, implement a cost function for LLM calls based on the model used (e.g., GPT-4 vs. GPT-3.5) and the number of input and output tokens.[5] |
+| C-03 | Cost Model | Implement cost for tool usage | Extend the Price Oracle to return a cost for using external tools or APIs. This can be a fixed cost per call or based on third-party pricing.[11] |
+| C-04 | Cost Model | Implement cost for media processing | Add a cost multiplier in the Price Oracle for actions that involve processing non-text media like images or audio, reflecting the higher computational load.[5] |
+| C-05 | Cost Model | Implement dynamic pricing based on system load | *[Advanced]* Evolve the Price Oracle to adjust resource prices based on overall system demand, increasing costs during peak load to incentivize off-peak usage.[12, 10] |
+| **Task Allocation & Auctions** ||| |
+| A-01 | Agent Schema | Define a standardized "Bid" schema | Create a structured data format for bids that includes `cost`, `predicted_reward_contribution`, `confidence_score`, and `estimated_completion_time`. |
+| A-02 | Architecture | Implement a "Market Maker" agent | Create a dedicated agent responsible for announcing tasks from the research plan and managing the auction process.[3, 13] |
+| A-03 | Auctions | Implement the Greedy Coalition Auction Algorithm (GCAA) | Implement GCAA as the initial task allocation mechanism. Agents will greedily select their best task and iteratively form coalitions.[14] |
+| A-04 | Auctions | Implement the Sequential Single Item (SSI) auction | *[Advanced]* Implement the SSI auction mechanism, where tasks are auctioned one at a time. This is ideal for plans with strong sequential dependencies.[13] |
+| A-05 | Auctions | Implement Combinatorial Auctions | *[Advanced]* Implement a combinatorial auction where agents can bid on bundles of tasks, allowing them to express the value of completing tasks together. This requires an NP-hard winner determination solver.[15] |
+| **Budget-Aware Planning** ||| |
+| P-01 | Planner Agent | Add budget constraint to Planner input | Modify the Planner agent's interface to accept the total `computational_budget` as an input parameter for a given research query. |
+| P-02 | Planner Agent | Generate a "Budgeted Plan" | Modify the Planner's output to include not just a list of sub-tasks, but also an estimated cost allocation for each sub-task. |
+| P-03 | Agent State | Include "Remaining Budget" in agent state | Add the current `remaining_budget` to the state information available to all agents during their decision-making process. This allows agents to adapt their strategy based on available funds.[16] |
+| P-04 | Planner Agent | Implement "Anytime" planning loop | Structure the planning process to be interruptible. The Planner should first generate a low-cost, simple plan, and then, if budget permits, enter an iterative loop to refine and add detail to the plan.[17] |
+| P-05 | System | Create a dynamic "Agent Roster" | Implement a service that provides the Planner with a real-time, structured list of available agents, their specialized skills, current workload, and operational cost.[18, 8] |
+| **System Architecture** ||| |
+| AR-01 | Architecture | Implement a hierarchical "CEO" agent | Create a top-level agent that manages the overall economic process, including receiving the initial budget, invoking the Planner, and overseeing the Market Maker.[19, 9, 20] |
+| AR-02 | Architecture | Enable ad-hoc "Agent Team" formation | Implement the logic for agents to dynamically form coalitions or "teams" to bid on tasks announced by the Market Maker. |
+| AR-03 | Architecture | Implement budget enforcement authority | Grant the CEO agent the architectural capability to enforce budget limits, such as by rejecting a plan that is over budget or terminating a task that has exhausted its allocated funds.[8] |
+| AR-04 | Framework | Integrate LangGraph for hierarchical control | Use the LangGraph framework to define the stateful, hierarchical control flow between the CEO, Market Maker, and worker agent teams.[2, 21, 22] |
+| **Cost Optimizations** ||| |
+| O-01 | Caching | Implement exact-match caching (Layer 1) | Add a key-value caching layer (e.g., using Redis) to store and retrieve responses for identical LLM prompts, reducing redundant API calls.[23, 24, 25] |
+| O-02 | Caching | Implement semantic caching (Layer 2) | *[Advanced]* Add a vector-based semantic cache to return stored responses for prompts that are semantically similar, further increasing the cache hit rate.[23, 24, 26] |
+| O-03 | Prompting | Implement automated prompt conciseness | Add a pre-processing step to programmatically strip conversational filler and unnecessary tokens from all inter-agent prompts before they are sent to an LLM.[27, 3, 28] |
+| O-04 | Prompting | Enforce structured data for agent communication | Mandate that agents communicate internally using token-efficient structured formats like JSON or YAML instead of natural language prose.[27, 3, 28] |
+| O-05 | Prompting | Implement BatchPrompt for parallel tasks | Modify the Market Maker to identify independent, parallelizable tasks and bundle them into a single, batched LLM call to reduce overhead.[27, 3, 28] |
+| O-06 | Architecture | Implement a hierarchical model cascade | Architect the system to use smaller, faster, and cheaper models (e.g., local models via Ollama) for simple, routine tasks, reserving expensive flagship models for complex planning and synthesis.[5, 19] |
+| **Governance & Risk Mitigation** ||| |
+| G-01 | Governance | Implement an "Auditor" agent role | Define a high-privilege agent whose function is to monitor market activity (bidding patterns, resource use) for signs of manipulation or instability.[29, 18] |
+| G-02 | Governance | Implement market "circuit breakers" | Add a mechanism that allows the Auditor or CEO agent to temporarily halt market activity if extreme volatility or anomalous behavior (e.g., a flash crash in bid prices) is detected.[3, 13] |
+| G-03 | Governance | Implement agent identity and reputation system | Develop a system to assign unique, verifiable identities to agents and track their performance history (e.g., task success rate, budget adherence) to mitigate Sybil attacks and inform bidding decisions.[29] |
+| G-04 | Governance | Track economic overhead | Implement a system-level metric to calculate the computational cost of the economic mechanisms themselves (e.g., auction deliberation time) to ensure the efficiency gains outweigh the overhead.[2, 30, 31] |
+
 #### **Works cited**
 
 1. How to Build a Multi-Agent AI System : In-Depth Guide : Aalpha, accessed on June 16, 2025, [https://www.aalpha.net/blog/how-to-build-multi-agent-ai-system/](https://www.aalpha.net/blog/how-to-build-multi-agent-ai-system/)  
