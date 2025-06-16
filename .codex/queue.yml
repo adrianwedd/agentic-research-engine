@@ -116,3 +116,11 @@
   steps: []
   acceptance_criteria:
     - RL training uses Ray RLlib and NVIDIA Isaac Lab
+
+- id: CR-02
+  title: Detailed Implementation of the LLM-Based Auxiliary Guidance Loss
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - dataset generation pipeline outputs at least 1000 mappings
+    - training logs show policy_loss and guidance_loss at each step
