@@ -38,16 +38,16 @@ def test_conditional_router_executes_verifier():
 
     engine = create_orchestration_engine()
 
-    def start(state: GraphState) -> GraphState:
+    def start(state: GraphState, scratchpad: dict) -> GraphState:
         state.data.setdefault("order", []).append("Start")
         return state
 
-    def verifier(state: GraphState) -> GraphState:
+    def verifier(state: GraphState, scratchpad: dict) -> GraphState:
         state.data["order"].append("Verifier")
         state.data["status"] = "approved"
         return state
 
-    def complete(state: GraphState) -> GraphState:
+    def complete(state: GraphState, scratchpad: dict) -> GraphState:
         state.data["order"].append("Complete")
         return state
 
@@ -85,7 +85,7 @@ def test_conditional_router_executes_verifier():
 def test_conditional_router_invalid_status_raises():
     engine = create_orchestration_engine()
 
-    def start(state: GraphState) -> GraphState:
+    def start(state: GraphState, scratchpad: dict) -> GraphState:
         state.data.setdefault("order", []).append("Start")
         return state
 
@@ -111,11 +111,11 @@ def test_cosc_router_routes_for_retry():
 
     order: list[str] = []
 
-    def researcher(state: GraphState) -> GraphState:
+    def researcher(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Researcher")
         return state
 
-    def evaluator(state: GraphState) -> GraphState:
+    def evaluator(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Evaluator")
         if state.retry_count == 0:
             state.evaluator_feedback = {"overall_score": 0.2}
@@ -123,7 +123,7 @@ def test_cosc_router_routes_for_retry():
             state.evaluator_feedback = {"overall_score": 0.8}
         return state
 
-    def complete(state: GraphState) -> GraphState:
+    def complete(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Complete")
         return state
 
@@ -156,16 +156,16 @@ def test_cosc_router_stops_after_max_retries():
 
     order: list[str] = []
 
-    def researcher(state: GraphState) -> GraphState:
+    def researcher(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Researcher")
         return state
 
-    def evaluator(state: GraphState) -> GraphState:
+    def evaluator(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Evaluator")
         state.evaluator_feedback = {"overall_score": 0.1}
         return state
 
-    def abort(state: GraphState) -> GraphState:
+    def abort(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Abort")
         return state
 
@@ -194,16 +194,16 @@ def test_cosc_loop_terminates_after_three_retries():
 
     order: list[str] = []
 
-    def researcher(state: GraphState) -> GraphState:
+    def researcher(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Researcher")
         return state
 
-    def evaluator(state: GraphState) -> GraphState:
+    def evaluator(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Evaluator")
         state.evaluator_feedback = {"overall_score": 0.0}
         return state
 
-    def failure(state: GraphState) -> GraphState:
+    def failure(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("Failure")
         return state
 

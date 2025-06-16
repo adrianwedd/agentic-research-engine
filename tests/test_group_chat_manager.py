@@ -11,11 +11,11 @@ pytestmark = pytest.mark.core
 def test_group_chat_manager_message_passing():
     received_by_b = []
 
-    def agent_a(messages, state):
+    def agent_a(messages, state, scratchpad):
         assert messages == []
         return "hello"
 
-    def agent_b(messages, state):
+    def agent_b(messages, state, scratchpad):
         received_by_b.extend(messages)
         return {"content": "FINISH", "type": "finish"}
 
@@ -29,16 +29,16 @@ def test_group_chat_manager_message_passing():
 def test_directed_question_routing():
     order = []
 
-    def agent_a(messages, state):
+    def agent_a(messages, state, scratchpad):
         order.append("A")
         return {"content": "where are we?", "type": "question", "recipient": "B"}
 
-    def agent_b(messages, state):
+    def agent_b(messages, state, scratchpad):
         order.append("B")
         assert messages and messages[0]["recipient"] == "B"
         return {"content": "FINISH", "type": "finish"}
 
-    def agent_c(messages, state):
+    def agent_c(messages, state, scratchpad):
         order.append("C")
         return "noop"
 
@@ -51,11 +51,11 @@ def test_directed_question_routing():
 
 
 def test_group_chat_scratchpad_shared():
-    def agent_a(messages, state):
+    def agent_a(messages, state, scratchpad):
         manager.chat.write_scratchpad("foo", "bar")
         return "continue"
 
-    def agent_b(messages, state):
+    def agent_b(messages, state, scratchpad):
         seen = manager.chat.read_scratchpad("foo")
         state.update({"seen": seen})
         return {"content": "FINISH", "type": "finish"}

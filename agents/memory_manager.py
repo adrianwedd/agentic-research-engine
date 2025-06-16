@@ -28,7 +28,7 @@ class MemoryManagerAgent:
             "outcome": {"status": state.status},
         }
 
-    def __call__(self, state: State) -> State:
+    def __call__(self, state: State, scratchpad: Dict[str, Any]) -> State:
         record = self._format_record(state)
         try:
             self.tool_registry.invoke(

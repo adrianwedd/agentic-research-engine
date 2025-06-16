@@ -23,7 +23,7 @@ def test_memory_manager_invoked_after_graph():
     mm = MemoryManagerAgent(endpoint=endpoint, tool_registry=create_default_registry())
 
     engine = create_orchestration_engine(memory_manager=mm)
-    engine.add_node("A", lambda s: s)
+    engine.add_node("A", lambda s, sp: s)
 
     state = GraphState(data={"query": "Write docs"})
     asyncio.run(engine.run_async(state))
