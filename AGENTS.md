@@ -39,3 +39,8 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 - Summarize changes in the PR description.
 - Include test results in the PR body.
 - Ensure all tests and linters pass before opening a pull request.
+
+## Codex Queue Synchronization
+- The file `.codex/queue.yml` must reflect the latest open change requests.
+- Run `python scripts/sync_codex_tasks.py` to compare open issues with queued tasks.
+- Address any reported discrepancies before committing.
