@@ -191,8 +191,16 @@ class SupervisorAgent:
         )
         return state
 
-    def __call__(self, graph_state: Any) -> Any:
-        """Node entrypoint for the orchestration graph."""
+    def __call__(self, graph_state: Any, scratchpad: Dict[str, Any]) -> Any:
+        """Node entrypoint for the orchestration graph.
+
+        Parameters
+        ----------
+        graph_state:
+            Parent workflow state.
+        scratchpad:
+            Shared scratchpad (unused).
+        """
 
         query = graph_state.data.get("query", "")
         if not isinstance(query, str) or not query.strip():

@@ -13,7 +13,7 @@ pytestmark = pytest.mark.core
 def test_lost_message_triggers_retry(monkeypatch):
     attempts = []
 
-    def agent_a(messages, state):
+    def agent_a(messages, state, scratchpad):
         # record attempts; resend if no reply
         attempt = state.data.get("attempt", 0)
         if attempt < 2:
@@ -22,7 +22,7 @@ def test_lost_message_triggers_retry(monkeypatch):
             return {"content": "ping", "recipient": "B"}
         return {"content": "FINISH", "type": "finish"}
 
-    def agent_b(messages, state):
+    def agent_b(messages, state, scratchpad):
         if messages:
             state.update({"received": messages[0]["content"]})
             return {"content": "FINISH", "type": "finish"}

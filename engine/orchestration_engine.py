@@ -60,7 +60,11 @@ class Node:
     """Representation of a node in the workflow graph."""
 
     name: str
-    func: Callable[[State], Awaitable[State]] | Callable[[State], State]
+    func: (
+        Callable[[State, Dict[str, Any]], Awaitable[State]]
+        | Callable[[State, Dict[str, Any]], State]
+    )
+
     retries: int = 0
     node_type: NodeType = NodeType.DEFAULT
 
@@ -80,9 +84,9 @@ class Node:
                                 "subgraph node must be an OrchestrationEngine"
                             )
                     elif asyncio.iscoroutinefunction(self.func):
-                        result = await self.func(state)
+                        result = await self.func(state, state.scratchpad)
                     else:
-                        result = self.func(state)
+                        result = self.func(state, state.scratchpad)
 
                     if isinstance(result, GraphState):
                         out_state = result

@@ -38,12 +38,12 @@ def test_state_history_and_roundtrip():
 def test_state_propagates_between_nodes():
     engine = OrchestrationEngine()
 
-    def node_a(state: State) -> State:
+    def node_a(state: State, scratchpad: dict) -> State:
         state.update({"count": state.data.get("count", 0) + 1})
         state.add_message({"content": "from_a"})
         return state
 
-    def node_b(state: State) -> State:
+    def node_b(state: State, scratchpad: dict) -> State:
         state.update({"seen": state.data["count"]})
         return state
 
@@ -61,12 +61,12 @@ def test_parallel_updates_preserve_history():
     engine1 = OrchestrationEngine()
     engine2 = OrchestrationEngine()
 
-    def node_a(state: State) -> State:
+    def node_a(state: State, scratchpad: dict) -> State:
         state.update({"a": 1})
         state.add_message({"content": "A"})
         return state
 
-    def node_b(state: State) -> State:
+    def node_b(state: State, scratchpad: dict) -> State:
         state.update({"b": 2})
         state.add_message({"content": "B"})
         return state
@@ -83,3 +83,21 @@ def test_parallel_updates_preserve_history():
     assert merged.data == {"a": 1, "b": 2}
     assert any(e.get("message", {}).get("content") == "A" for e in merged.history)
     assert any(e.get("message", {}).get("content") == "B" for e in merged.history)
+
+
+def test_scratchpad_passthrough_when_unused():
+    engine = OrchestrationEngine()
+
+    def node_a(state: State, scratchpad: dict) -> State:
+        return state
+
+    def node_b(state: State, scratchpad: dict) -> State:
+        return state
+
+    engine.add_node("a", node_a)
+    engine.add_node("b", node_b)
+    engine.add_edge("a", "b")
+
+    init = State(scratchpad={"foo": "bar"})
+    final = engine.run(init)
+    assert final.scratchpad == {"foo": "bar"}

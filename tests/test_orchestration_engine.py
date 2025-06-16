@@ -40,12 +40,12 @@ def test_sequential_execution_and_spans():
 
     order = []
 
-    def node_a(state: GraphState) -> GraphState:
+    def node_a(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("A")
         state.update({"a": 1})
         return state
 
-    def node_b(state: GraphState) -> GraphState:
+    def node_b(state: GraphState, scratchpad: dict) -> GraphState:
         order.append("B")
         state.update({"b": state.data.get("a")})
         return state
@@ -84,8 +84,8 @@ def test_sequential_execution_and_spans():
 def test_export_dot_outputs_valid_graph():
     engine = create_orchestration_engine()
 
-    engine.add_node("A", lambda s: s)
-    engine.add_node("B", lambda s: s)
+    engine.add_node("A", lambda s, sp: s)
+    engine.add_node("B", lambda s, sp: s)
     engine.add_edge("A", "B")
 
     engine.build()
@@ -107,14 +107,14 @@ def test_export_dot_outputs_valid_graph():
 def test_typed_edges_routing_and_lookup():
     engine = create_orchestration_engine()
 
-    def start(state: GraphState) -> GraphState:
+    def start(state: GraphState, scratchpad: dict) -> GraphState:
         return state
 
-    def node_b(state: GraphState) -> GraphState:
+    def node_b(state: GraphState, scratchpad: dict) -> GraphState:
         state.update({"dest": "B"})
         return state
 
-    def node_c(state: GraphState) -> GraphState:
+    def node_c(state: GraphState, scratchpad: dict) -> GraphState:
         state.update({"dest": "C"})
         return state
 

@@ -39,7 +39,7 @@ def test_orchestration_checkpointer_logs_runs():
 
     engine = create_orchestration_engine()
     engine.checkpointer = cp
-    engine.add_node("A", lambda s: s)
+    engine.add_node("A", lambda s, sp: s)
 
     asyncio.run(engine.run_async(GraphState(), thread_id="t"))
     assert any(r["name"] == "A" for r in client.runs)
