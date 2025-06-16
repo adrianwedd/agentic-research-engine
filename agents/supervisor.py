@@ -4,7 +4,6 @@ This agent acts as the primary coordinator for research tasks.
 """
 
 import os
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -79,12 +78,13 @@ class SupervisorAgent:
         return [{"topic": p} for p in parts]
 
     def _score_memories(self, query: str, memories: List[Dict]) -> List[Dict]:
-        """Attach a relevance score to each memory based on the query."""
+        """Use similarity scores from LTM results when available."""
 
         for rec in memories:
-            ctx = str(rec.get("task_context", {}).get("query", "")).lower()
-            rec["relevance"] = SequenceMatcher(None, query.lower(), ctx).ratio()
-        memories.sort(key=lambda r: r.get("relevance", 0), reverse=True)
+            if "similarity" in rec:
+                rec["relevance"] = rec["similarity"]
+        if any("relevance" in r for r in memories):
+            memories.sort(key=lambda r: r.get("relevance", 0), reverse=True)
         return memories
 
     def _merge_template(self, plan: Dict[str, Any], template: Dict[str, Any]) -> None:
