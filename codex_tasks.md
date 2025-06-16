@@ -1268,3 +1268,57 @@ priority: medium
 notes: |
   `services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware timestamps.
 ```
+
+```codex-task
+id: CR-001
+title: SkillLibrary-based MemoryManager overhaul
+priority: medium
+steps: []
+acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+```
+
+```codex-task
+id: CR-002
+title: Unsupervised SkillDiscoveryModule
+priority: medium
+steps: []
+acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+```
+
+```codex-task
+id: CR-003
+title: LLM-guided semantic skill decomposition
+priority: medium
+steps: []
+acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+```
+
+```codex-task
+id: CR-004
+title: Hierarchical Policy Executor
+priority: medium
+steps: []
+acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+```
+
+```codex-task
+id: CR-005
+title: Lifelong skill generalization support
+priority: medium
+steps: []
+acceptance_criteria:
+  - New skills added without overwriting existing ones
+```
+
+```codex-task
+id: CR-006
+title: Adopt RLlib and Isaac Lab tooling
+priority: medium
+steps: []
+acceptance_criteria:
+  - RL training uses Ray RLlib and NVIDIA Isaac Lab
+```

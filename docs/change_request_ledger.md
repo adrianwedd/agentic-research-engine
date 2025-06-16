@@ -18,3 +18,9 @@ This ledger tracks open change requests across the project. Each entry lists the
 | CR-P3-02 | Typed edge support in orchestration engine | Open |
 | CR-P3-03 | Enforce Tool Registry for all tool calls | Open |
 | CR-P3-04 | Harden evaluation pipeline integration | Open |
+| CR-001 | SkillLibrary-based MemoryManager overhaul | Open |
+| CR-002 | Unsupervised SkillDiscoveryModule | Open |
+| CR-003 | LLM-guided semantic skill decomposition | Open |
+| CR-004 | Hierarchical Policy Executor | Open |
+| CR-005 | Lifelong skill generalization support | Open |
+| CR-006 | Adopt RLlib and Isaac Lab tooling | Open |
