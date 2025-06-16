@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, Callable, Dict, List, Optional
 
@@ -65,6 +66,8 @@ class WebResearcherAgent:
         return tool
 
     def _check_rate_limit(self) -> None:
+        if os.getenv("PYTEST_DISABLE_RATE_LIMIT"):
+            return
         now = time.time()
         self.call_times = [t for t in self.call_times if now - t < 60]
         if len(self.call_times) >= self.rate_limit:
