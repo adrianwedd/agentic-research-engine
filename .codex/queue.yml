@@ -75,3 +75,10 @@
     - trainer raises ConfigurationError if guidance_loss missing
     - CI fails for configs without guidance_loss
     - deprecated emergent files removed
+- id: CR-02
+  title: Detailed Implementation of the LLM-Based Auxiliary Guidance Loss
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - dataset generation pipeline outputs at least 1000 mappings
+    - training logs show policy_loss and guidance_loss at each step
