@@ -141,8 +141,16 @@ class WebResearcherAgent:
     # ------------------------------------------------------------------
     # Graph node integration
     # ------------------------------------------------------------------
-    def __call__(self, state: "GraphState") -> "GraphState":
-        """Graph node entrypoint for orchestrated execution."""
+    def __call__(self, state: "GraphState", scratchpad: Dict[str, Any]) -> "GraphState":
+        """Graph node entrypoint for orchestrated execution.
+
+        Parameters
+        ----------
+        state:
+            The orchestration state.
+        scratchpad:
+            Shared scratchpad (unused by default).
+        """
         task: str | None = state.data.get("sub_task")
         if not task:
             return state

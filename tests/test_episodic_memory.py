@@ -89,3 +89,15 @@ def test_weaviate_vector_store(tmp_path):
     assert results
     assert results[0]["id"] == rec_id
     store.close()
+
+
+def test_retrieve_boosts_relevance():
+    storage = InMemoryStorage()
+    service = EpisodicMemoryService(storage)
+
+    ctx = {"description": "Boost"}
+    rec_id = service.store_experience(ctx, {}, {"success": True})
+    before = storage._data[rec_id]["relevance_score"]
+    service.retrieve_similar_experiences(ctx)
+    after = storage._data[rec_id]["relevance_score"]
+    assert after > before

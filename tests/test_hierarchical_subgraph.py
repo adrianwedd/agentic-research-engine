@@ -19,9 +19,9 @@ def test_subgraph_node_executes_and_returns_state():
     sub.add_node("s2", sub_end)
     sub.add_edge("s1", "s2")
 
-    parent.add_node("start", lambda s: s)
+    parent.add_node("start", lambda s, sp: s)
     parent.add_subgraph("child", sub)
-    parent.add_node("finish", lambda s: s)
+    parent.add_node("finish", lambda s, sp: s)
     parent.add_edge("start", "child")
     parent.add_edge("child", "finish")
 

@@ -107,7 +107,8 @@ class GroupChatManager:
         agents: Dict[
             str,
             Callable[
-                [List[Dict[str, Any]], "State"], Awaitable[str] | str | Dict[str, Any]
+                [List[Dict[str, Any]], "State", Dict[str, Any]],
+                Awaitable[str] | str | Dict[str, Any],
             ],
         ],
         *,
@@ -131,9 +132,9 @@ class GroupChatManager:
             agent_fn = self.agents[agent_id]
             incoming = self.chat.get_messages(agent_id)
             if asyncio.iscoroutinefunction(agent_fn):
-                result = await agent_fn(incoming, state)
+                result = await agent_fn(incoming, state, state.scratchpad)
             else:
-                result = agent_fn(incoming, state)
+                result = agent_fn(incoming, state, state.scratchpad)
 
             if result:
                 if isinstance(result, dict):

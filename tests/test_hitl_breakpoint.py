@@ -15,18 +15,18 @@ def _build_engine(queue: InMemoryReviewQueue):
     engine = create_orchestration_engine()
     engine.review_queue = queue
 
-    def node_a(state: GraphState) -> GraphState:
+    def node_a(state: GraphState, scratchpad: dict) -> GraphState:
         state.update({"a": 1})
         return state
 
-    def node_b(state: GraphState) -> GraphState:
+    def node_b(state: GraphState, scratchpad: dict) -> GraphState:
         state.update({"b": 2})
         return state
 
     engine.add_node("A", node_a)
     engine.add_node(
         "Break",
-        lambda s: s,
+        lambda s, sp: s,
         node_type=NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT,
     )
     engine.add_node("B", node_b)

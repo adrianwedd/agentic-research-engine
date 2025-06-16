@@ -4,6 +4,8 @@ import logging
 from typing import Any, Dict, Optional
 
 from engine.state import State
+from tools.ltm_client import consolidate_memory, retrieve_memory
+
 from services.tool_registry import ToolRegistry, create_default_registry
 
 logger = logging.getLogger(__name__)
@@ -16,6 +18,13 @@ class MemoryManagerAgent:
         self,
         *,
         endpoint: Optional[str] = None,
+        pass_threshold: float = 0.5,
+        novelty_threshold: float = 0.9,
+    ) -> None:
+        self.endpoint = endpoint
+        self.pass_threshold = pass_threshold
+        self.novelty_threshold = novelty_threshold
+
         tool_registry: ToolRegistry | None = None,
     ) -> None:
         self.endpoint = endpoint
@@ -28,8 +37,15 @@ class MemoryManagerAgent:
             "outcome": {"status": state.status},
         }
 
-    def __call__(self, state: State) -> State:
+    def __call__(self, state: State, scratchpad: Dict[str, Any]) -> State:
+
         record = self._format_record(state)
+        if not self._quality_passed(state):
+            logger.info("MemoryManager: quality gate failed")
+            return state
+        if not self._is_novel(record):
+            logger.info("MemoryManager: novelty gate failed")
+            return state
         try:
             self.tool_registry.invoke(
                 "MemoryManager",
