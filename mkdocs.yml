@@ -7,6 +7,8 @@ nav:
       - LTM Forgetting Study: docs/research/2025-ltm-forgetting-study.md
       - Synthetic Data Research: docs/research/2025-synthetic-data-research.md
       - Graph Compilation Study: docs/research/2025-graph-compilation.md
+      - Dynamic Trust & Reputation: docs/research/2025-dynamic-trust-reputation-system.md
+
   - Reports:
       - Phase 2 DevEx Review: docs/reports/phase2-devex-review-report.md
       - Phase 2 LTM API Gap: docs/reports/phase2-ltm-api-gap-report.md
