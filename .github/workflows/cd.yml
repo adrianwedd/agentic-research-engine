@@ -22,7 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y helm terraform
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg software-properties-common
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+            sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+            sudo tee /etc/apt/sources.list.d/hashicorp.list
+          curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+          echo 'deb https://baltocdn.com/helm/stable/debian/ all main' | \
+            sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+          sudo apt-get update
+          sudo apt-get install -y helm terraform
       - name: Deploy to staging
         run: |
           bash scripts/deploy.sh staging ${{ github.sha }}
@@ -34,7 +46,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y helm terraform
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg software-properties-common
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+            sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+            sudo tee /etc/apt/sources.list.d/hashicorp.list
+          curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+          echo 'deb https://baltocdn.com/helm/stable/debian/ all main' | \
+            sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+          sudo apt-get update
+          sudo apt-get install -y helm terraform
       - name: Deploy to production
         run: |
           IMAGE_TAG=${{ inputs.image_tag }}
