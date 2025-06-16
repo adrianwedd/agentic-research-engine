@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from .composite_reward import CompositeRewardFunction, LinearPreferenceModel
+
 
 class RewardModelTrainer:
     """Train a simple linear reward model on labeled trajectories."""
@@ -48,14 +50,15 @@ class RewardModelTrainer:
 
     def save_model(self, model: Dict[str, float]) -> Path:
         self.out_dir.mkdir(parents=True, exist_ok=True)
-        path = self.out_dir / "reward_model.json"
+        path = self.out_dir / "preference_model.json"
         path.write_text(json.dumps(model, indent=2), encoding="utf-8")
         return path
 
-    def run(self) -> float:
+    def run(self) -> CompositeRewardFunction:
         records = self.load_data()
         x, y = self.preprocess(records)
         model = self.train_model(x, y)
-        mse = self.evaluate_model(model, x, y)
+        self.evaluate_model(model, x, y)
         self.save_model(model)
-        return mse
+        preference_model = LinearPreferenceModel(model)
+        return CompositeRewardFunction(preference_model)
