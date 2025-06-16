@@ -11,4 +11,6 @@ permissions:
     - MemoryManager
   fact_check:
     - Evaluator
+  code_interpreter:
+    - CodeResearcher
 
