@@ -1,6 +1,18 @@
 """Service utilities and clients."""
 
-from .llm_client import LLMClient, OllamaClient, OpenAICompatibleClient, load_llm_client
+
+def __getattr__(name: str):
+    if name in {
+        "LLMClient",
+        "OllamaClient",
+        "OpenAICompatibleClient",
+        "load_llm_client",
+    }:
+        from . import llm_client as _lc
+
+        return getattr(_lc, name)
+    raise AttributeError(name)
+
 
 __all__ = [
     "LLMClient",

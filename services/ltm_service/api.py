@@ -1,11 +1,35 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
-from pydantic import BaseModel, Field, ValidationError
+try:
+    from pydantic import BaseModel, Field, ValidationError
+
+    _HAS_PYDANTIC = True
+except Exception:  # pragma: no cover - fallback for test stubs
+    _HAS_PYDANTIC = False
+
+    class BaseModel:
+        def __init__(self, **data):
+            for key, value in data.items():
+                setattr(self, key, value)
+
+        @classmethod
+        def model_rebuild(cls):
+            pass
+
+    def Field(default=None, **_):
+        return default
+
+    class ValidationError(Exception):
+        """Fallback validation error when pydantic isn't fully available."""
+
+        pass
+
 
 from .episodic_memory import EpisodicMemoryService
 from .semantic_memory import SemanticMemoryService
@@ -22,18 +46,44 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
 }
 
 
-class ConsolidateRequest(BaseModel):
-    record: Dict = Field(...)
-    memory_type: str = Field("episodic")
+if _HAS_PYDANTIC:
+
+    class ConsolidateRequest(BaseModel):
+        record: Dict = Field(...)
+        memory_type: str = Field("episodic")
+
+else:  # pragma: no cover - used in tests without pydantic
+
+    @dataclass
+    class ConsolidateRequest:
+        record: Dict
+        memory_type: str = "episodic"
 
 
-class RetrieveBody(BaseModel):
-    query: Optional[Dict] = None
-    task_context: Optional[Dict] = None
+if _HAS_PYDANTIC:
+
+    class RetrieveBody(BaseModel):
+        query: Optional[Dict] = None
+        task_context: Optional[Dict] = None
+
+else:  # pragma: no cover
+
+    @dataclass
+    class RetrieveBody:
+        query: Optional[Dict] = None
+        task_context: Optional[Dict] = None
 
 
-class ForgetRequest(BaseModel):
-    hard: bool = False
+if _HAS_PYDANTIC:
+
+    class ForgetRequest(BaseModel):
+        hard: bool = False
+
+else:  # pragma: no cover
+
+    @dataclass
+    class ForgetRequest:
+        hard: bool = False
 
 
 class LTMService:
@@ -107,19 +157,21 @@ class LTMServiceServer:
     def _handler(self):
         service = self.service
 
+        def _rbac(method: str, path: str):
+            """Decorator enforcing role-based access for Handler methods."""
+
+            def decorator(func):
+                def wrapped(self, *args, **kwargs):
+                    if not self._check_role(method, path):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    return func(self, *args, **kwargs)
+
+                return wrapped
+
+            return decorator
+
         class Handler(BaseHTTPRequestHandler):
-            def _rbac(self, method: str, path: str):
-                def decorator(func):
-                    def wrapped(*args, **kwargs):
-                        if not self._check_role(method, path):
-                            self._send_json(403, {"error": "forbidden"})
-                            return
-                        return func(*args, **kwargs)
-
-                    return wrapped
-
-                return decorator
-
             def _json_body(self) -> Dict:
                 length = int(self.headers.get("Content-Length", 0))
                 if not length:
