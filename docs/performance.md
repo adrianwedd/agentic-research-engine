@@ -29,5 +29,5 @@ uvicorn services.episodic_memory.app:app --host 0.0.0.0 --port 8081 --workers ${
 The Dockerfile and Helm chart also honor this variable for container deployments.
 
 ## Benchmark Results
-Load testing results are summarized in `docs/fastapi_benchmark_report.md`.
+Load testing results are summarized in `docs/reports/phase2-fastapi-benchmark-report.md`.
 Switching to FastAPI achieved over a 10× throughput increase versus the previous HTTP server while keeping latency under 100 ms at moderate concurrency.
