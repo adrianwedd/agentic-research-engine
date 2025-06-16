@@ -146,14 +146,17 @@ Tesseract binary to be installed and accessible on the system.
 
 All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
 The pipeline uses Terraform and Helm configurations under `infra/` to perform
-"rainbow" deployments. The `scripts/deploy.sh` helper script toggles between
+blue–green deployments. The `scripts/deploy.sh` helper script toggles between
 `blue` and `green` deployments so the new version is spun up alongside the old
 one. Once the new pods are ready, the service selector is patched to shift
-traffic with no interruption before the old deployment is removed. A push to
-`main` deploys to the `staging` environment automatically. After verification,
-an operator can trigger the `promote-production` job to roll out the same
-release to production. In case of issues, `scripts/rollback.sh` reverts the
-selector to the previous color.
+traffic with no interruption before the old deployment is removed. While the
+blueprint originally called for a rainbow rollout, technical leadership approved
+the simpler blue–green approach. See
+[docs/research/2025-blue-green-rainbow-analysis.md](docs/research/2025-blue-green-rainbow-analysis.md)
+for the detailed rationale. A push to `main` deploys to the `staging`
+environment automatically. After verification, an operator can trigger the
+`promote-production` job to roll out the same release to production. In case of
+issues, `scripts/rollback.sh` reverts the selector to the previous color.
 
 ## **8. Project Roadmap**
 
