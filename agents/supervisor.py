@@ -43,6 +43,12 @@ class SupervisorAgent:
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
         self.tool_registry = tool_registry or create_default_registry()
+        try:
+            self.knowledge_graph_search = self.tool_registry.get_tool(
+                "Supervisor", "knowledge_graph_search"
+            )
+        except Exception:
+            self.knowledge_graph_search = None
         if use_plan_templates is None:
             use_plan_templates = bool(os.getenv("USE_PLAN_TEMPLATES"))
         self.use_plan_templates = use_plan_templates
@@ -180,6 +186,12 @@ class SupervisorAgent:
         """Perform initial analysis and create the workflow state."""
 
         cleaned = query.strip()
+        facts: List[Dict[str, Any]] = []
+        if self.knowledge_graph_search:
+            try:
+                facts = self.knowledge_graph_search({"text": cleaned})
+            except Exception:
+                facts = []
         plan = self.plan_research_task(cleaned)
         state = State()
         state.update(
@@ -189,6 +201,8 @@ class SupervisorAgent:
                 "context": plan.get("context", []),
             }
         )
+        if facts:
+            state.update({"facts": facts})
         return state
 
     def __call__(self, graph_state: Any, scratchpad: Dict[str, Any]) -> Any:

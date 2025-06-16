@@ -26,6 +26,7 @@ class WebResearcherAgent:
 
         # Required tools
         self.web_search = self._require_tool("web_search")
+        self.knowledge_graph_search = self.tool_registry.get("knowledge_graph_search")
         self.pdf_extract = self.tool_registry.get("pdf_extract")
         self.html_scraper = self.tool_registry.get("html_scraper")
         self.summarize = self._require_tool("summarize")
@@ -89,6 +90,21 @@ class WebResearcherAgent:
     def research_topic(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Conduct comprehensive web research on specified topic."""
         self._check_rate_limit()
+        if self.knowledge_graph_search:
+            try:
+                facts = self._call_with_retry(
+                    self.knowledge_graph_search, {"text": topic}
+                )
+            except Exception:
+                facts = []
+            if facts:
+                return {
+                    "topic": topic,
+                    "facts": facts,
+                    "sources": [],
+                    "confidence": 1.0,
+                }
+
         start = time.perf_counter()
         search_results = self._call_with_retry(self.web_search, topic)
         latency_ms = (time.perf_counter() - start) * 1000

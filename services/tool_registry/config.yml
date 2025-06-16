@@ -15,4 +15,7 @@ permissions:
     - CodeResearcher
   github_search:
     - CodeResearcher
+  knowledge_graph_search:
+    - Supervisor
+    - WebResearcher
 

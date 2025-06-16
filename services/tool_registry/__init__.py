@@ -16,6 +16,7 @@ from tools import (
     fact_check_claim,
     github_search,
     html_scraper,
+    knowledge_graph_search,
     pdf_extract,
     retrieve_memory,
     summarize_text,
@@ -109,6 +110,7 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "summarize": summarize_text,
     "fact_check": fact_check_claim,
     "code_interpreter": code_interpreter,
+    "knowledge_graph_search": knowledge_graph_search,
     "github_search": github_search,
 }
 
