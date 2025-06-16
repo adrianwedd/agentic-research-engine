@@ -3,6 +3,7 @@
 from . import web_search
 from .code_interpreter import code_interpreter
 from .fact_check import fact_check_claim
+from .github_search import github_search
 from .html_scraper import html_scraper
 from .ltm_client import consolidate_memory, retrieve_memory
 from .pdf_reader import pdf_extract
@@ -12,6 +13,7 @@ __all__ = [
     "consolidate_memory",
     "retrieve_memory",
     "web_search",
+    "github_search",
     "html_scraper",
     "pdf_extract",
     "summarize_text",
