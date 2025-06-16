@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -124,3 +124,83 @@ class ReputationService:
                 )
             ).scalar_one_or_none()
             return rep.reputation_vector if rep else None
+
+    def get_reputation_record(
+        self, agent_id: str, context: str | None = None
+    ) -> Optional[Dict[str, Any]]:
+        """Return full reputation record for an agent."""
+        with self._session_factory() as session:
+            rep = session.execute(
+                select(ReputationScore).where(
+                    ReputationScore.agent_id == agent_id,
+                    ReputationScore.context == context,
+                )
+            ).scalar_one_or_none()
+            if rep is None:
+                return None
+            return {
+                "agent_id": rep.agent_id,
+                "context": rep.context,
+                "reputation_vector": rep.reputation_vector,
+                "confidence_score": rep.confidence_score,
+                "last_updated_timestamp": rep.last_updated_timestamp,
+            }
+
+    def query_reputations(
+        self,
+        context: str | None = None,
+        *,
+        top_n: int = 10,
+        sort_by: str | None = None,
+        offset: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """Return a list of reputation records sorted by the given dimension."""
+        with self._session_factory() as session:
+            stmt = select(ReputationScore)
+            if context is not None:
+                stmt = stmt.where(ReputationScore.context == context)
+            reps = session.execute(stmt).scalars().all()
+            if sort_by:
+                reps.sort(
+                    key=lambda r: float(r.reputation_vector.get(sort_by, 0.0)),
+                    reverse=True,
+                )
+            else:
+                reps.sort(key=lambda r: r.confidence_score, reverse=True)
+            sliced = reps[offset : offset + top_n]
+            return [
+                {
+                    "agent_id": r.agent_id,
+                    "context": r.context,
+                    "reputation_vector": r.reputation_vector,
+                    "confidence_score": r.confidence_score,
+                    "last_updated_timestamp": r.last_updated_timestamp,
+                }
+                for r in sliced
+            ]
+
+    def get_history(
+        self, agent_id: str, *, offset: int = 0, limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """Return evaluation history for an agent ordered by timestamp desc."""
+        with self._session_factory() as session:
+            stmt = (
+                select(Evaluation)
+                .join(Assignment, Evaluation.assignment_id == Assignment.assignment_id)
+                .where(Assignment.agent_id == agent_id)
+                .order_by(Evaluation.evaluation_timestamp.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+            rows = session.execute(stmt).scalars().all()
+            return [
+                {
+                    "evaluation_id": e.evaluation_id,
+                    "assignment_id": e.assignment_id,
+                    "evaluator_id": e.evaluator_id,
+                    "evaluation_timestamp": e.evaluation_timestamp,
+                    "performance_vector": e.performance_vector,
+                    "is_final": e.is_final,
+                }
+                for e in rows
+            ]
