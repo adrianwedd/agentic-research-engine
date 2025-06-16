@@ -80,7 +80,10 @@ def fallacy_examples(n: int) -> list[dict]:
             "If the alarm is set, the door locks.",
             "The door is locked, so the alarm is set.",
         ),
-        ("If I study, I'll pass the exam.", "I passed the exam, so I must have studied."),
+        (
+            "If I study, I'll pass the exam.",
+            "I passed the exam, so I must have studied.",
+        ),
         ("All cats are mammals.", "Fido is a mammal, therefore Fido is a cat."),
     ]
     examples = []

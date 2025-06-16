@@ -14,4 +14,3 @@ def test_ppo_policy_optimizer_step(tmp_path):
     loss = optimizer.update(traj, 1.0)
     assert isinstance(loss, float)
     assert (tmp_path / "policy" / "config.json").exists()
-

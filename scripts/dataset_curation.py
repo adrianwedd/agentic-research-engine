@@ -49,7 +49,9 @@ def save_version(records: List[Dict], out_dir: Path) -> str:
     version_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     version_path = out_dir / version_id
     version_path.mkdir(parents=True, exist_ok=True)
-    (version_path / "dataset.json").write_text(json.dumps(records, indent=2), encoding="utf-8")
+    (version_path / "dataset.json").write_text(
+        json.dumps(records, indent=2), encoding="utf-8"
+    )
     return version_id
 
 

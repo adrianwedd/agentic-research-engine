@@ -1,7 +1,7 @@
-- acceptance_criteria:
-  - something done
-  id: CODEX-EXAMPLE-01
-  priority: low
+- id: P3-15
+  title: Integrate graph database for Semantic LTM
+  priority: high
   steps:
-  - do something
-  title: Example task
+    - connect LTM service to Neo4j
+  acceptance_criteria:
+    - semantic facts stored as nodes with relationships

@@ -18,7 +18,7 @@ SAMPLES = [
         "Graph Compilation Strategies Research"
         "\n\nA short research spike evaluated dynamic graph execution versus"
         " ahead-of-time compilation for the orchestration engine."
-    )
+    ),
 ]
 
 
