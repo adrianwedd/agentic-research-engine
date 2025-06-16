@@ -1383,3 +1383,15 @@ acceptance_criteria:
   - When the call completes or is blocked
   - Then a log entry is emitted with timestamp, agent_id, action, intent, and outcome
 ```
+```codex-task
+id: CR-05b-04
+title: Verify sandbox and optional-suite stability post-migration
+priority: low
+steps:
+  - "Rerun `test_sandbox.py` under the new core suite to confirm sandbox isolation and timeouts still work."
+  - "Execute the 'optional' and 'integration' markers locally and in CI to catch any regressions in slow or optional tests."
+  - "Fix any failures (e.g. missing fixtures, new dependency issues, or timeouts)."
+acceptance_criteria:
+  - "All @pytest.mark.core tests (including sandbox) pass under the parallel runner."
+  - "optional and integration tests continue to pass in their respective CI jobs."
+```
