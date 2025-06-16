@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,9 +23,11 @@ class PlannerAgent:
         self,
         available_agents: Optional[List[str]] | None = None,
         *,
+        agent_skills: Optional[Dict[str, List[str]]] | None = None,
         objective_metric: str = "cost",
     ) -> None:
         self.available_agents = available_agents or ["WebResearcher"]
+        self.agent_skills = agent_skills or {}
         self.objective_metric = objective_metric
         try:
             with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
@@ -52,11 +55,34 @@ class PlannerAgent:
             return [normalized]
         return parts
 
+    def _tokenize(self, text: str) -> set[str]:
+        return set(re.findall(r"\w+", text.lower()))
+
+    def _skill_score(self, task: str, agent: str) -> int:
+        skills = self.agent_skills.get(agent, [])
+        if not skills:
+            return 0
+        task_tokens = self._tokenize(task)
+        skill_tokens = {s.lower() for s in skills}
+        return len(task_tokens.intersection(skill_tokens))
+
     def _allocate_tasks(self, tasks: List[str]) -> List[Dict[str, Any]]:
         nodes: List[Dict[str, Any]] = []
+        load: Dict[str, int] = {name: 0 for name in self.available_agents}
         for idx, topic in enumerate(tasks):
-            agent = self.available_agents[idx % len(self.available_agents)]
-            nodes.append({"id": f"task_{idx}", "agent": agent, "topic": topic})
+            best_agent = None
+            best_score = -1
+            for agent in self.available_agents:
+                score = self._skill_score(topic, agent)
+                if (
+                    best_agent is None
+                    or score > best_score
+                    or (score == best_score and load[agent] < load[best_agent])
+                ):
+                    best_agent = agent
+                    best_score = score
+            load[best_agent] += 1
+            nodes.append({"id": f"task_{idx}", "agent": best_agent, "topic": topic})
         return nodes
 
     # ------------------------------------------------------------------
@@ -109,7 +135,9 @@ class PlannerAgent:
         state.update({"initial_query": cleaned, "plan": plan, "context": []})
         return state
 
-    def __call__(self, graph_state: Any, scratchpad: Dict[str, Any]) -> Any:
+    def __call__(
+        self, graph_state: Any, scratchpad: Dict[str, Any] | None = None
+    ) -> Any:
         query = graph_state.data.get("query", "")
         if not isinstance(query, str) or not query.strip():
             raise ValueError("query must be a non-empty string")

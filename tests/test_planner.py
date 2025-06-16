@@ -16,6 +16,7 @@ class DummyGraphState:
 
 def test_analyze_query_returns_state():
     agent = PlannerAgent()
+    agent.plan_schema = {}
     state = agent.analyze_query("What is AI?")
     assert isinstance(state, State)
     assert state.data["initial_query"] == "What is AI?"
@@ -23,6 +24,7 @@ def test_analyze_query_returns_state():
 
 def test_planner_node_updates_graph_state():
     agent = PlannerAgent()
+    agent.plan_schema = {}
     gs = DummyGraphState({"query": "Example query"})
     result = agent(gs)
     assert isinstance(result.data.get("state"), State)
@@ -30,7 +32,11 @@ def test_planner_node_updates_graph_state():
 
 
 def test_task_allocation_uses_available_agents():
-    agent = PlannerAgent(available_agents=["A1", "A2"])
+    agent = PlannerAgent(
+        available_agents=["A1", "A2"],
+        agent_skills={"A1": ["topic1"], "A2": ["topic2"]},
+    )
+    agent.plan_schema = {}
     plan = agent.plan_research_task("Topic1 vs Topic2")
     nodes = {
         n["topic"]: n["agent"]
@@ -43,6 +49,7 @@ def test_task_allocation_uses_available_agents():
 
 def test_plan_yaml_roundtrip():
     agent = PlannerAgent()
+    agent.plan_schema = {}
     plan = agent.plan_research_task("Example")
     yaml_text = agent.format_plan_as_yaml(plan)
     parsed = agent.parse_plan(yaml_text)
