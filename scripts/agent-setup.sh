@@ -3,6 +3,7 @@ set -e
 
 # Install Python dependencies
 python -m pip install --upgrade pip
+pip install torch==2.2.2+cpu --extra-index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt -c constraints.txt
 
 # Install pre-commit hooks

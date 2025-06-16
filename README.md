@@ -76,6 +76,8 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```
    The setup script installs from `requirements.txt` using a
    pinned `constraints.txt` file to avoid dependency resolution loops.
+   It pulls the CPU-only PyTorch wheels so you don't need CUDA
+   drivers for local testing.
    For a lean environment run `bash scripts/bootstrap_minimal.sh`. See
    [docs/onboarding.md](docs/onboarding.md) for troubleshooting tips.
 
