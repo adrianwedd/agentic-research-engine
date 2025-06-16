@@ -241,6 +241,27 @@ class EpisodicMemoryService:
 
         return results[:limit]
 
+    def forget_experience(self, record_id: str, *, hard: bool = False) -> bool:
+        """Forget a memory record by ID."""
+        rec = self.storage._data.get(record_id)
+        if rec is None:
+            return False
+        if hard:
+            self.storage.delete(record_id)
+            if hasattr(self.vector_store, "delete"):
+                try:
+                    self.vector_store.delete(record_id)
+                except Exception:  # pragma: no cover - best effort
+                    pass
+        else:
+            self.storage.update(record_id, {"deleted_at": time.time()})
+            if hasattr(self.vector_store, "delete"):
+                try:
+                    self.vector_store.delete(record_id)
+                except Exception:  # pragma: no cover - best effort
+                    pass
+        return True
+
     def prune_stale_memories(self, ttl_seconds: float) -> int:
         """Delete memories not accessed within the TTL."""
         cutoff = time.time() - ttl_seconds

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
+
+from pydantic import BaseModel, Field, ValidationError
 
 from .episodic_memory import EpisodicMemoryService
 from .semantic_memory import SemanticMemoryService
@@ -13,10 +15,25 @@ ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
+    ("DELETE", "/forget"): {"editor"},
     # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
     ("GET", "/retrieve"): {"viewer", "editor"},
 }
+
+
+class ConsolidateRequest(BaseModel):
+    record: Dict = Field(...)
+    memory_type: str = Field("episodic")
+
+
+class RetrieveBody(BaseModel):
+    query: Optional[Dict] = None
+    task_context: Optional[Dict] = None
+
+
+class ForgetRequest(BaseModel):
+    hard: bool = False
 
 
 class LTMService:
@@ -63,6 +80,20 @@ class LTMService:
             return module.query_facts(**query)[:limit]
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
+    def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
+        if memory_type not in ALLOWED_MEMORY_TYPES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
+        module = self._modules.get(memory_type)
+        if module is None:
+            raise ValueError(f"Unknown memory type: {memory_type}")
+        if memory_type == "episodic":
+            if hasattr(module, "forget_experience"):
+                return module.forget_experience(identifier, hard=hard)
+        if memory_type == "semantic":
+            if hasattr(module, "forget_fact"):
+                return module.forget_fact(identifier, hard=hard)
+        raise ValueError(f"Unsupported memory type: {memory_type}")
+
 
 class LTMServiceServer:
     """Minimal HTTP API for the LTM service."""
@@ -77,6 +108,18 @@ class LTMServiceServer:
         service = self.service
 
         class Handler(BaseHTTPRequestHandler):
+            def _rbac(self, method: str, path: str):
+                def decorator(func):
+                    def wrapped(*args, **kwargs):
+                        if not self._check_role(method, path):
+                            self._send_json(403, {"error": "forbidden"})
+                            return
+                        return func(*args, **kwargs)
+
+                    return wrapped
+
+                return decorator
+
             def _json_body(self) -> Dict:
                 length = int(self.headers.get("Content-Length", 0))
                 if not length:
@@ -98,6 +141,7 @@ class LTMServiceServer:
                 allowed = ROLE_PERMISSIONS.get((method, path), set())
                 return role in allowed
 
+            @_rbac("POST", "/memory")
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
                 if parsed.path == "/consolidate":
@@ -110,22 +154,20 @@ class LTMServiceServer:
                     self.send_response(404)
                     self.end_headers()
                     return
-                if not self._check_role("POST", "/memory"):
-                    self._send_json(403, {"error": "forbidden"})
-                    return
                 data = self._json_body()
-                record = data.get("record")
-                memory_type = data.get("memory_type", "episodic")
-                if record is None:
-                    self._send_json(400, {"error": "missing record"})
+                try:
+                    req = ConsolidateRequest(**data)
+                except ValidationError as exc:
+                    self._send_json(422, {"error": exc.errors()})
                     return
                 try:
-                    rec_id = service.consolidate(memory_type, record)
+                    rec_id = service.consolidate(req.memory_type, req.record)
                 except ValueError as exc:
                     self._send_json(400, {"error": str(exc)})
                     return
                 self._send_json(201, {"id": rec_id})
 
+            @_rbac("GET", "/memory")
             def do_GET(self) -> None:
                 parsed = urlparse(self.path)
                 if parsed.path == "/retrieve":
@@ -140,20 +182,48 @@ class LTMServiceServer:
                     self.send_response(404)
                     self.end_headers()
                     return
-                if not self._check_role("GET", "/memory"):
-                    self._send_json(403, {"error": "forbidden"})
-                    return
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]
                 limit = int(params.get("limit", ["5"])[0])
                 data = self._json_body()
-                query = data.get("query") or data.get("task_context") or {}
+                try:
+                    body = RetrieveBody(**data)
+                except ValidationError as exc:
+                    self._send_json(422, {"error": exc.errors()})
+                    return
+                query = body.query or body.task_context or {}
                 try:
                     results = service.retrieve(memory_type, query, limit=limit)
                 except ValueError as exc:
                     self._send_json(400, {"error": str(exc)})
                     return
                 self._send_json(200, {"results": results})
+
+            @_rbac("DELETE", "/forget")
+            def do_DELETE(self) -> None:
+                parsed = urlparse(self.path)
+                if not parsed.path.startswith("/forget/"):
+                    self.send_response(404)
+                    self.end_headers()
+                    return
+                identifier = parsed.path.split("/", 2)[2]
+                params = parse_qs(parsed.query)
+                memory_type = params.get("memory_type", ["episodic"])[0]
+                data = self._json_body()
+                try:
+                    req = ForgetRequest(**data)
+                except ValidationError as exc:
+                    self._send_json(422, {"error": exc.errors()})
+                    return
+                try:
+                    success = service.forget(memory_type, identifier, hard=req.hard)
+                except ValueError as exc:
+                    self._send_json(400, {"error": str(exc)})
+                    return
+                if not success:
+                    self._send_json(404, {"error": "not found"})
+                    return
+                self._send_json(200, {"status": "forgotten"})
 
         return Handler
 

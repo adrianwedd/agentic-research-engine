@@ -84,3 +84,35 @@ def test_invalid_memory_type_and_rbac():
     assert resp.status_code == 403
 
     server.httpd.shutdown()
+
+
+def test_schema_validation_and_forget():
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"description": "Temp"},
+        "execution_trace": {},
+        "outcome": {},
+    }
+    resp = requests.post(f"{endpoint}/memory", json={"record": record})
+    assert resp.status_code == 201
+    rec_id = resp.json()["id"]
+
+    resp = requests.post(f"{endpoint}/memory", json={}, headers={"X-Role": "editor"})
+    assert resp.status_code == 422
+
+    resp = requests.delete(
+        f"{endpoint}/forget/{rec_id}",
+        headers={"X-Role": "editor"},
+        json={"hard": False},
+    )
+    assert resp.status_code == 200
+
+    resp = requests.get(
+        f"{endpoint}/memory",
+        json={"query": {"description": "Temp"}},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    assert not resp.json()["results"]
+
+    server.httpd.shutdown()

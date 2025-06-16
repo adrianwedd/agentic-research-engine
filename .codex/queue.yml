@@ -1,3 +1,11 @@
+- id: CR-P2-01A
+  title: Harden LTM Service API with Forgetting Endpoint
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - forgetting route deletes a record
+    - invalid bodies return 422
+
 - id: P3-15
   title: Integrate graph database for Semantic LTM
   priority: high
