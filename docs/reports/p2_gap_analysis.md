@@ -25,7 +25,7 @@ This document maps each Phase 2 change request (P2‑01 through P2‑20) to the 
 | P2‑14 | Judge calibration test suite | ✔ | `test_judge_calibration_mean_kappa_above_threshold` computes Cohen's Kappa【F:tests/test_judge_calibration.py†L1-L63】 |
 | P2‑15 | Research synthetic data generation | ✔ | Study outlines teacher‑student and back‑translation methods【F:docs/research/2025-synthetic-data-research.md†L1-L18】 |
 | P2‑16 | Synthetic dataset of errors and corrections | ✔ | `generate_self_correction_dataset.py` builds dataset from golden reports【F:scripts/generate_self_correction_dataset.py†L1-L56】 |
-| P2‑17 | Fine-tune Evaluator on correction dataset | ⚠ | Training script outputs accuracy but improvement metrics not stored【F:scripts/train_evaluator.py†L84-L111】 |
+| P2‑17 | Fine-tune Evaluator on correction dataset | ✔ | Training script saves baseline and fine-tuned accuracy to metrics file【F:scripts/train_evaluator.py†L119-L142】 |
 | P2‑18 | Human-in-the-loop breakpoint node | ✔ | Orchestration pauses when node type `HUMAN_IN_THE_LOOP_BREAKPOINT` encountered【F:engine/orchestration_engine.py†L260-L279】【F:docs/hitl_breakpoint.md†L1-L11】 |
 | P2‑19 | Research memory consolidation & forgetting | ✔ | Report compares candidate algorithms and recommends hybrid decay【F:docs/research/2025-ltm-forgetting-study.md†L1-L18】【F:docs/research/2025-ltm-forgetting-study.md†L40-L48】 |
 | P2‑20 | Basic LTM forgetting mechanism | ⚠ | Episodic service exposes pruning/decay methods and job script but no scheduled integration【F:scripts/episodic_forgetting_job.py†L1-L18】【F:tests/test_forgetting_job.py†L62-L117】 |

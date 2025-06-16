@@ -32,14 +32,14 @@ def prepare_datasets(path: Path, test_split: float = 0.1) -> Tuple[Dataset, Data
     return splits["train"], splits["test"]
 
 
-def train_model(
+def build_trainer(
     train_ds: Dataset,
     eval_ds: Dataset,
     model_name: str,
     out_dir: Path,
     epochs: int = 3,
 ) -> Seq2SeqTrainer:
-    """Fine-tune ``model_name`` on the provided dataset."""
+    """Return a ``Seq2SeqTrainer`` instance for ``model_name``."""
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
@@ -70,10 +70,22 @@ def train_model(
         data_collator=collator,
         tokenizer=tokenizer,
     )
+    return trainer
+
+
+def train_model(
+    train_ds: Dataset,
+    eval_ds: Dataset,
+    model_name: str,
+    out_dir: Path,
+    epochs: int = 3,
+) -> Seq2SeqTrainer:
+    """Fine-tune ``model_name`` on the provided dataset."""
+    trainer = build_trainer(train_ds, eval_ds, model_name, out_dir, epochs)
     trainer.train()
     out_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(out_dir)
-    tokenizer.save_pretrained(out_dir)
+    trainer.tokenizer.save_pretrained(out_dir)
     return trainer
 
 
@@ -105,10 +117,31 @@ def main() -> None:
     out_dir = args.out_root / version
 
     train_ds, eval_ds = prepare_datasets(args.data_path, args.test_split)
+
+    # evaluate baseline model before fine-tuning
+    baseline_trainer = build_trainer(
+        train_ds, eval_ds, args.model, out_dir, args.epochs
+    )
+    baseline_acc = evaluate_model(baseline_trainer, eval_ds)
+
+    # fine-tune and evaluate
     trainer = train_model(train_ds, eval_ds, args.model, out_dir, args.epochs)
-    acc = evaluate_model(trainer, eval_ds)
+    finetuned_acc = evaluate_model(trainer, eval_ds)
+
+    metrics = {
+        "baseline_model_accuracy": baseline_acc,
+        "finetuned_model_accuracy": finetuned_acc,
+    }
+    metrics_file = out_dir / "metrics.json"
+    metrics_file.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+
     print(f"Saved model to {out_dir}")
-    print(f"Eval accuracy: {acc:.3f}")
+    print(f"Baseline accuracy: {baseline_acc:.3f}")
+    print(f"Finetuned accuracy: {finetuned_acc:.3f}")
+    if finetuned_acc > baseline_acc:
+        print("Fine-tuned model improved over baseline")
+    else:
+        print("Fine-tuned model did not improve over baseline")
 
 
 if __name__ == "__main__":
