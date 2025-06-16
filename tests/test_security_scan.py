@@ -13,7 +13,7 @@ sample_report = {
     ]
 }
 
+
 def test_detect_high_vulnerability():
     vulns = list(iter_vulnerabilities(sample_report))
     assert any(is_high(v) for v in vulns)
-

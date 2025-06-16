@@ -5,12 +5,14 @@ from pipelines.teacher import TeacherDataPipeline
 
 def test_generate_example_valid():
     def fake_llm(prompt: str) -> str:
-        return json.dumps({
-            "original_problem": "Q",
-            "flawed_output": "A",
-            "detailed_critique": "factual error",
-            "corrected_solution": "C",
-        })
+        return json.dumps(
+            {
+                "original_problem": "Q",
+                "flawed_output": "A",
+                "detailed_critique": "factual error",
+                "corrected_solution": "C",
+            }
+        )
 
     pipeline = TeacherDataPipeline(fake_llm)
     result = pipeline.generate_example("topic")
@@ -26,12 +28,14 @@ def test_pipeline_diverse_error_types():
 
     def fake_llm(_prompt: str) -> str:
         text = critiques.pop(0)
-        return json.dumps({
-            "original_problem": "P",
-            "flawed_output": "F",
-            "detailed_critique": text,
-            "corrected_solution": "C",
-        })
+        return json.dumps(
+            {
+                "original_problem": "P",
+                "flawed_output": "F",
+                "detailed_critique": text,
+                "corrected_solution": "C",
+            }
+        )
 
     pipeline = TeacherDataPipeline(fake_llm)
     results = pipeline.run(["t1", "t2", "t3"])

@@ -45,4 +45,6 @@ def main(path: str = "security/pip_audit_report.json") -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1] if len(sys.argv) > 1 else "security/pip_audit_report.json"))
+    raise SystemExit(
+        main(sys.argv[1] if len(sys.argv) > 1 else "security/pip_audit_report.json")
+    )

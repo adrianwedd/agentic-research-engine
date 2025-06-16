@@ -1,10 +1,11 @@
-- acceptance_criteria:
-  - something done
-  id: CODEX-EXAMPLE-01
-  priority: low
+- id: P3-15
+  title: Integrate graph database for Semantic LTM
+  priority: high
   steps:
-  - do something
-  title: Example task
+    - connect LTM service to Neo4j
+  acceptance_criteria:
+    - semantic facts stored as nodes with relationships
+
 - id: P3-19
   title: Implement a GitHub Search API tool
   priority: medium
@@ -13,3 +14,4 @@
     - Given a query for a specific open-source library
     - When the GitHub Search tool is called with the query
     - Then it returns a list of relevant repository URLs and descriptions
+

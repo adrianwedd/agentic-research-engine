@@ -1,5 +1,6 @@
-from pipelines.back_translation.pipeline import BackTranslationPipeline
 import json
+
+from pipelines.back_translation.pipeline import BackTranslationPipeline
 
 
 def test_back_translation_pipeline(tmp_path):
