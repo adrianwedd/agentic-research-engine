@@ -125,3 +125,29 @@ def test_tool_init_span_and_propagation():
     names = {span.name for span in exporter.spans}
     assert "tool.init" in names
     assert "tool_call" in names
+
+
+def test_tool_invocation_audit_logged(caplog):
+    registry = ToolRegistry()
+
+    def tool(x):
+        return x
+
+    registry.register_tool("dummy", tool)
+    with caplog.at_level("INFO"):
+        out = registry.invoke("WebResearcher", "dummy", "hi", intent="demo")
+    assert out == "hi"
+    entries = [json.loads(r.message) for r in caplog.records]
+    assert any(
+        e.get("outcome") == "success" and e.get("action") == "dummy" for e in entries
+    )
+
+
+def test_tool_invocation_audit_blocked(caplog):
+    registry = ToolRegistry()
+    registry.register_tool("dummy", dummy_tool, allowed_roles=["Other"])
+    with caplog.at_level("INFO"):
+        with pytest.raises(AccessDeniedError):
+            registry.invoke("WebResearcher", "dummy", intent="demo")
+    entries = [json.loads(r.message) for r in caplog.records]
+    assert any(e.get("outcome") == "blocked" for e in entries)
