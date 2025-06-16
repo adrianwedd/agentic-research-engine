@@ -1,0 +1,22 @@
+site_name: Agentic Research Engine Docs
+nav:
+  - Home: docs/index.md
+  - Research:
+      - Reward Shaping Proposal: docs/research/2025-score-reward-shaping.md
+      - Emergent Communication: docs/research/2025-emergent-communication-report.md
+      - LTM Forgetting Study: docs/research/2025-ltm-forgetting-study.md
+      - Synthetic Data Research: docs/research/2025-synthetic-data-research.md
+      - Graph Compilation Study: docs/research/2025-graph-compilation.md
+  - Reports:
+      - Phase 2 DevEx Review: docs/reports/phase2-devex-review-report.md
+      - Phase 2 LTM API Gap: docs/reports/phase2-ltm-api-gap-report.md
+      - Phase 2 Data Curation Workflow: docs/reports/phase2-data-curation-workflow-report.md
+      - Phase 2 FastAPI Benchmark: docs/reports/phase2-fastapi-benchmark-report.md
+      - Phase 2 Performance Bottlenecks: docs/reports/phase2-performance-bottlenecks-report.md
+      - Phase 2 Performance Scorecard: docs/reports/phase2-performance-scorecard-report.md
+      - Phase 2 Architecture Health: docs/reports/phase2-architecture-health-report.md
+      - Phase 2 API Consistency: docs/reports/phase2-api-consistency-report.md
+      - Phase 2 Security Audit: docs/reports/phase2-security-audit-report.md
+      - Phase 1 Gap Analysis: docs/reports/phase1-gap-analysis-report.md
+      - Phase 1 UAT Gap Analysis: docs/reports/phase1-uat-gap-analysis-report.md
+      - Phase 1 UAT Review Agenda: docs/reports/phase1-uat-review-agenda-report.md

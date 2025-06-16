@@ -95,6 +95,15 @@ pre-commit run --all-files
 
 This step formats the codebase and runs lint checks.
 
+## Docs Structure
+
+Project documentation lives in the `docs/` folder. Academic papers and surveys
+go under `docs/research/` and should follow the naming pattern
+`YYYY-<short-slug>.md`. Phase-based deliverables such as security audits or
+performance scorecards belong in `docs/reports/` with filenames like
+`phase<phase#>-<topic>-report.md`. Remember to update `mkdocs.yml` so the new
+page appears in the navigation sidebar.
+
 ## Release Process
 
 1. Update `infra/helm/agent-services/Chart.yaml` with the new version.
