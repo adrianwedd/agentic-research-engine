@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Lightweight sandbox for executing Python code securely."""
 
+import json
 import os
 import subprocess
 import sys
@@ -26,13 +27,34 @@ class _BlockedSocket(socket.socket):
 socket.socket = _BlockedSocket  # type: ignore[assignment]
 socket.create_connection = lambda *a, **k: (_ for _ in ()).throw(OSError('network access disabled'))
 
-code_file = sys.argv[1]
-args = sys.argv[2:]
+result_file = sys.argv[1]
+code_file = sys.argv[2]
+args = sys.argv[3:]
 with open(code_file) as f:
     code = f.read()
 
+import ast
+import json
+
+tree = ast.parse(code, mode='exec')
+if tree.body and isinstance(tree.body[-1], ast.Expr):
+    expr = tree.body[-1]
+    tree.body[-1] = ast.Assign(targets=[ast.Name("_result", ast.Store())], value=expr.value)
+    ast.fix_missing_locations(tree)
+    has_result = True
+else:
+    has_result = False
+    ast.fix_missing_locations(tree)
+code_obj = compile(tree, "<sandbox>", "exec")
+
 sys.argv = [sys.argv[0]] + args
-exec(compile(code, '<sandbox>', 'exec'), {{'__name__': '__main__'}})
+env = {{'__name__': '__main__'}}
+exec(code_obj, env)
+if has_result:
+    with open(result_file, 'w') as rf:
+        json.dump(env.get('_result'), rf)
+else:
+    open(result_file, 'w').write('null')
 """
 
 
@@ -52,6 +74,7 @@ def run_python_code(
     with tempfile.TemporaryDirectory() as tmp:
         code_path = os.path.join(tmp, "code.py")
         wrapper_path = os.path.join(tmp, "wrapper.py")
+        result_path = os.path.join(tmp, "result.json")
         with open(code_path, "w") as f:
             f.write(code)
         with open(wrapper_path, "w") as f:
@@ -60,7 +83,7 @@ def run_python_code(
             )
             f.write(textwrap.dedent(script))
 
-        cmd = [sys.executable, wrapper_path, code_path] + list(args)
+        cmd = [sys.executable, wrapper_path, result_path, code_path] + list(args)
         try:
             proc = subprocess.run(
                 cmd,
@@ -69,10 +92,21 @@ def run_python_code(
                 timeout=timeout,
                 check=False,
             )
+            try:
+                with open(result_path) as rf:
+                    result = json.load(rf)
+            except Exception:
+                result = None
             return {
                 "stdout": proc.stdout,
                 "stderr": proc.stderr,
                 "returncode": proc.returncode,
+                "result": result,
             }
         except subprocess.TimeoutExpired:
-            return {"stdout": "", "stderr": "timeout expired", "returncode": -1}
+            return {
+                "stdout": "",
+                "stderr": "timeout expired",
+                "returncode": -1,
+                "result": None,
+            }

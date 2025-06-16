@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -15,13 +16,23 @@ class BackTranslationPipeline:
         self.pivot_lang = pivot_lang
 
     def _back_translate(self, text: str) -> str:
-        inter = self.translator.translate(text, dest=self.pivot_lang).text
-        return self.translator.translate(inter, src=self.pivot_lang, dest="en").text
+        inter = self.translator.translate(text, dest=self.pivot_lang)
+        if asyncio.iscoroutine(inter):
+            inter = asyncio.get_event_loop().run_until_complete(inter)
+        inter_text = inter.text
+        out = self.translator.translate(inter_text, src=self.pivot_lang, dest="en")
+        if asyncio.iscoroutine(out):
+            out = asyncio.get_event_loop().run_until_complete(out)
+        return out.text
 
-    def augment_records(self, records: Iterable[Dict[str, str]]) -> List[Dict[str, str]]:
+    def augment_records(
+        self, records: Iterable[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
         augmented = []
         for rec in records:
-            original = rec.get("corrected_solution") or rec.get("text") or rec.get("original")
+            original = (
+                rec.get("corrected_solution") or rec.get("text") or rec.get("original")
+            )
             if not original:
                 raise ValueError("Record missing 'corrected_solution' field")
             bt = self._back_translate(original)
