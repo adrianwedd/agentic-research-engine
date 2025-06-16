@@ -14,7 +14,7 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -c constraints.txt
       - name: Run training
         run: python scripts/train_evaluator.py --epochs 1 --version ci-test
       - name: Upload model artifact

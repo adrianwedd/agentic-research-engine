@@ -24,3 +24,8 @@ repos:
         language: python
         pass_filenames: false
         additional_dependencies: [PyYAML]
+      - id: core-tests
+        name: run core test suite
+        entry: bash scripts/run_core_tests.sh
+        language: system
+        pass_filenames: false
