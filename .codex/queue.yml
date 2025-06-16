@@ -32,3 +32,11 @@
     - When the GitHub Search tool is called with the query
     - Then it returns a list of relevant repository URLs and descriptions
 
+- id: CR-DEV-01
+  title: Implement Pluggable LLM Client for Local and Cloud Model Support
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Given LLM_PROVIDER="ollama" the client sends requests to the local server
+    - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured cloud endpoint
+    - Changing environment variables switches models without code changes
