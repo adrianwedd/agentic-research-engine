@@ -6,6 +6,7 @@ from typing import Dict, List, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from .episodic_memory import EpisodicMemoryService
+from .semantic_memory import SemanticMemoryService
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 
@@ -21,8 +22,13 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
 class LTMService:
     """Coordinate access to various memory modules."""
 
-    def __init__(self, episodic_memory: EpisodicMemoryService) -> None:
-        self._modules: Dict[str, EpisodicMemoryService] = {"episodic": episodic_memory}
+    def __init__(
+        self,
+        episodic_memory: EpisodicMemoryService,
+        semantic_memory: SemanticMemoryService | None = None,
+    ) -> None:
+        self._modules: Dict[str, object] = {"episodic": episodic_memory}
+        self._modules["semantic"] = semantic_memory or SemanticMemoryService()
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -30,11 +36,20 @@ class LTMService:
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
-        return module.store_experience(
-            record.get("task_context", {}),
-            record.get("execution_trace", {}),
-            record.get("outcome", {}),
-        )
+        if memory_type == "episodic":
+            return module.store_experience(
+                record.get("task_context", {}),
+                record.get("execution_trace", {}),
+                record.get("outcome", {}),
+            )
+        if memory_type == "semantic":
+            return module.store_fact(
+                record["subject"],
+                record["predicate"],
+                record["object"],
+                properties=record.get("properties", {}),
+            )
+        raise ValueError(f"Unsupported memory type: {memory_type}")
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -42,7 +57,11 @@ class LTMService:
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
-        return module.retrieve_similar_experiences(query, limit=limit)
+        if memory_type == "episodic":
+            return module.retrieve_similar_experiences(query, limit=limit)
+        if memory_type == "semantic":
+            return module.query_facts(**query)[:limit]
+        raise ValueError(f"Unsupported memory type: {memory_type}")
 
 
 class LTMServiceServer:

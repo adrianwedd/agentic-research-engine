@@ -6,6 +6,15 @@
   acceptance_criteria:
     - semantic facts stored as nodes with relationships
 
+- id: P3-16
+  title: Enhance MemoryManager to extract entities for knowledge graph
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - Given a verified report containing a relationship statement
+    - When the MemoryManager processes the report
+    - Then the corresponding nodes and relationship are stored in Semantic LTM
+
 - id: P3-19
   title: Implement a GitHub Search API tool
   priority: medium
