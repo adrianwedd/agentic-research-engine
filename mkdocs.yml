@@ -8,6 +8,9 @@ nav:
       - Synthetic Data Research: docs/research/2025-synthetic-data-research.md
       - Graph Compilation Study: docs/research/2025-graph-compilation.md
       - Dynamic Trust & Reputation: docs/research/2025-dynamic-trust-reputation-system.md
+  - Architecture:
+      - Decision Records: docs/architecture/decision_records.md
+      - Communication Guidelines: docs/architecture/llm_grounded_guided_evolution.md
 
   - Reports:
       - Phase 2 DevEx Review: docs/reports/phase2-devex-review-report.md
