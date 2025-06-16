@@ -64,3 +64,14 @@
   acceptance_criteria:
     - Subgraph final state merges into parent scratchpad
     - Parent graph resumes after subgraph completion
+- id: CR-ADR-003-IMPL
+  title: Enforce LLM-Grounded Communication Paradigm in Training Pipeline
+  priority: high
+  steps:
+    - make guidance_loss mandatory in trainers
+    - remove deprecated emergent protocols
+    - add CI check for guidance_loss in configs
+  acceptance_criteria:
+    - trainer raises ConfigurationError if guidance_loss missing
+    - CI fails for configs without guidance_loss
+    - deprecated emergent files removed
