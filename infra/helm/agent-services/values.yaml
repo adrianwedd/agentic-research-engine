@@ -8,3 +8,8 @@ service:
   port: 80
 color: blue
 workerCount: 4
+
+forgetting:
+  enabled: true
+  schedule: "0 2 * * *"
+  ttlDays: "180"

@@ -17,6 +17,7 @@ def main() -> None:
         "forget_job", attributes={"pruned": pruned, "ttl_days": TTL_DAYS}
     ):
         pass
+    print(f"Pruned {pruned} stale memories older than {TTL_DAYS} days")
 
 
 if __name__ == "__main__":
