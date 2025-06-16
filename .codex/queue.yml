@@ -40,6 +40,14 @@
     - Given LLM_PROVIDER="ollama" the client sends requests to the local server
     - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured cloud endpoint
     - Changing environment variables switches models without code changes
+
+- id: CR-BUG-02
+  title: Fix PyTorch Dependency Resolution in requirements.txt
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - pip-audit -r requirements.txt exits with code 0
+    - pip install -r requirements.txt installs torch 2.2.2 CPU build
 - id: CR-P3-03A
   title: Fix State Propagation from Hierarchical Subgraphs to Parent
   priority: high
