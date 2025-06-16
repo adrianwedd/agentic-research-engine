@@ -45,5 +45,30 @@ services:
       - otel-collector
       - weaviate
 
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_USER: agent
+      POSTGRES_DB: reputation
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  reputation-service:
+    build: .
+    image: agentic/research-engine:latest
+    command: uvicorn services.reputation.app:app --host 0.0.0.0 --port 8090 --workers ${WORKER_COUNT:-4}
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agent:example@postgres:5432/reputation
+      WORKER_COUNT: ${WORKER_COUNT:-4}
+    ports:
+      - "8090:8090"
+    depends_on:
+      - postgres
+      - otel-collector
+
 volumes:
   weaviate_data:
+  postgres_data:

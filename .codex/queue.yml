@@ -6,6 +6,14 @@
     - forgetting route deletes a record
     - invalid bodies return 422
 
+- id: CR-01
+  title: New Component - Reputation Service & Persistent Data Store
+  priority: high
+  steps: []
+  acceptance_criteria:
+    - FastAPI service stores evaluations in PostgreSQL
+    - Reputation scores aggregate by task type
+
 - id: P3-15
   title: Integrate graph database for Semantic LTM
   priority: high
