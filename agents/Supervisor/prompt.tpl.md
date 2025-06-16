@@ -10,6 +10,17 @@ The YAML **must** contain a top-level `graph` mapping with `nodes` and `edges`
 lists. Each node requires an `id` and `agent` field. Ensure the YAML parses
 correctly with no additional commentary.
 
+## Scratchpad Usage
+You may write intermediate data to the shared scratchpad under the key `<topic>`.
+Example write:
+```json
+{"scratchpad_write": {"key": "<topic>", "value": "<info>"}}
+```
+To read from the scratchpad:
+```json
+{"type": "finding", "content": "<scratchpad[topic]>", "recipient": "<agent_id>"}
+```
+
 Using retrieved memories:
 {{memory_context}}
 
