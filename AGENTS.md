@@ -44,3 +44,9 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 - The file `.codex/queue.yml` must reflect the latest open change requests.
 - Run `python scripts/sync_codex_tasks.py` to compare open issues with queued tasks.
 - Address any reported discrepancies before committing.
+
+## Codex Issue Workflows
+- The `Codex Notary` workflow opens GitHub issues for new entries in `.codex/queue.yml`.
+- The `Codex Archivist` workflow posts agent logs to the issue once it is closed.
+- Both workflows expect `issue_logger.create_issue` to return `{url, number}` and
+  rely on the stored `issue_id` for traceability.
