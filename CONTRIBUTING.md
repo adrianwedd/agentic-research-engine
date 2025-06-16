@@ -31,7 +31,12 @@ The CI pipeline verifies that the queue file matches the tasks. Ensure you run t
 
 All development happens on feature branches. Direct pushes to `main` are disabled.
 Pull requests targeting `main` must have at least one approved review and pass all
-required CI status checks before they can be merged.
+required CI status checks before they can be merged. These settings are enforced
+through the repository's branch protection rules.
+
+To confirm the configuration, you can run `scripts/check_branch_protection.py`.
+The script calls the GitHub API and returns non-zero if the rules are missing or
+incomplete.
 
 ## Environment Setup
 

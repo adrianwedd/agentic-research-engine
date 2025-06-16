@@ -185,7 +185,7 @@ Contributions are welcome and encouraged! Please follow these steps to contribut
 7. **Open a Pull Request** against the main branch of this repository.
 
 All pull requests will be automatically validated by the CI pipeline (P1-02), which includes running linters, unit tests, and checking for code coverage. A review from at least one core team member is required for a PR to be merged.
-Branch protection rules on `main` enforce these checks so direct pushes are rejected.
+Branch protection rules on `main` enforce these checks so direct pushes are rejected. You can verify the policy by running `scripts/check_branch_protection.py` with a GitHub token.
 For instructions on running the pipeline locally and the required 80% coverage threshold, see [docs/ci.md](docs/ci.md).
 
 ## **10. License**
