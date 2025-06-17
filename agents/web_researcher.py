@@ -209,6 +209,10 @@ class WebResearcherAgent(BaseAgent):
         scratchpad:
             Shared scratchpad (unused by default).
         """
+        if self._execute_stored_procedure(state):
+            self._store_procedure(state)
+            return state
+
         task: str | None = state.data.get("sub_task")
         if not task:
             return state
