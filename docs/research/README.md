@@ -25,3 +25,4 @@ This folder contains proposals and deep-dive studies that guide future developme
 - [2025-synthetic-data-research.md](./2025-synthetic-data-research.md): Study evaluating synthetic data generation methods for training the Evaluator agent.
 - [2025-agent-introspection-toolkit.md](./2025-agent-introspection-toolkit.md): Overview of architectures and methods for introspection, tracing, and debugging complex multi-agent systems.
 - [2025-dp-ltm-architecture.md](./2025-dp-ltm-architecture.md): Report detailing architectures for differentially private long-term memory.
+- [2025-procedural-memory-recall.md](./2025-procedural-memory-recall.md): Results of a spike comparing RAG and fine-tuning for skill recall.
