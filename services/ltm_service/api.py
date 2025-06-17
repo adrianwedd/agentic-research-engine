@@ -45,6 +45,7 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/temporal_consolidate"): {"editor"},
     ("POST", "/propagate_subgraph"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
+    ("GET", "/spatial_query"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
     # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
@@ -206,6 +207,14 @@ class LTMService:
             location=fact.get("location"),
         )
 
+    def spatial_query(
+        self, bbox: List[float], valid_from: float, valid_to: float
+    ) -> List[Dict[str, Any]]:
+        module = self._modules.get("semantic")
+        if not isinstance(module, SpatioTemporalMemoryService):
+            raise ValueError("Spatio-temporal memory module not available")
+        return module.query_spatial_range(bbox, valid_from, valid_to)
+
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise ValueError(f"Unsupported memory type: {memory_type}")
@@ -362,6 +371,28 @@ class LTMServiceServer:
             @_rbac("GET", "/memory")
             def do_GET(self) -> None:
                 parsed = urlparse(self.path)
+                if parsed.path == "/spatial_query":
+                    if not self._check_role("GET", "/spatial_query"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    params = parse_qs(parsed.query)
+                    bbox_str = params.get("bbox", [""])[0]
+                    try:
+                        bbox = [float(x) for x in bbox_str.split(",")]
+                        if len(bbox) != 4:
+                            raise ValueError
+                        valid_from = float(params.get("valid_from", ["0"])[0])
+                        valid_to = float(params.get("valid_to", ["0"])[0])
+                    except ValueError:
+                        self._send_json(400, {"error": "invalid parameters"})
+                        return
+                    try:
+                        results = service.spatial_query(bbox, valid_from, valid_to)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"results": results})
+                    return
                 if parsed.path == "/retrieve":
                     new_path = "/memory"
                     if parsed.query:

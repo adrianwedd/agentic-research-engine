@@ -63,3 +63,39 @@ def test_openapi_contains_temporal_endpoint():
     client, _ = _create_client()
     schema = client.get("/docs/openapi.json").json()
     assert "/temporal_consolidate" in schema["paths"]
+
+
+def test_spatial_query_endpoint():
+    client, _ = _create_client()
+
+    data1 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v1",
+        "valid_from": 0,
+        "valid_to": 20,
+        "location": {"lat": 1, "lon": 1},
+    }
+    client.post("/temporal_consolidate", json=data1, headers={"X-Role": "editor"})
+
+    data2 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v2",
+        "valid_from": 30,
+        "valid_to": 60,
+        "location": {"lat": 1.5, "lon": 1.5},
+    }
+    client.post("/temporal_consolidate", json=data2, headers={"X-Role": "editor"})
+
+    resp = client.get(
+        "/spatial_query",
+        params={"bbox": "0,0,2,2", "valid_from": 40, "valid_to": 50},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    results = resp.json()["results"]
+    assert len(results) == 1
+    assert results[0]["value"] == "v2"
