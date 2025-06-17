@@ -54,10 +54,18 @@ setup_dev_tools() {
     pre-commit install >/dev/null
 }
 
+setup_neo4j_indexes() {
+    if [ -n "${NEO4J_URI:-}" ]; then
+        echo "Configuring Neo4j indexes..."
+        python "$(dirname "$0")/neo4j_setup.py" || echo "Warning: failed to create Neo4j indexes" >&2
+    fi
+}
+
 main() {
     validate_environment
     verify_services
     setup_dev_tools
+    setup_neo4j_indexes
     echo "Development environment setup complete."
 }
 
