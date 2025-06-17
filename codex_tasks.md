@@ -1430,3 +1430,17 @@ acceptance_criteria:
   - The UI displays the original and simulated plans side-by-side with updated KPIs.
   - Simulation logs are kept separate from the primary execution logs.
 ```
+```codex-task
+id: CR-P4-07
+title: End-to-End Integration & Pipeline Audit
+priority: high
+steps:
+  - Inventory all workflows
+  - Document E2E tests and coverage
+  - Validate schemas and benchmark pipelines
+  - Record gaps and follow-up CRs
+acceptance_criteria:
+  - docs/integration_audit.md summarizes workflows, tests, schemas and performance
+  - CI shows coverage >= 95%
+  - Follow-up CRs listed for partial or missing flows
+```
