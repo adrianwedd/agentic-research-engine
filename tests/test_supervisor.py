@@ -244,3 +244,12 @@ def test_skill_based_agent_selection():
     plan = agent.plan_research_task("Transformer vs LSTM")
     agents = [n["agent"] for n in plan["graph"]["nodes"] if n["agent"] != "Supervisor"]
     assert all(a == "A1" for a in agents)
+
+
+def test_plan_includes_citation_agent():
+    agent = SupervisorAgent()
+    agent.plan_schema = {}
+    plan = agent.plan_research_task("Example topic")
+    nodes = plan["graph"]["nodes"]
+    assert nodes[-1]["agent"] == "CitationAgent"
+    assert {"from": "synthesis", "to": "citation"} in plan["graph"]["edges"]

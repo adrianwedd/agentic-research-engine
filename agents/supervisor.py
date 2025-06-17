@@ -157,6 +157,8 @@ class SupervisorAgent:
             nodes.append({"id": node_id, "agent": agent, **task})
             edges.append({"from": node_id, "to": "synthesis"})
         nodes.append({"id": "synthesis", "agent": "Supervisor", "task": "synthesize"})
+        nodes.append({"id": "citation", "agent": "CitationAgent", "task": "cite"})
+        edges.append({"from": "synthesis", "to": "citation"})
 
         plan = {
             "query": query,
