@@ -232,3 +232,15 @@ def test_plan_template_applied_when_enabled():
     assert plain["graph"] != template_plan["graph"]
     assert templ["graph"] == template_plan["graph"]
     server.httpd.shutdown()
+
+
+def test_skill_based_agent_selection():
+    skills = {"A1": ["transformer", "lstm"], "A2": ["finance"]}
+    agent = SupervisorAgent(
+        available_agents=["A1", "A2"],
+        agent_skills=skills,
+    )
+    agent.plan_schema = {}
+    plan = agent.plan_research_task("Transformer vs LSTM")
+    agents = [n["agent"] for n in plan["graph"]["nodes"] if n["agent"] != "Supervisor"]
+    assert all(a == "A1" for a in agents)

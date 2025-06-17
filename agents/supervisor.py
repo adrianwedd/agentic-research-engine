@@ -4,6 +4,7 @@ This agent acts as the primary coordinator for research tasks.
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -33,6 +34,8 @@ class SupervisorAgent:
         agent_registry: Optional[Any] = None,
         tool_registry: ToolRegistry | None = None,
         use_plan_templates: bool | None = None,
+        available_agents: Optional[List[str]] | None = None,
+        agent_skills: Optional[Dict[str, List[str]]] | None = None,
     ) -> None:
         """Initialize supervisor with optional services."""
 
@@ -56,6 +59,9 @@ class SupervisorAgent:
                 self.plan_schema = yaml.safe_load(f) or {}
         except FileNotFoundError:  # pragma: no cover - doc missing only in dev
             self.plan_schema = {}
+
+        self.available_agents = available_agents or ["WebResearcher"]
+        self.agent_skills = agent_skills or {}
 
     def _decompose_query(self, query: str) -> List[Dict[str, Any]]:
         """Return research sub-topics derived from the query."""
@@ -95,6 +101,27 @@ class SupervisorAgent:
             return
         plan["graph"] = t_graph
 
+    def _tokenize(self, text: str) -> set[str]:
+        return set(re.findall(r"\w+", text.lower()))
+
+    def _skill_score(self, task: str, agent: str) -> int:
+        skills = self.agent_skills.get(agent, [])
+        if not skills:
+            return 0
+        task_tokens = self._tokenize(task)
+        skill_tokens = {s.lower() for s in skills}
+        return len(task_tokens.intersection(skill_tokens))
+
+    def _select_agent(self, task: str) -> str:
+        best = self.available_agents[0]
+        best_score = float("-inf")
+        for agent in self.available_agents:
+            score = self._skill_score(task, agent)
+            if score > best_score:
+                best = agent
+                best_score = score
+        return best
+
     def plan_research_task(self, query: str) -> Dict[str, Any]:
         """Decompose research query into executable subgraphs."""
 
@@ -126,7 +153,8 @@ class SupervisorAgent:
         edges = []
         for idx, task in enumerate(tasks):
             node_id = f"research_{idx}"
-            nodes.append({"id": node_id, "agent": "WebResearcher", **task})
+            agent = self._select_agent(task.get("topic", ""))
+            nodes.append({"id": node_id, "agent": agent, **task})
             edges.append({"from": node_id, "to": "synthesis"})
         nodes.append({"id": "synthesis", "agent": "Supervisor", "task": "synthesize"})
 
