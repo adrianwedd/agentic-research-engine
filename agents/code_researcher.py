@@ -96,6 +96,10 @@ class CodeResearcherAgent(BaseAgent):
     # Graph node integration
     # ------------------------------------------------------------------
     def __call__(self, state: "GraphState", scratchpad: Dict[str, Any]) -> "GraphState":
+        if self._execute_stored_procedure(state):
+            self._store_procedure(state)
+            return state
+
         code = state.data.get("code")
         if not code:
             return state

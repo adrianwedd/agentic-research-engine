@@ -74,3 +74,41 @@ class BaseAgent:
         except Exception:
             pass
         self._procedure = []
+
+    def _execute_stored_procedure(self, state: State) -> bool:
+        """Retrieve and run a stored procedure if available."""
+        if self.registry is None:
+            return False
+        try:
+            matches = self.registry.invoke(
+                self.role,
+                "retrieve_memory",
+                {"query": state.data},
+                memory_type="procedural",
+                limit=1,
+                endpoint=self.ltm_endpoint,
+            )
+        except Exception:
+            return False
+        if not matches:
+            return False
+        steps = matches[0].get("execution_trace", {}).get("procedure", [])
+        if not steps:
+            return False
+        results: List[Any] = []
+        for step in steps:
+            action = step.get("action")
+            args = step.get("args", [])
+            kwargs = step.get("kwargs", {})
+            try:
+                if self.registry is not None:
+                    result = self.registry.invoke(self.role, action, *args, **kwargs)
+                else:
+                    tool = self.tool_registry.get(action)
+                    result = tool(*args, **kwargs)
+            except Exception:
+                return False
+            self._log_tool(action, list(args), kwargs, result)
+            results.append(result)
+        state.update({"procedure_result": results})
+        return True

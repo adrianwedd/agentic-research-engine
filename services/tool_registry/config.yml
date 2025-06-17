@@ -9,6 +9,8 @@ permissions:
     - MemoryManager
   retrieve_memory:
     - MemoryManager
+    - WebResearcher
+    - CodeResearcher
   fact_check:
     - Evaluator
   code_interpreter:
