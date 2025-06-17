@@ -23,9 +23,9 @@ Status codes:
 | **P4‑11R** – Security Enhancements | ⚠ Partially implemented | Dependency scan in CI【F:.github/workflows/ci.yml†L157-L168】 but path validation lacks logging |
 | **P4‑12R** – Address Phase 3 Gaps | ⚠ Partially implemented | Subgraph state propagation still incomplete【F:docs/epics/p4_12r_phase3_gap_closure_epic.md†L7-L29】 |
 | **P4‑13R** – Exponential Backoff in Tool Calls | ✔ Implemented | `_embed_with_retry` uses `time.sleep(2**i * 0.5)`【F:services/ltm_service/episodic_memory.py†L128-L158】 |
-| **P4‑14R** – MAST test for Step Repetition | ✗ Missing | No FM‑1.3 test found |
-| **P4‑15R** – MAST test for Information Withholding | ✗ Missing | No FM‑2.4 test found |
-| **P4‑16R** – MAST test for Incorrect Verification | ✗ Missing | No FM‑3.3 test found |
+| **P4‑14R** – MAST test for Step Repetition | ✔ Implemented | `StepRepetitionError` raised after max loops【F:tests/test_mast_suite.py†L11-L34】 |
+| **P4‑15R** – MAST test for Information Withholding | ✔ Implemented | refusal policy in MAST suite【F:tests/test_mast_suite.py†L37-L47】 |
+| **P4‑16R** – MAST test for Incorrect Verification | ✔ Implemented | Evaluator flags Moon cheese claim【F:tests/test_mast_suite.py†L50-L55】 |
 | **P4‑17R** – Specialized DB connectors | ✗ Missing | Tool Registry lacks SQL connectors |
 | **P4‑18R** – Spatio-temporal memory research | ✗ Missing | No research doc present |
 
