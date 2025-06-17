@@ -135,7 +135,6 @@ jobs:
 
   security-dependencies:
     needs: changes
-    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

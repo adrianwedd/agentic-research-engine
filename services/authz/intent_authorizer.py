@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import yaml
 
 from services.tool_registry import AccessDeniedError, ToolRegistry
+from tools.validation import validate_path_or_url
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,8 @@ class IntentAuthorizer:
 
     @classmethod
     def from_yaml(cls, path: str) -> "IntentAuthorizer":
-        data = yaml.safe_load(open(path)) or {}
+        sanitized = validate_path_or_url(path, allowed_schemes={"file"})
+        data = yaml.safe_load(open(sanitized)) or {}
         return cls(data.get("intents", {}))
 
     def allowed(self, intent: str, tool: str) -> bool:

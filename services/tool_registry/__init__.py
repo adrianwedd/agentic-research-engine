@@ -25,6 +25,7 @@ from tools import (
     summarize_text,
     web_search,
 )
+from tools.validation import validate_path_or_url
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,8 @@ class ToolRegistry:
 
     def load_permissions(self, path: str) -> None:
         """Load role permissions from a YAML config."""
-        data = yaml.safe_load(open(path)) or {}
+        sanitized = validate_path_or_url(path, allowed_schemes={"file"})
+        data = yaml.safe_load(open(sanitized)) or {}
         perms = data.get("permissions", {})
         self._permissions = {tool: set(roles or []) for tool, roles in perms.items()}
 
@@ -181,7 +183,8 @@ def create_default_registry(config_path: str | None = None) -> ToolRegistry:
         config_path = os.path.join(os.path.dirname(__file__), "config.yml")
 
     if os.path.exists(config_path):
-        data = yaml.safe_load(open(config_path)) or {}
+        sanitized = validate_path_or_url(config_path, allowed_schemes={"file"})
+        data = yaml.safe_load(open(sanitized)) or {}
         perms = data.get("permissions", {})
     else:
         perms = {}

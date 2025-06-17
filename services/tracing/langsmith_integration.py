@@ -6,6 +6,8 @@ import json
 import os
 from typing import Any
 
+from tools.validation import validate_path_or_url
+
 try:  # pragma: no cover - optional dependency
     from langsmith import Client
 except Exception:  # pragma: no cover - fallback
@@ -56,7 +58,8 @@ def import_dataset(path: str, dataset_name: str, client: Client | None = None) -
     if client.has_dataset(dataset_name=dataset_name):
         return
     dataset = client.create_dataset(dataset_name)
-    with open(path, "r", encoding="utf-8") as f:
+    sanitized = validate_path_or_url(path, allowed_schemes={"file"})
+    with open(sanitized, "r", encoding="utf-8") as f:
         cases = json.load(f)
     for case in cases:
         client.create_example(
