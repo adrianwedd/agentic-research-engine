@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from datetime import datetime
+from math import exp
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+
+from services.monitoring.events import EvaluationCompletedEvent
 
 from .models import Agent, Assignment, Evaluation, ReputationScore, Task
 
@@ -70,47 +73,103 @@ class ReputationService:
                 return evaluation.evaluation_id
             task = session.get(Task, assignment.task_id)
             context = task.task_type if task else None
-            self._update_reputation(session, assignment.agent_id, context)
+            self._update_reputation(
+                session,
+                assignment.agent_id,
+                context,
+                performance_vector,
+                evaluation.evaluation_timestamp,
+            )
             session.commit()
             return evaluation.evaluation_id
 
+    def handle_evaluation_event(self, event: EvaluationCompletedEvent) -> None:
+        """Ingest an EvaluationCompletedEvent and update reputation."""
+        with self._session_factory() as session:
+            task = session.execute(
+                select(Task).where(Task.task_id == event.task_id)
+            ).scalar_one_or_none()
+            if task is None:
+                task = Task(
+                    task_id=event.task_id, task_type=event.task_type or "unknown"
+                )
+                session.add(task)
+
+            agent = session.execute(
+                select(Agent).where(Agent.agent_id == event.worker_agent_id)
+            ).scalar_one_or_none()
+            if agent is None:
+                agent = Agent(agent_id=event.worker_agent_id, agent_type="worker")
+                session.add(agent)
+
+            assignment = session.execute(
+                select(Assignment).where(
+                    Assignment.task_id == task.task_id,
+                    Assignment.agent_id == agent.agent_id,
+                )
+            ).scalar_one_or_none()
+            if assignment is None:
+                assignment = Assignment(task_id=task.task_id, agent_id=agent.agent_id)
+                session.add(assignment)
+                session.flush()
+
+            evaluation = Evaluation(
+                assignment_id=assignment.assignment_id,
+                evaluator_id=event.evaluator_id,
+                evaluation_timestamp=event.timestamp,
+                performance_vector=event.performance_vector,
+                is_final=event.is_final,
+            )
+            session.add(evaluation)
+            self._update_reputation(
+                session,
+                agent.agent_id,
+                task.task_type,
+                event.performance_vector,
+                event.timestamp,
+            )
+            session.commit()
+
     def _update_reputation(
-        self, session: Session, agent_id: str, context: str | None
+        self,
+        session: Session,
+        agent_id: str,
+        context: str | None,
+        new_vector: Dict[str, Any],
+        timestamp: datetime,
     ) -> None:
-        stmt = (
-            select(Evaluation.performance_vector)
-            .join(Assignment, Evaluation.assignment_id == Assignment.assignment_id)
-            .join(Task, Assignment.task_id == Task.task_id)
-            .where(Assignment.agent_id == agent_id)
-        )
-        if context:
-            stmt = stmt.where(Task.task_type == context)
-        rows = session.execute(stmt).all()
-        if not rows:
-            return
-        totals: defaultdict[str, float] = defaultdict(float)
-        for row in rows:
-            vec = row[0] or {}
-            for k, v in vec.items():
-                totals[k] += float(v)
-        count = len(rows)
-        avg = {k: v / count for k, v in totals.items()}
         rep = session.execute(
             select(ReputationScore).where(
-                ReputationScore.agent_id == agent_id, ReputationScore.context == context
+                ReputationScore.agent_id == agent_id,
+                ReputationScore.context == context,
             )
         ).scalar_one_or_none()
         if rep is None:
             rep = ReputationScore(
                 agent_id=agent_id,
                 context=context,
-                reputation_vector=avg,
-                confidence_score=float(count),
+                reputation_vector=new_vector,
+                confidence_score=1.0,
+                last_updated_timestamp=timestamp,
             )
             session.add(rep)
-        else:
-            rep.reputation_vector = avg
-            rep.confidence_score = float(count)
+            session.flush()
+            return
+
+        age_days = (timestamp - rep.last_updated_timestamp).total_seconds() / 86400.0
+        decay = exp(-age_days / 7.0)
+        old_weight = rep.confidence_score * decay
+        new_weight = 1.0
+        total_weight = old_weight + new_weight
+        merged: Dict[str, float] = {}
+        keys = set(rep.reputation_vector.keys()) | set(new_vector.keys())
+        for k in keys:
+            old_val = float(rep.reputation_vector.get(k, 0.0))
+            new_val = float(new_vector.get(k, 0.0))
+            merged[k] = (old_val * old_weight + new_val * new_weight) / total_weight
+        rep.reputation_vector = merged
+        rep.confidence_score = total_weight
+        rep.last_updated_timestamp = timestamp
         session.flush()
 
     def get_reputation(

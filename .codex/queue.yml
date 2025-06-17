@@ -175,3 +175,11 @@
   acceptance_criteria:
     - All @pytest.mark.core tests (including sandbox) pass under the parallel runner.
     - optional and integration tests continue to pass in their respective CI jobs.
+
+- id: CR-03B
+  title: System Integration - Event-Driven Reputation Feedback Loop
+  priority: medium
+  steps: []
+  acceptance_criteria:
+    - Evaluator publishes EvaluationCompletedEvent
+    - Reputation Service updates scores on event
