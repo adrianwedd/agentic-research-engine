@@ -16,6 +16,8 @@ __all__ = [
     "EpisodicMemoryService",
     "InMemoryStorage",
     "ProceduralMemoryService",
+    "Skill",
+    "SkillLibrary",
     "SemanticMemoryService",
     "SpatioTemporalMemoryService",
     "EmbeddingClient",
