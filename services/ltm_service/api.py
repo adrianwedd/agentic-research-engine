@@ -31,6 +31,8 @@ except Exception:  # pragma: no cover - fallback for test stubs
         pass
 
 
+from services.monitoring.system_monitor import SystemMonitor
+
 from .episodic_memory import EpisodicMemoryService
 from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService
@@ -95,12 +97,14 @@ class LTMService:
         episodic_memory: EpisodicMemoryService,
         semantic_memory: SemanticMemoryService | None = None,
         procedural_memory: ProceduralMemoryService | None = None,
+        monitor: SystemMonitor | None = None,
     ) -> None:
         self._modules: Dict[str, object] = {"episodic": episodic_memory}
         self._modules["semantic"] = semantic_memory or SemanticMemoryService()
         self._modules["procedural"] = procedural_memory or ProceduralMemoryService(
             episodic_memory.storage
         )
+        self._monitor = monitor
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -136,12 +140,17 @@ class LTMService:
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
         if memory_type == "episodic":
-            return module.retrieve_similar_experiences(query, limit=limit)
-        if memory_type == "semantic":
-            return module.query_facts(**query)[:limit]
-        if memory_type == "procedural":
-            return module.retrieve_similar_procedures(query, limit=limit)
-        raise ValueError(f"Unsupported memory type: {memory_type}")
+            results = module.retrieve_similar_experiences(query, limit=limit)
+        elif memory_type == "semantic":
+            results = module.query_facts(**query)[:limit]
+        elif memory_type == "procedural":
+            results = module.retrieve_similar_procedures(query, limit=limit)
+        else:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
+
+        if self._monitor:
+            self._monitor.record_ltm_result(memory_type, bool(results))
+        return results
 
     def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
         if memory_type not in ALLOWED_MEMORY_TYPES:

@@ -25,3 +25,5 @@ nav:
       - Phase 1 Gap Analysis: docs/reports/phase1-gap-analysis-report.md
       - Phase 1 UAT Gap Analysis: docs/reports/phase1-uat-gap-analysis-report.md
       - Phase 1 UAT Review Agenda: docs/reports/phase1-uat-review-agenda-report.md
+  - Dashboards:
+      - LTM Metrics: docs/dashboards/ltm_metrics_dashboard.md
