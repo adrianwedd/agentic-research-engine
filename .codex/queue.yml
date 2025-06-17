@@ -20,36 +20,6 @@
   - Add regression test for plan length reduction
   title: Replace deprecated utcnow usage
 - acceptance_criteria:
-  - MemoryManager stores skills with policy, embedding and metadata
-  id: CR-001
-  priority: medium
-  steps: []
-  title: SkillLibrary-based MemoryManager overhaul
-- acceptance_criteria:
-  - URL discovers disentangled skills for the SkillLibrary
-  id: CR-002
-  priority: medium
-  steps: []
-  title: Unsupervised SkillDiscoveryModule
-- acceptance_criteria:
-  - LLM-generated sub-tasks and rewards stored in skill metadata
-  id: CR-003
-  priority: medium
-  steps: []
-  title: LLM-guided semantic skill decomposition
-- acceptance_criteria:
-  - Manager selects goals and Worker executes skills via HRL
-  id: CR-004
-  priority: medium
-  steps: []
-  title: Hierarchical Policy Executor
-- acceptance_criteria:
-  - New skills added without overwriting existing ones
-  id: CR-005
-  priority: medium
-  steps: []
-  title: Lifelong skill generalization support
-- acceptance_criteria:
   - RL training uses Ray RLlib and NVIDIA Isaac Lab
   id: CR-006
   priority: medium
@@ -209,13 +179,7 @@
   - Generalist agent used when no specialist exceeds threshold
   id: CR-P4-07R
   priority: high
-  steps:
-  - Extend Supervisor to query ProceduralMemoryService for agent skill metadata
-  - Compute specialization score and route tasks accordingly
-  - Log routing decisions and scores
-  title: Implement Specialist Agent Selection
   steps: []
-  
   title: Add Neo4j consolidation for semantic memory
 - acceptance_criteria:
   - SELECT queries on SQLite return DataFrame results
@@ -227,3 +191,57 @@
   - Register tools in the registry with RBAC roles
   - Add tests spinning up SQLite and Postgres instances
   title: Add Specialized DB Connectors
+- acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  id: CR-001
+  priority: medium
+  steps:
+  - Design SkillLibrary schema with policy, representation and metadata fields
+  - Refactor MemoryManager to use the SkillLibrary for storage and retrieval
+  - Implement semantic lookup APIs by embedding or metadata filters
+  - Ensure compatibility with episodic and semantic memory modules
+  - Add unit tests and update documentation
+  title: SkillLibrary-based MemoryManager overhaul
+- acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+  id: CR-002
+  priority: medium
+  steps:
+  - Research and select a URL framework focusing on the DUSDi algorithm
+  - Integrate environment interface for reward-free exploration
+  - Implement mutual-information objective for disentangled skill learning
+  - Store discovered skills and metadata in the SkillLibrary
+  - Evaluate diversity and disentanglement metrics
+  title: Unsupervised SkillDiscoveryModule
+- acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+  id: CR-003
+  priority: medium
+  steps:
+  - Define interface and prompt templates for the LLM to describe sub-tasks
+  - Translate LLM output into reward functions and termination conditions
+  - Integrate L2S/LDSC framework to generate structured skill specs
+  - Persist semantic scaffolding in skill metadata
+  - Test with sample tasks and refine prompts
+  title: LLM-guided semantic skill decomposition
+- acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+  id: CR-004
+  priority: medium
+  steps:
+  - Design two-level FuN architecture with Manager and Worker policies
+  - Implement goal-conditioned Worker using intrinsic rewards
+  - Sequence skills using SkillLibrary embeddings for goal selection
+  - Validate integration with MemoryManager and other modules
+  - Add integration tests for long-horizon tasks
+  title: Hierarchical Policy Executor
+- acceptance_criteria:
+  - New skills added without overwriting existing ones
+  id: CR-005
+  priority: medium
+  steps:
+  - Diversify training environments to learn invariant features
+  - Freeze existing skills and modularize SkillLibrary for expansion
+  - Compose new skills via Primitive Prompt Learning
+  - Continuously evaluate transfer and generalization
+  title: Lifelong skill generalization support
