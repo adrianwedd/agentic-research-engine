@@ -1395,3 +1395,16 @@ acceptance_criteria:
   - "All @pytest.mark.core tests (including sandbox) pass under the parallel runner."
   - "optional and integration tests continue to pass in their respective CI jobs."
 ```
+
+```codex-task
+id: CR-04
+title: Agent Modification - Planner Agent Enhancement
+priority: medium
+steps:
+  - integrate Planner with Reputation Service via GET /v1/reputation/query
+  - compute weighted utility using reputation, cost, and current load
+  - allocate tasks to maximize utility
+acceptance_criteria:
+  - Planner queries the reputation API before assigning tasks
+  - Weighted sum considers reputation score, token cost and load
+```
