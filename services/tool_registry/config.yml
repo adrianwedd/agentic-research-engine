@@ -19,6 +19,10 @@ permissions:
     - CodeResearcher
   github_search:
     - CodeResearcher
+  sqlite_query:
+    - CodeResearcher
+  postgres_query:
+    - CodeResearcher
   knowledge_graph_search:
     - Supervisor
     - WebResearcher
