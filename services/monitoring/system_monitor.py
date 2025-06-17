@@ -59,6 +59,12 @@ class SystemMonitor:
             "agent.collaboration_effectiveness",
             description="Collaboration effectiveness",
         )
+        self._ltm_hit_counter = self._meter.create_counter(
+            "ltm.hits", description="LTM retrieval hits"
+        )
+        self._ltm_miss_counter = self._meter.create_counter(
+            "ltm.misses", description="LTM retrieval misses"
+        )
 
     @classmethod
     def from_otlp(cls, endpoint: str = "http://localhost:4317") -> "SystemMonitor":
@@ -98,3 +104,11 @@ class SystemMonitor:
             if collab is not None:
                 self._collab_effectiveness.record(collab, attributes)
                 span.set_attribute("collaboration_effectiveness", collab)
+
+    def record_ltm_result(self, memory_type: str, hit: bool) -> None:
+        """Record the outcome of an LTM lookup."""
+        attributes = {"memory_type": memory_type}
+        if hit:
+            self._ltm_hit_counter.add(1, attributes)
+        else:
+            self._ltm_miss_counter.add(1, attributes)

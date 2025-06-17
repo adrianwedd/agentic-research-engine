@@ -21,7 +21,8 @@ This epic translates the updated Phase 4 blueprint into a structured set of chan
    - Add fallback logic when no procedure matches.
 4. **P4-04R – Observability: LTM Metrics**
    - Add counters for episodic, semantic, and procedural memory hits/misses.
-   - Expose metrics via the monitoring service and update dashboards.
+   - Metrics `ltm.hits` and `ltm.misses` are exported with a `memory_type` label.
+   - Expose these metrics via the monitoring service and update dashboards.
 5. **P4-05R – Procedural Memory Recall Research**
    - Continue research comparing retrieval-augmented generation with fine-tuning for skill recall.
    - Document findings in `docs/research` and update the blueprint accordingly.
