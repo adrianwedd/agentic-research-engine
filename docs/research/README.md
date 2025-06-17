@@ -15,3 +15,4 @@ This directory contains research reports and proposals for future development. B
 - [2025-procedural-memory-skill-generalization.md](./2025-procedural-memory-skill-generalization.md): Blueprint for transitioning procedural memory to compositional skill generalization.
 - [2025-score-reward-shaping.md](./2025-score-reward-shaping.md): Proposal to use SCoRe reward shaping for incentivizing self-correction in RLHF.
 - [2025-synthetic-data-research.md](./2025-synthetic-data-research.md): Study evaluating synthetic data generation methods for training the Evaluator agent.
+- [2025-dp-ltm-architecture.md](./2025-dp-ltm-architecture.md): Report detailing architectures for differentially private long-term memory.
