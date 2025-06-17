@@ -31,3 +31,14 @@ This epic consolidates change requests aimed at strengthening the system's defen
 ## Next Steps
 Each change request will be logged in the change request ledger and broken down into tasks within `codex_tasks.md`. Engineering and QA teams should prioritize implementation according to the threat level outlined in the Red Team Agent report.
 
+
+## Audit Status
+Progress recorded in earlier audits:
+
+| Reference | Status |
+| --- | --- |
+| P2-05 Memory-Augmented Evaluator | ✔ Implemented |
+| P3-02 Dedicated Security Agent | ✔ Implemented |
+| P2-01 LTM Hardening | ⚠ Partially implemented |
+
+_Source: [Phase 2 Implementation Audit](../reports/p2_gap_analysis.md) and [Phase 3 Implementation Audit](../reports/p3_gap_analysis.md)._ 

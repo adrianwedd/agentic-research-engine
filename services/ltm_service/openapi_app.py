@@ -173,6 +173,31 @@ def create_app(service: LTMService) -> FastAPI:
         )
         return TemporalConsolidateResponse(id=fid)
 
+
+    @app.get("/spatial_query", summary="Query facts by bounding box")
+    async def spatial_query(
+        bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
+        valid_from: float = Query(..., description="Start time"),
+        valid_to: float = Query(..., description="End time"),
+        x_role: str | None = Header(None),
+    ) -> RetrieveResponse:
+        role = x_role or ""
+        if not _check_role("GET", "/spatial_query", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        try:
+            coords = [float(x) for x in bbox.split(",")]
+            if len(coords) != 4:
+                raise ValueError
+        except ValueError:
+            raise HTTPException(status_code=400, detail="invalid bbox")
+        results = await asyncio.to_thread(
+            service.spatial_query,
+            coords,
+            valid_from,
+            valid_to,
+        )
+        return RetrieveResponse(results=results)
+
     @app.post("/consolidate", include_in_schema=False)
     async def consolidate() -> RedirectResponse:
         return RedirectResponse(url="/memory", status_code=308)

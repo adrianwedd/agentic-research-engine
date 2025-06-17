@@ -141,9 +141,7 @@ def test_propagate_subgraph_endpoint():
     server, endpoint = _start_server()
     subgraph = {
         "entities": [{"id": "E1"}, {"id": "E2"}],
-        "relations": [
-            {"subject": "E1", "predicate": "LINKS_TO", "object": "E2"}
-        ],
+        "relations": [{"subject": "E1", "predicate": "LINKS_TO", "object": "E2"}],
     }
     resp = requests.post(f"{endpoint}/propagate_subgraph", json=subgraph)
     assert resp.status_code == 200

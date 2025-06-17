@@ -36,6 +36,32 @@ components:
           type: array
       title: HTTPValidationError
       type: object
+    PropagateSubgraphRequest:
+      properties:
+        entities:
+          items:
+            type: object
+          title: Entities
+          type: array
+        relations:
+          items:
+            type: object
+          title: Relations
+          type: array
+      title: PropagateSubgraphRequest
+      type: object
+    PropagateSubgraphResponse:
+      properties:
+        ids:
+          description: Stored relation ids
+          items:
+            type: string
+          title: Ids
+          type: array
+      required:
+      - ids
+      title: PropagateSubgraphResponse
+      type: object
     RetrieveBody:
       properties:
         query:
@@ -91,6 +117,59 @@ components:
       required:
       - result
       title: SemanticConsolidateResponse
+      type: object
+    TemporalConsolidateRequest:
+      properties:
+        location:
+          anyOf:
+          - type: object
+          - type: 'null'
+          description: Location context
+          title: Location
+        object:
+          description: Fact object
+          title: Object
+          type: string
+        predicate:
+          description: Relation type
+          title: Predicate
+          type: string
+        subject:
+          description: Fact subject
+          title: Subject
+          type: string
+        valid_from:
+          description: Start of validity
+          title: Valid From
+          type: number
+        valid_to:
+          anyOf:
+          - type: number
+          - type: 'null'
+          description: End of validity
+          title: Valid To
+        value:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Fact value
+          title: Value
+      required:
+      - subject
+      - predicate
+      - object
+      - valid_from
+      title: TemporalConsolidateRequest
+      type: object
+    TemporalConsolidateResponse:
+      properties:
+        id:
+          description: Stored fact identifier
+          title: Id
+          type: string
+      required:
+      - id
+      title: TemporalConsolidateResponse
       type: object
     ValidationError:
       properties:
@@ -196,6 +275,38 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Store an experience
+  /propagate_subgraph:
+    post:
+      operationId: propagate_subgraph_propagate_subgraph_post
+      parameters:
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropagateSubgraphRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropagateSubgraphResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Propagate a completed subgraph
   /semantic_consolidate:
     post:
       operationId: semantic_consolidate_semantic_consolidate_post
@@ -228,3 +339,85 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Store facts in the knowledge graph
+  /spatial_query:
+    get:
+      operationId: spatial_query_spatial_query_get
+      parameters:
+      - description: min_lon,min_lat,max_lon,max_lat
+        in: query
+        name: bbox
+        required: true
+        schema:
+          description: min_lon,min_lat,max_lon,max_lat
+          title: Bbox
+          type: string
+      - description: Start time
+        in: query
+        name: valid_from
+        required: true
+        schema:
+          description: Start time
+          title: Valid From
+          type: number
+      - description: End time
+        in: query
+        name: valid_to
+        required: true
+        schema:
+          description: End time
+          title: Valid To
+          type: number
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Query facts by bounding box
+  /temporal_consolidate:
+    post:
+      operationId: temporal_consolidate_temporal_consolidate_post
+      parameters:
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemporalConsolidateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporalConsolidateResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Merge fact versions

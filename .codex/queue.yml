@@ -1,82 +1,24 @@
 - acceptance_criteria:
-  - forgetting route deletes a record
-  - invalid bodies return 422
-  id: CR-P2-01A
-  priority: high
-  steps: []
-  title: Harden LTM Service API with Forgetting Endpoint
-- acceptance_criteria:
-  - FastAPI service stores evaluations in PostgreSQL
-  - Reputation scores aggregate by task type
-  id: CR-01
-  priority: high
-  steps: []
-  title: New Component - Reputation Service & Persistent Data Store
-- acceptance_criteria:
-  - semantic facts stored as nodes with relationships
-  id: P3-15
-  priority: high
+  - something done
+  id: CODEX-EXAMPLE-01
+  priority: low
   steps:
-  - connect LTM service to Neo4j
-  title: Integrate graph database for Semantic LTM
+  - do something
+  title: Example task
 - acceptance_criteria:
-  - Given a verified report containing a relationship statement
-  - When the MemoryManager processes the report
-  - Then the corresponding nodes and relationship are stored in Semantic LTM
-  id: P3-16
-  priority: high
-  steps: []
-  title: Enhance MemoryManager to extract entities for knowledge graph
-- acceptance_criteria:
-  - Given the MemoryManager processes complex text
-  - When relation extraction completes
-  - Then multiple distinct triples are returned
-  id: CR-P3-16A
-  priority: high
-  steps: []
-  title: Improve MemoryManager Relation Extraction
-- acceptance_criteria:
-  - Given a query for a specific open-source library
-  - When the GitHub Search tool is called with the query
-  - Then it returns a list of relevant repository URLs and descriptions
-  id: P3-19
+  - Given a recalled plan template exists
+  - When a similar query is submitted
+  - Then the resulting plan has fewer nodes than the baseline
+  id: P3-TEST-01
+  notes: '`services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated
+    in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware
+    timestamps.'
   priority: medium
-  steps: []
-  title: Implement a GitHub Search API tool
-- acceptance_criteria:
-  - Given LLM_PROVIDER="ollama" the client sends requests to the local server
-  - Given LLM_PROVIDER="openai_compatible" the client sends requests to the configured
-    cloud endpoint
-  - Changing environment variables switches models without code changes
-  id: CR-DEV-01
-  priority: medium
-  steps: []
-  title: Implement Pluggable LLM Client for Local and Cloud Model Support
-- acceptance_criteria:
-  - pip-audit -r requirements.txt exits with code 0
-  - pip install -r requirements.txt installs torch 2.2.2 CPU build
-  id: CR-BUG-02
-  priority: high
-  steps: []
-  title: Fix PyTorch Dependency Resolution in requirements.txt
-- acceptance_criteria:
-  - Subgraph final state merges into parent scratchpad
-  - Parent graph resumes after subgraph completion
-  id: CR-P3-03A
-  priority: high
-  steps: []
-  title: Fix State Propagation from Hierarchical Subgraphs to Parent
-- acceptance_criteria:
-  - trainer raises ConfigurationError if guidance_loss missing
-  - CI fails for configs without guidance_loss
-  - deprecated emergent files removed
-  id: CR-ADR-003-IMPL
-  priority: high
+  status: open
   steps:
-  - make guidance_loss mandatory in trainers
-  - remove deprecated emergent protocols
-  - add CI check for guidance_loss in configs
-  title: Enforce LLM-Grounded Communication Paradigm in Training Pipeline
+  - Investigate Supervisor merging logic
+  - Add regression test for plan length reduction
+  title: Replace deprecated utcnow usage
 - acceptance_criteria:
   - MemoryManager stores skills with policy, embedding and metadata
   id: CR-001
@@ -114,37 +56,32 @@
   steps: []
   title: Adopt RLlib and Isaac Lab tooling
 - acceptance_criteria:
-  - dataset generation pipeline outputs at least 1000 mappings
-  - training logs show policy_loss and guidance_loss at each step
-  id: CR-02
-  priority: high
+  - docs/change-requests.md aggregates suggestions by topic
+  - codex_tasks.md references this issue
+  id: CODEX-CR-COLLECT-02
+  issue: TBD
+  priority: low
   steps: []
-  title: Detailed Implementation of the LLM-Based Auxiliary Guidance Loss
+  title: Consolidate scattered change-request suggestions
 - acceptance_criteria:
-  - Given two agents from separate runs
-  - When the evaluation pipeline runs
-  - Then the report includes ZSC, CIC, and Interpretability scores
-  id: CR-03
-  priority: medium
+  - Overlapping entries are consolidated in codex_tasks.md
+  - docs/change-requests.md notes consolidation date
+  - Issue link is recorded here
+  id: CODEX-CR-RATIONALISE-03
+  issue: TBD
+  priority: low
   steps: []
-  title: Enhancement of the Evaluation Framework to Include ZSC, CIC, and Interpretability
-    Metrics
-- acceptance_criteria:
-  - Unauthorized network calls are blocked and log SandboxNetworkBlocked
-  id: CR-05a
-  priority: high
-  steps:
-  - containerize agents with gVisor or Firecracker
-  - deny all network egress by default
-  - manage sandbox specs via IaC
-  title: Enforce Agent Sandboxing
+  title: Rationalise overlap between change_requests.md and codex_tasks.md
 - acceptance_criteria:
   - Gap analysis report produced
-  - Task lifecycle documented with pain points
-  - AGENTS.md and codex_tasks logic updated
+  - Task flow diagram with pain points
+  - AGENTS.md and codex_tasks updated with examples and new metadata support
   id: CR-AI-16
   priority: medium
-  steps: []
+  steps:
+  - Audit AGENTS.md against runtime behaviors
+  - Trace task lifecycle from queue to completion
+  - Propose doc updates and logic refinements
   title: Analyse & Enhance Codex Agent Experience
 - acceptance_criteria:
   - Given an agent issues any tool call
@@ -167,13 +104,6 @@
   - Fix any failures (e.g. missing fixtures, new dependency issues, or timeouts).
   title: Verify sandbox and optional-suite stability post-migration
 - acceptance_criteria:
-  - Evaluator publishes EvaluationCompletedEvent
-  - Reputation Service updates scores on event
-  id: CR-03B
-  priority: medium
-  steps: []
-  title: System Integration - Event-Driven Reputation Feedback Loop
-- acceptance_criteria:
   - Planner queries the reputation API before assigning tasks
   - Weighted sum considers reputation score, token cost and load
   id: CR-04
@@ -184,20 +114,6 @@
   - allocate tasks to maximize utility
   title: Agent Modification - Planner Agent Enhancement
 - acceptance_criteria:
-  - Given a recalled plan template exists
-  - When a similar query is submitted
-  - Then the resulting plan has fewer nodes than the baseline
-  id: P3-TEST-01
-  notes: '`services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated
-    in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware
-    timestamps.'
-  priority: medium
-  status: open
-  steps:
-  - Investigate Supervisor merging logic
-  - Add regression test for plan length reduction
-  title: Replace deprecated utcnow usage
-- acceptance_criteria:
   - Edges and nodes styled based on agent-provided confidence scores
   - Agent's primary intended plan visually distinct
   - Selecting a belief node reveals the evidence chain
@@ -205,30 +121,6 @@
   priority: medium
   steps: []
   title: Uncertainty & Intent Display
-- acceptance_criteria:
-  - something done
-  id: CODEX-EXAMPLE-01
-  priority: low
-  steps:
-  - do something
-  title: Example task
-- acceptance_criteria:
-  - docs/change-requests.md aggregates suggestions by topic
-  - codex_tasks.md references this issue
-  id: CODEX-CR-COLLECT-02
-  issue: TBD
-  priority: low
-  steps: []
-  title: Consolidate scattered change-request suggestions
-- acceptance_criteria:
-  - Overlapping entries are consolidated in codex_tasks.md
-  - docs/change-requests.md notes consolidation date
-  - Issue link is recorded here
-  id: CODEX-CR-RATIONALISE-03
-  issue: TBD
-  priority: low
-  steps: []
-  title: Rationalise overlap between change_requests.md and codex_tasks.md
 - acceptance_criteria:
   - A "What-If" mode can be toggled on, creating a non-destructive simulation environment.
   - Within this mode, operators can modify plan parameters and trigger a re-simulation.
@@ -312,22 +204,18 @@
   - Explain EMBED_CACHE_SIZE and caching benefits
   - Reference scripts/agent-setup.sh for environment setup
   title: Update onboarding docs with embedding cache guidance
-  - docs/integration_audit.md summarizes workflows, tests, schemas and performance
-  - CI shows coverage >= 95%
-  - Follow-up CRs listed for partial or missing flows
-  id: CR-P4-07
+- acceptance_criteria:
+  - Specialist agent receives a tagged task when its specialization score is highest
+  - Generalist agent used when no specialist exceeds threshold
+  id: CR-P4-07R
   priority: high
   steps:
-  - Inventory all workflows
-  - Document E2E tests and coverage
-  - Validate schemas and benchmark pipelines
-  - Record gaps and follow-up CRs
-  title: End-to-End Integration & Pipeline Audit
-- acceptance_criteria:
-  - Neo4j consolidation endpoint stores triples
-  id: CR-P4-07A2
-  priority: high
+  - Extend Supervisor to query ProceduralMemoryService for agent skill metadata
+  - Compute specialization score and route tasks accordingly
+  - Log routing decisions and scores
+  title: Implement Specialist Agent Selection
   steps: []
+  
   title: Add Neo4j consolidation for semantic memory
 - acceptance_criteria:
   - SELECT queries on SQLite return DataFrame results

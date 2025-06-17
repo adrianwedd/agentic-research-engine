@@ -87,6 +87,7 @@ def semantic_consolidate(
                 raise ValueError(f"Semantic consolidation failed: {exc}") from exc
             time.sleep(backoff * 2**attempt)
 
+
 def propagate_subgraph(
     subgraph: Dict,
     *,

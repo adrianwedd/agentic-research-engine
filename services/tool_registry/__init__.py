@@ -23,10 +23,10 @@ from tools import (
     html_scraper,
     knowledge_graph_search,
     pdf_extract,
+    propagate_subgraph,
     publish_reputation_event,
     retrieve_memory,
     semantic_consolidate,
-    propagate_subgraph,
     summarize_text,
     web_search,
 )
