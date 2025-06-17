@@ -1,0 +1,11 @@
+{
+  "request": {
+    "headers": {"X-Role": "viewer"},
+    "params": {"memory_type": "procedural"},
+    "json": {"query": {"description": "Add numbers"}}
+  },
+  "response": {
+    "status": 200,
+    "body": {"results": "*"}
+  }
+}

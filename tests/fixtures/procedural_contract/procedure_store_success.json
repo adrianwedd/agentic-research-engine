@@ -1,0 +1,17 @@
+{
+  "request": {
+    "headers": {"X-Role": "editor"},
+    "json": {
+      "record": {
+        "task_context": {"description": "Add numbers"},
+        "procedure": [{"action": "add", "args": [1, 2]}],
+        "outcome": {"success": true}
+      },
+      "memory_type": "procedural"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {"id": "*"}
+  }
+}

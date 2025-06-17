@@ -4,6 +4,7 @@ from .api import LTMService, LTMServiceServer
 from .embedding_client import EmbeddingClient, SimpleEmbeddingClient
 from .episodic_memory import EpisodicMemoryService, InMemoryStorage
 from .openapi_app import create_app
+from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService
 from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
 
@@ -13,6 +14,7 @@ __all__ = [
     "create_app",
     "EpisodicMemoryService",
     "InMemoryStorage",
+    "ProceduralMemoryService",
     "SemanticMemoryService",
     "EmbeddingClient",
     "SimpleEmbeddingClient",

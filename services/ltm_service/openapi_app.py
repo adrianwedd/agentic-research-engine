@@ -125,6 +125,11 @@ if __name__ == "__main__":  # pragma: no cover - manual execution
     import uvicorn
 
     from .episodic_memory import EpisodicMemoryService, InMemoryStorage
+    from .procedural_memory import ProceduralMemoryService
 
-    service = LTMService(EpisodicMemoryService(InMemoryStorage()))
+    episodic = EpisodicMemoryService(InMemoryStorage())
+    service = LTMService(
+        episodic,
+        procedural_memory=ProceduralMemoryService(InMemoryStorage()),
+    )
     uvicorn.run(create_app(service), host="0.0.0.0", port=8081)
