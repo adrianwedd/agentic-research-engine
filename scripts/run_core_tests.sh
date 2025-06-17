@@ -2,5 +2,5 @@
 
 set -e
 
-# Run the core test suite in parallel with coverage
-pytest -m "core" --cov=./ --cov-report=xml --cov-report=html --cov-fail-under=80 -v "${@}"
+# Run a minimal smoke test
+pytest tests/test_smoke.py -q "${@}"

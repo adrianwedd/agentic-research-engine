@@ -5,9 +5,23 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Set
 
-from fastapi import FastAPI, HTTPException
-from opentelemetry.sdk.trace import ReadableSpan
-from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+try:  # optional dependency
+    from fastapi import FastAPI, HTTPException
+except Exception:  # pragma: no cover - fallback objects
+    FastAPI = object
+    HTTPException = Exception
+
+try:
+    from opentelemetry.sdk.trace import ReadableSpan
+    from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
+except Exception:  # pragma: no cover - fallback classes
+    ReadableSpan = object
+
+    class SpanExporter:
+        pass
+
+    class SpanExportResult:
+        SUCCESS = 0
 
 
 def _extract_node_states(spans: List[ReadableSpan]) -> Dict[str, Dict[str, Any]]:

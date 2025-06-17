@@ -19,7 +19,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
 
-from opentelemetry import trace
+try:  # optional dependency
+    from opentelemetry import trace
+except Exception:  # pragma: no cover - fallback tracer
+    import contextlib
+
+    class _Tracer:
+        def start_as_current_span(self, *_a, **_k):
+            return contextlib.nullcontext()
+
+    class _Trace:
+        def get_tracer(self, *_a, **_k):
+            return _Tracer()
+
+    trace = _Trace()
 
 from services.tracing import get_metrics, reset_metrics
 
