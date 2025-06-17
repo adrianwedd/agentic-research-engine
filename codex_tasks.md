@@ -1419,3 +1419,14 @@ acceptance_criteria:
   - Agent's primary intended plan visually distinct
   - Selecting a belief node reveals the evidence chain
 ```
+```codex-task
+id: CR-1.3
+title: "What-If Simulation Mode"
+priority: medium
+steps: []
+acceptance_criteria:
+  - A "What-If" mode can be toggled on, creating a non-destructive simulation environment.
+  - Within this mode, operators can modify plan parameters and trigger a re-simulation.
+  - The UI displays the original and simulated plans side-by-side with updated KPIs.
+  - Simulation logs are kept separate from the primary execution logs.
+```

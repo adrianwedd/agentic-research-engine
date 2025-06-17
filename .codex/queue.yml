@@ -205,3 +205,36 @@
   priority: medium
   steps: []
   title: Uncertainty & Intent Display
+- acceptance_criteria:
+  - something done
+  id: CODEX-EXAMPLE-01
+  priority: low
+  steps:
+  - do something
+  title: Example task
+- acceptance_criteria:
+  - docs/change-requests.md aggregates suggestions by topic
+  - codex_tasks.md references this issue
+  id: CODEX-CR-COLLECT-02
+  issue: TBD
+  priority: low
+  steps: []
+  title: Consolidate scattered change-request suggestions
+- acceptance_criteria:
+  - Overlapping entries are consolidated in codex_tasks.md
+  - docs/change-requests.md notes consolidation date
+  - Issue link is recorded here
+  id: CODEX-CR-RATIONALISE-03
+  issue: TBD
+  priority: low
+  steps: []
+  title: Rationalise overlap between change_requests.md and codex_tasks.md
+- acceptance_criteria:
+  - A "What-If" mode can be toggled on, creating a non-destructive simulation environment.
+  - Within this mode, operators can modify plan parameters and trigger a re-simulation.
+  - The UI displays the original and simulated plans side-by-side with updated KPIs.
+  - Simulation logs are kept separate from the primary execution logs.
+  id: CR-1.3
+  priority: medium
+  steps: []
+  title: What-If Simulation Mode
