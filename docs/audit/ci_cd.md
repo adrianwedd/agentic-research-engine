@@ -6,9 +6,9 @@ This document outlines the findings of the audit of the Continuous Integration (
 
 The repository utilizes GitHub Actions for its CI/CD processes. Key workflows include:
 
-*   **`ci.yml`**: The main CI pipeline triggered on pull requests and pushes to `main`. It performs linting, runs a comprehensive test suite (including integration tests with coverage reporting via `pytest --cov`), core system tests, and a security dependency check using `pip-audit`. Coverage reports and test logs are uploaded as artifacts.
+*   **`ci.yml`**: The main CI pipeline triggered on pushes to `main`, on a nightly schedule, or manually. It performs linting, runs a comprehensive test suite (including integration tests with coverage reporting via `pytest --cov`), core system tests, and a security dependency check using `pip-audit`. Coverage reports and test logs are uploaded as artifacts.
 *   **`cd.yml`**: Manages deployments. It deploys to a 'staging' environment automatically on pushes to `main` and allows for manual promotion to 'production' via `workflow_dispatch`. The deployment process uses Terraform and Helm, orchestrated by `scripts/deploy.sh`.
-*   **`minimal-ci.yml`**: A lighter CI workflow, also triggered on pushes to `main` and pull requests (and manually). It runs linters and the test suite with coverage, similar to `ci.yml` but potentially with a subset of tests or a faster execution path. It also uploads a coverage report.
+*   **`minimal-ci.yml`**: A lighter CI workflow triggered on pull requests (and manually). It runs linters and the test suite with coverage, similar to `ci.yml` but with a faster execution path. It also uploads a coverage report.
 *   **`dependency-audit.yml`**: A dedicated workflow for dependency checking, running `pip-audit` weekly and on demand. It automatically creates a GitHub issue if vulnerabilities are detected.
 *   **`judge-pipeline.yml`**: Runs tests specifically for the 'judge' pipeline, triggered by changes to its dedicated paths (`pipelines/judge/**`, `data/golden_judge_dataset/**`), on a schedule, or manually.
 *   **`codex-sync.yml`**: Validates `.codex/queue.yml` on pull requests affecting this file.

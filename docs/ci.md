@@ -1,8 +1,7 @@
 # Continuous Integration Guidelines
 
-This project uses GitHub Actions to run tests and code quality checks on every pull request.
-The main workflow is defined in `.github/workflows/ci.yml` and ensures that all
-linters pass and the full test suite runs with coverage enabled.
+This project uses GitHub Actions to run tests and code quality checks on every pull request via the `minimal-ci.yml` workflow.
+The full workflow defined in `.github/workflows/ci.yml` runs when changes are merged to `main` (or on the nightly schedule) and ensures that all linters pass and the complete test suite runs with coverage enabled.
 
 ## Coverage Gates
 
