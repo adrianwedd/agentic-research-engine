@@ -89,6 +89,27 @@ class SupervisorAgent:
             return [{"topic": normalized}]
         return [{"topic": p} for p in parts]
 
+    def _extract_spatio_temporal(
+        self, query: str
+    ) -> tuple[Optional[List[float]], Optional[Dict[str, int]]]:
+        """Detect bounding box and time range from a query string."""
+        bbox = None
+        time_range = None
+        m = re.search(r"from (\d{4}) to (\d{4})", query)
+        if m:
+            time_range = {"valid_from": int(m.group(1)), "valid_to": int(m.group(2))}
+        loc_map = {
+            "europe": [-10.0, 35.0, 30.0, 60.0],
+            "paris": [2.25, 48.8, 2.4, 48.9],
+            "new york": [-74.3, 40.5, -73.6, 40.9],
+        }
+        lowered = query.lower()
+        for name, box in loc_map.items():
+            if name in lowered:
+                bbox = box
+                break
+        return bbox, time_range
+
     def _score_memories(self, query: str, memories: List[Dict]) -> List[Dict]:
         """Use similarity scores from LTM results when available."""
 
@@ -169,6 +190,7 @@ class SupervisorAgent:
         past = self._score_memories(query, past)
 
         tasks = self._decompose_query(query)
+        bbox, time_range = self._extract_spatio_temporal(query)
 
         nodes = []
         edges = []
@@ -188,6 +210,10 @@ class SupervisorAgent:
             "graph": {"nodes": nodes, "edges": edges},
             "evaluation": {"metric": "quality"},
         }
+        if time_range:
+            plan["time_range"] = time_range
+        if bbox:
+            plan["bbox"] = bbox
 
         if self.use_plan_templates:
             for rec in past:

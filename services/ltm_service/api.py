@@ -207,7 +207,6 @@ class LTMService:
             location=fact.get("location"),
         )
 
-
     def spatial_query(
         self, bbox: List[float], valid_from: float, valid_to: float
     ) -> List[Dict[str, Any]]:
