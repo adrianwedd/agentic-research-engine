@@ -356,3 +356,74 @@ class SpatioTemporalMemoryService(SemanticMemoryService):
                     }
                 )
         return results
+
+    def query_spatial_range(
+        self, bbox: List[float], valid_from: float, valid_to: float
+    ) -> List[Dict[str, Any]]:
+        """Return fact versions inside a bounding box during a time range."""
+        results: List[Dict[str, Any]] = []
+        if self._driver:
+            query = """
+                MATCH (s:Entity)-[r:RELATION]->(o:Entity)
+                WHERE r.location IS NOT NULL
+                  AND point.withinBBox(
+                        r.location,
+                        point({longitude: $min_lon, latitude: $min_lat}),
+                        point({longitude: $max_lon, latitude: $max_lat})
+                    )
+                  AND r.valid_from <= $valid_to
+                  AND ($valid_from <= coalesce(r.valid_to, $valid_to))
+                  AND r.deleted_at IS NULL
+                RETURN id(r) AS id, s.name AS subject, r.type AS predicate,
+                       o.name AS object, r AS rel
+            """
+            with self._driver.session() as session:
+                records = session.run(
+                    query,
+                    min_lon=bbox[0],
+                    min_lat=bbox[1],
+                    max_lon=bbox[2],
+                    max_lat=bbox[3],
+                    valid_from=valid_from,
+                    valid_to=valid_to,
+                )
+                for rec in records:
+                    results.append(
+                        {
+                            "id": str(rec["id"]),
+                            "subject": rec["subject"],
+                            "predicate": rec["predicate"],
+                            "object": rec["object"],
+                            **dict(rec["rel"]),
+                        }
+                    )
+            return results
+
+        if self._facts is None:
+            return results
+        for fact in self._facts:
+            for ver in fact.get("history", []):
+                loc = ver.get("location")
+                if not isinstance(loc, dict):
+                    continue
+                lat = loc.get("lat")
+                lon = loc.get("lon")
+                if lat is None or lon is None:
+                    continue
+                if not (
+                    bbox[0] <= lon <= bbox[2]
+                    and bbox[1] <= lat <= bbox[3]
+                    and ver["valid_from"] <= valid_to
+                    and (ver.get("valid_to") is None or valid_from <= ver["valid_to"])
+                ):
+                    continue
+                results.append(
+                    {
+                        "id": fact["id"],
+                        "subject": fact["subject"],
+                        "predicate": fact["predicate"],
+                        "object": fact["object"],
+                        **ver,
+                    }
+                )
+        return results
