@@ -10,6 +10,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      judge: ${{ steps.filter.outputs.judge }}
+      python: ${{ steps.filter.outputs.python }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'core/**'
+            judge:
+              - 'pipelines/judge/**'
+              - 'data/golden_judge_dataset/**'
+            python:
+              - '**/*.py'
+              - '**/requirements.txt'
+
   lint:
     runs-on: ubuntu-latest
     permissions:
@@ -83,6 +104,8 @@ jobs:
         run: python scripts/validate_queue.py
 
   judge-pipeline:
+    needs: changes
+    if: needs.changes.outputs.judge == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,6 +144,8 @@ jobs:
         run: exit 1
 
   core:
+    needs: changes
+    if: needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -148,6 +173,8 @@ jobs:
 
 
   security-dependencies:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
