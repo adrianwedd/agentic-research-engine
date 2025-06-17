@@ -22,6 +22,10 @@ def __getattr__(name: str):
         return import_module(".marl_trainer", __name__).MARLTrainer
     if name == "SkillDiscoveryModule":
         return import_module(".skill_discovery", __name__).SkillDiscoveryModule
+    if name == "MultiContextEnv":
+        return import_module(".multi_context_env", __name__).MultiContextEnv
+    if name == "evaluate_transfer":
+        return import_module(".transfer_eval", __name__).evaluate_transfer
     if name == "Manager":
         return import_module(".feudal_network", __name__).Manager
     if name == "Worker":
@@ -45,6 +49,8 @@ __all__ = [
     "SkillSpec",
     "generate_skill_specs",
     "store_skill_specs",
+    "MultiContextEnv",
+    "evaluate_transfer",
     "Manager",
     "Worker",
     "ConfigurationError",
