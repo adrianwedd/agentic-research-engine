@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     from .exceptions import ConfigurationError
+    from .feudal_network import Manager, Worker
     from .marl_trainer import MARLTrainer
     from .ppo_policy_optimizer import PPOPolicyOptimizer
     from .rlaif_system import RLAIFSystem
@@ -21,6 +22,10 @@ def __getattr__(name: str):
         return import_module(".marl_trainer", __name__).MARLTrainer
     if name == "SkillDiscoveryModule":
         return import_module(".skill_discovery", __name__).SkillDiscoveryModule
+    if name == "Manager":
+        return import_module(".feudal_network", __name__).Manager
+    if name == "Worker":
+        return import_module(".feudal_network", __name__).Worker
     if name == "SkillSpec":
         return import_module(".skill_spec", __name__).SkillSpec
     if name == "generate_skill_specs":
@@ -40,5 +45,7 @@ __all__ = [
     "SkillSpec",
     "generate_skill_specs",
     "store_skill_specs",
+    "Manager",
+    "Worker",
     "ConfigurationError",
 ]
