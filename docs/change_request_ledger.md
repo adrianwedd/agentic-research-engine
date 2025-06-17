@@ -31,3 +31,15 @@ This ledger tracks open change requests across the project. Each entry lists the
 | CR-EA-04 | Constitutionally aligned RL loop | Open |
 | CR-EA-05 | Continuous adversarial benchmarking pipeline | Open |
 | CR-EA-06 | AI assurance lifecycle framework | Open |
+| CR-2.1 | AgentAuditor experiential memory | Open |
+| CR-2.2 | RAG-based recall in Evaluator | Open |
+| CR-2.3 | Secure Evaluator API authentication | Open |
+| CR-3.1 | Security Agent with credibility scoring | Open |
+| CR-3.2 | Credibility-aware output aggregation | Open |
+| CR-3.3 | Communication anomaly monitoring | Open |
+| CR-4.1 | Source credibility verification at ingestion | Open |
+| CR-4.2 | Retrieval-time filtering for LTM | Open |
+| CR-4.3 | Continuous LTM anomaly detection | Open |
+| CR-5.1 | Dual LLM sandbox pattern | Open |
+| CR-5.2 | Enforce LLM-grounded protocols | Open |
+| CR-5.3 | ML-BOM data provenance tracking | Open |

@@ -1558,3 +1558,155 @@ acceptance_criteria:
   - SELECT queries on SQLite return DataFrame results
   - Parameterized queries on Postgres return correct results
 ```
+```codex-task
+id: CR-2.1
+title: Implement AgentAuditor experiential memory
+priority: high
+steps:
+  - Add dedicated storage for Evaluator risk cases
+  - Serialize past critiques with metadata for retrieval
+  - Expose memory operations via LTM service
+acceptance_criteria:
+  - Evaluator persists structured critique records after each run
+  - Retrieval API returns relevant risk cases for new prompts
+```
+
+```codex-task
+id: CR-2.2
+title: Integrate RAG-based recall in Evaluator
+priority: high
+steps:
+  - Retrieve top past cases from experiential memory
+  - Inject retrieved examples into Evaluator reasoning chain
+  - Tune prompt to use Chain-of-Thought with references
+acceptance_criteria:
+  - Given a prompt similar to a stored risk case
+  - When the Evaluator runs
+  - Then its critique references the prior case
+```
+
+```codex-task
+id: CR-2.3
+title: Secure Evaluator API authentication
+priority: high
+steps:
+  - Require OAuth token on all Evaluator service endpoints
+  - Validate tokens before processing any request
+  - Update client agents to include authentication headers
+acceptance_criteria:
+  - Unauthorized requests to Evaluator endpoints return 401
+  - Authorized calls succeed with token-based authentication
+```
+
+```codex-task
+id: CR-3.1
+title: Deploy Security Agent with credibility scoring
+priority: high
+steps:
+  - Implement service calculating real-time reputation vectors
+  - Maintain credibility score per agent in shared store
+  - Expose score query API to orchestration engine
+acceptance_criteria:
+  - Security Agent returns a numeric credibility score for any agent id
+  - Scores update based on recent behavior metrics
+```
+
+```codex-task
+id: CR-3.2
+title: Integrate credibility-aware aggregation
+priority: high
+steps:
+  - Modify output aggregator to weight contributions by credibility score
+  - Update documentation and tests for new weighting logic
+acceptance_criteria:
+  - Low-credibility agents have reduced influence on final output
+  - Aggregation tests demonstrate score-weighted decisions
+```
+
+```codex-task
+id: CR-3.3
+title: Monitor inter-agent communication for anomalies
+priority: high
+steps:
+  - Stream group chat traffic to Security Agent
+  - Detect deviations in message frequency or size
+  - Raise alerts for suspected covert channels
+acceptance_criteria:
+  - Sudden spikes in traffic trigger anomaly alerts
+  - Logged alerts include offending agent ids and timestamps
+```
+
+```codex-task
+id: CR-4.1
+title: Verify source credibility on LTM ingestion
+priority: high
+steps:
+  - Implement reputation checks for external data sources
+  - Block ingestion when source score falls below threshold
+  - Log verification outcomes for auditing
+acceptance_criteria:
+  - Ingestion from untrusted sources is rejected with an error
+  - Audit log records decision with source reputation value
+```
+
+```codex-task
+id: CR-4.2
+title: Add retrieval-time filtering for LTM
+priority: high
+steps:
+  - Sanitize documents after retrieval from LTM
+  - Strip or quarantine suspicious payloads before agent use
+acceptance_criteria:
+  - Retrieval filter removes AGENTPOISON-style backdoor prompts
+  - Sanitized documents pass subsequent safety checks
+```
+
+```codex-task
+id: CR-4.3
+title: Continuous anomaly detection on LTM embeddings
+priority: high
+steps:
+  - Periodically scan embedding space for outlier clusters
+  - Flag anomalies for manual review and potential purge
+acceptance_criteria:
+  - Embedding monitor reports unusual data points
+  - Alerts include reference to offending record ids
+```
+
+```codex-task
+id: CR-5.1
+title: Formalize Dual LLM sandbox pattern
+priority: high
+steps:
+  - Separate privileged and quarantined agents for risky tasks
+  - Document pattern in architecture guides
+  - Enforce separation in orchestration logic
+acceptance_criteria:
+  - High-risk operations route through Dual LLM sandbox
+  - Documentation outlines quarantine vs privileged responsibilities
+```
+
+```codex-task
+id: CR-5.2
+title: Enforce LLM-grounded communication protocols
+priority: high
+steps:
+  - Audit inter-agent messaging for adherence to defined schema
+  - Block or log any attempt to use emergent private languages
+acceptance_criteria:
+  - Protocol compliance checks pass during integration tests
+  - Violations trigger security alerts with message details
+```
+
+```codex-task
+id: CR-5.3
+title: Implement ML-BOM data provenance tracking
+priority: high
+steps:
+  - Track origin and transformations of data stored in LTM
+  - Persist provenance metadata alongside memory records
+  - Provide API to query provenance for any item
+acceptance_criteria:
+  - Provenance query returns full history for a memory id
+  - CI tests verify metadata recorded on ingestion
+```
