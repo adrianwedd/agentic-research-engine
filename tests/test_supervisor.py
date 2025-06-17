@@ -6,7 +6,11 @@ import requests
 
 from agents.supervisor import SupervisorAgent
 from engine.state import State
-from services.ltm_service import EpisodicMemoryService, InMemoryStorage
+from services.ltm_service import (
+    EpisodicMemoryService,
+    InMemoryStorage,
+    ProceduralMemoryService,
+)
 from services.ltm_service.api import LTMService, LTMServiceServer
 from services.tool_registry import create_default_registry
 
@@ -244,6 +248,47 @@ def test_skill_based_agent_selection():
     plan = agent.plan_research_task("Transformer vs LSTM")
     agents = [n["agent"] for n in plan["graph"]["nodes"] if n["agent"] != "Supervisor"]
     assert all(a == "A1" for a in agents)
+
+
+def test_specialist_routing_from_procedural_memory(caplog):
+    pm = ProceduralMemoryService(InMemoryStorage())
+    pm.register_agent("A", domains=["legal"], success_rate=0.9)
+    pm.register_agent("B", domains=["compliance"], success_rate=0.8)
+    ltm = LTMService(EpisodicMemoryService(InMemoryStorage()), procedural_memory=pm)
+    agent = SupervisorAgent(
+        available_agents=["Generalist", "A", "B"],
+        ltm_service=ltm,
+        procedural_memory=pm,
+    )
+    agent.plan_schema = {}
+    with caplog.at_level("INFO"):
+        plan = agent.plan_research_task("legal compliance")
+    node_agent = next(
+        n["agent"]
+        for n in plan["graph"]["nodes"]
+        if n["agent"] not in {"Supervisor", "CitationAgent"}
+    )
+    assert node_agent == "A"
+    assert any("agent_selection" in r.message for r in caplog.records)
+
+
+def test_fallback_to_generalist():
+    pm = ProceduralMemoryService(InMemoryStorage())
+    pm.register_agent("A", domains=["legal"], success_rate=0.9)
+    ltm = LTMService(EpisodicMemoryService(InMemoryStorage()), procedural_memory=pm)
+    agent = SupervisorAgent(
+        available_agents=["Generalist", "A"],
+        ltm_service=ltm,
+        procedural_memory=pm,
+    )
+    agent.plan_schema = {}
+    plan = agent.plan_research_task("astronomy")
+    node_agent = next(
+        n["agent"]
+        for n in plan["graph"]["nodes"]
+        if n["agent"] not in {"Supervisor", "CitationAgent"}
+    )
+    assert node_agent == "Generalist"
 
 
 def test_plan_includes_citation_agent():

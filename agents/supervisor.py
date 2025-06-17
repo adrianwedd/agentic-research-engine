@@ -3,10 +3,12 @@ Supervisor Agent Implementation.
 This agent acts as the primary coordinator for research tasks.
 """
 
+import json
+import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import yaml
 from pykwalify.core import Core
@@ -36,6 +38,7 @@ class SupervisorAgent:
         use_plan_templates: bool | None = None,
         available_agents: Optional[List[str]] | None = None,
         agent_skills: Optional[Dict[str, List[str]]] | None = None,
+        procedural_memory: Optional[Any] = None,
     ) -> None:
         """Initialize supervisor with optional services."""
 
@@ -45,6 +48,7 @@ class SupervisorAgent:
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
         self.tool_registry = tool_registry or create_default_registry()
+        self.procedural_memory = procedural_memory
         try:
             self.knowledge_graph_search = self.tool_registry.get_tool(
                 "Supervisor", "knowledge_graph_search"
@@ -59,6 +63,8 @@ class SupervisorAgent:
                 self.plan_schema = yaml.safe_load(f) or {}
         except FileNotFoundError:  # pragma: no cover - doc missing only in dev
             self.plan_schema = {}
+
+        self.logger = logging.getLogger(__name__)
 
         self.available_agents = available_agents or ["WebResearcher"]
         self.agent_skills = agent_skills or {}
@@ -104,22 +110,37 @@ class SupervisorAgent:
     def _tokenize(self, text: str) -> set[str]:
         return set(re.findall(r"\w+", text.lower()))
 
-    def _skill_score(self, task: str, agent: str) -> int:
-        skills = self.agent_skills.get(agent, [])
-        if not skills:
-            return 0
-        task_tokens = self._tokenize(task)
-        skill_tokens = {s.lower() for s in skills}
-        return len(task_tokens.intersection(skill_tokens))
+    def _skill_score(self, tags: Iterable[str], agent: str) -> float:
+        metadata: Dict[str, Any] = {}
+        if self.procedural_memory:
+            metadata = self.procedural_memory.get_agent_metadata(agent)
+        if not metadata:
+            metadata = {
+                "domains": self.agent_skills.get(agent, []),
+                "success_rate": 1.0,
+            }
+        skill_tokens = {s.lower() for s in metadata.get("domains", [])}
+        tag_tokens = {t.lower() for t in tags}
+        overlap = len(tag_tokens.intersection(skill_tokens))
+        return overlap * float(metadata.get("success_rate", 1.0))
 
-    def _select_agent(self, task: str) -> str:
-        best = self.available_agents[0]
-        best_score = float("-inf")
-        for agent in self.available_agents:
-            score = self._skill_score(task, agent)
+    def _select_agent(self, tags: Iterable[str]) -> str:
+        generalist = self.available_agents[0]
+        best = generalist
+        best_score = 0.0
+        scores: Dict[str, float] = {}
+        for agent in self.available_agents[1:]:
+            score = self._skill_score(tags, agent)
+            scores[agent] = score
             if score > best_score:
                 best = agent
                 best_score = score
+        if best_score <= 0:
+            best = generalist
+        scores[best] = best_score
+        self.logger.info(
+            json.dumps({"event": "agent_selection", "scores": scores, "selected": best})
+        )
         return best
 
     def plan_research_task(self, query: str) -> Dict[str, Any]:
@@ -153,7 +174,8 @@ class SupervisorAgent:
         edges = []
         for idx, task in enumerate(tasks):
             node_id = f"research_{idx}"
-            agent = self._select_agent(task.get("topic", ""))
+            tags = task.get("tags") or self._tokenize(task.get("topic", ""))
+            agent = self._select_agent(tags)
             nodes.append({"id": node_id, "agent": agent, **task})
             edges.append({"from": node_id, "to": "synthesis"})
         nodes.append({"id": "synthesis", "agent": "Supervisor", "task": "synthesize"})
