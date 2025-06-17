@@ -61,12 +61,14 @@ class InMemorySaver:
     """Minimal in-memory checkpoint stub used for testing."""
 
     def __init__(self) -> None:
-        self._data: dict[str, State] = {}
+        self._data: dict[str, tuple[str, State]] = {}
 
-    def save(self, run_id: str, state: State) -> None:  # pragma: no cover - util
-        self._data[run_id] = state
+    def save(
+        self, run_id: str, node: str, state: State
+    ) -> None:  # pragma: no cover - util
+        self._data[run_id] = (node, state)
 
-    def load(self, run_id: str) -> State | None:  # pragma: no cover - util
+    def load(self, run_id: str) -> tuple[str, State] | None:  # pragma: no cover - util
         return self._data.get(run_id)
 
 
@@ -363,6 +365,34 @@ class OrchestrationEngine:
 
     def resume_from_queue(self, run_id: str) -> State:
         return asyncio.run(self.resume_from_queue_async(run_id))
+
+    # ------------------------------------------------------------------
+    # Checkpointing helpers
+    # ------------------------------------------------------------------
+
+    def _determine_next_node(self, node: str, state: State) -> str | None:
+        if node in self.routers_map:
+            router, path_map = self.routers_map[node]
+            dest = router(state)
+            if path_map:
+                dest = path_map.get(dest, dest)
+            return dest if isinstance(dest, str) else None
+        return self.order.get(node)
+
+    async def resume_from_checkpoint_async(self, run_id: str) -> State:
+        if not hasattr(self.checkpointer, "load"):
+            raise ValueError("No checkpointer configured")
+        loaded = self.checkpointer.load(run_id)
+        if not loaded:
+            raise ValueError(f"No checkpoint found for {run_id}")
+        node, state = loaded
+        if self.entry is None:
+            self.build()
+        next_node = self._determine_next_node(node, state)
+        return await self.run_async(state, thread_id=run_id, start_at=next_node)
+
+    def resume_from_checkpoint(self, run_id: str) -> State:
+        return asyncio.run(self.resume_from_checkpoint_async(run_id))
 
     def get_edges(
         self, start: str | None = None, edge_type: str | None = None
