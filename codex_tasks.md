@@ -1431,6 +1431,94 @@ acceptance_criteria:
   - Simulation logs are kept separate from the primary execution logs.
 ```
 ```codex-task
+id: CR-P4-01A
+title: Complete FastAPI migration for all services
+priority: high
+steps:
+  - Replace HTTPServer usage in ToolRegistryServer and LTMServiceServer with FastAPI apps
+  - Update docker-compose and helm charts to launch uvicorn workers
+acceptance_criteria:
+  - All services run under FastAPI with no blocking calls
+  - Existing endpoints behave identically
+```
+```codex-task
+id: CR-P4-02A
+title: Add CI smoke test for embedding cache eviction
+priority: medium
+steps:
+  - Generate enough unique texts to exceed EMBED_CACHE_SIZE
+  - Assert cache size is capped and LRU eviction occurs
+acceptance_criteria:
+  - CI test passes showing cache hit/miss counts
+```
+```codex-task
+id: CR-P4-03A
+title: Expose CPU and memory metrics via SystemMonitor
+priority: high
+steps:
+  - Integrate psutil to record process CPU and RSS values
+  - Export metrics through OpenTelemetry
+acceptance_criteria:
+  - monitoring service emits cpu_usage and memory_usage metrics
+```
+```codex-task
+id: CR-P4-04A
+title: Log invalid path and URL validation attempts
+priority: medium
+steps:
+  - Update validate_path_or_url to log InputValidationError details
+  - Add unit test verifying log output
+acceptance_criteria:
+  - Invalid inputs are logged with timestamp and caller information
+```
+```codex-task
+id: CR-P4-05A
+title: Implement specialist agent selection logic
+priority: high
+steps:
+  - Store agent skill metadata in ProceduralMemoryService
+  - Modify Supervisor to choose the best-matching specialist
+acceptance_criteria:
+  - Tasks are routed to specialized agents when available
+```
+```codex-task
+id: CR-P4-06A
+title: Implement MAST tests for Step Repetition, Information Withholding, and Incorrect Verification
+priority: medium
+steps:
+  - Add integration tests covering FM-1.3, FM-2.4, and FM-3.3 scenarios
+acceptance_criteria:
+  - New tests fail on regression and pass on baseline implementation
+```
+```codex-task
+id: CR-P4-07A
+title: Add SQL query tool connectors to Tool Registry
+priority: medium
+steps:
+  - Implement connectors for SQLite and PostgreSQL
+  - Register tools with appropriate RBAC rules
+acceptance_criteria:
+  - Agents can run parameterized SQL queries through the registry
+```
+```codex-task
+id: CR-P4-08A
+title: Document spatio-temporal memory research findings
+priority: low
+steps:
+  - Summarize proposed data model and API
+  - Add research report under docs/research/
+acceptance_criteria:
+  - New document linked from mkdocs navigation
+```
+```codex-task
+id: CR-P4-09A
+title: Update onboarding docs with embedding cache guidance
+priority: low
+steps:
+  - Explain EMBED_CACHE_SIZE and caching benefits
+  - Reference scripts/agent-setup.sh for environment setup
+acceptance_criteria:
+  - Onboarding guide includes caching configuration section
 id: CR-P4-07
 title: End-to-End Integration & Pipeline Audit
 priority: high

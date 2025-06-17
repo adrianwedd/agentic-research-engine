@@ -239,6 +239,79 @@
   steps: []
   title: What-If Simulation Mode
 - acceptance_criteria:
+  - All services run under FastAPI with no blocking calls
+  - Existing endpoints behave identically
+  id: CR-P4-01A
+  priority: high
+  steps:
+  - Replace HTTPServer usage in ToolRegistryServer and LTMServiceServer with FastAPI
+    apps
+  - Update docker-compose and helm charts to launch uvicorn workers
+  title: Complete FastAPI migration for all services
+- acceptance_criteria:
+  - CI test passes showing cache hit/miss counts
+  id: CR-P4-02A
+  priority: medium
+  steps:
+  - Generate enough unique texts to exceed EMBED_CACHE_SIZE
+  - Assert cache size is capped and LRU eviction occurs
+  title: Add CI smoke test for embedding cache eviction
+- acceptance_criteria:
+  - monitoring service emits cpu_usage and memory_usage metrics
+  id: CR-P4-03A
+  priority: high
+  steps:
+  - Integrate psutil to record process CPU and RSS values
+  - Export metrics through OpenTelemetry
+  title: Expose CPU and memory metrics via SystemMonitor
+- acceptance_criteria:
+  - Invalid inputs are logged with timestamp and caller information
+  id: CR-P4-04A
+  priority: medium
+  steps:
+  - Update validate_path_or_url to log InputValidationError details
+  - Add unit test verifying log output
+  title: Log invalid path and URL validation attempts
+- acceptance_criteria:
+  - Tasks are routed to specialized agents when available
+  id: CR-P4-05A
+  priority: high
+  steps:
+  - Store agent skill metadata in ProceduralMemoryService
+  - Modify Supervisor to choose the best-matching specialist
+  title: Implement specialist agent selection logic
+- acceptance_criteria:
+  - New tests fail on regression and pass on baseline implementation
+  id: CR-P4-06A
+  priority: medium
+  steps:
+  - Add integration tests covering FM-1.3, FM-2.4, and FM-3.3 scenarios
+  title: Implement MAST tests for Step Repetition, Information Withholding, and Incorrect
+    Verification
+- acceptance_criteria:
+  - Agents can run parameterized SQL queries through the registry
+  id: CR-P4-07A
+  priority: medium
+  steps:
+  - Implement connectors for SQLite and PostgreSQL
+  - Register tools with appropriate RBAC rules
+  title: Add SQL query tool connectors to Tool Registry
+- acceptance_criteria:
+  - New document linked from mkdocs navigation
+  id: CR-P4-08A
+  priority: low
+  steps:
+  - Summarize proposed data model and API
+  - Add research report under docs/research/
+  title: Document spatio-temporal memory research findings
+- acceptance_criteria:
+  - Onboarding guide includes caching configuration section
+  id: CR-P4-09A
+  priority: low
+  steps:
+  - Explain EMBED_CACHE_SIZE and caching benefits
+  - Reference scripts/agent-setup.sh for environment setup
+  title: Update onboarding docs with embedding cache guidance
   - docs/integration_audit.md summarizes workflows, tests, schemas and performance
   - CI shows coverage >= 95%
   - Follow-up CRs listed for partial or missing flows
