@@ -12,6 +12,7 @@ This directory contains research reports and proposals for future development. B
 - [2025-evolution-of-multi-agent-communication-protocols.md](./2025-evolution-of-multi-agent-communication-protocols.md): Guidelines and recommendations for evolving agent communication, adopted in ADR-003.
 - [2025-graph-compilation.md](./2025-graph-compilation.md): Research evaluating dynamic versus ahead-of-time graph compilation for the orchestration engine.
 - [2025-ltm-forgetting-study.md](./2025-ltm-forgetting-study.md): Study comparing algorithms for long-term memory consolidation and forgetting.
+- [2025-multi-modal-memory-integration.md](./2025-multi-modal-memory-integration.md): Technical deep dive into architectures for multimodal memory systems.
 - [2025-procedural-memory-skill-generalization.md](./2025-procedural-memory-skill-generalization.md): Blueprint for transitioning procedural memory to compositional skill generalization.
 - [2025-score-reward-shaping.md](./2025-score-reward-shaping.md): Proposal to use SCoRe reward shaping for incentivizing self-correction in RLHF.
 - [2025-synthetic-data-research.md](./2025-synthetic-data-research.md): Study evaluating synthetic data generation methods for training the Evaluator agent.
