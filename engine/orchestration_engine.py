@@ -109,6 +109,8 @@ class Node:
                     if self.node_type == NodeType.SUBGRAPH:
                         if isinstance(self.func, OrchestrationEngine):
                             result = await self.func.run_async(state)
+                            if isinstance(result, GraphState):
+                                state.scratchpad.update(result.scratchpad)
                         else:
                             raise TypeError(
                                 "subgraph node must be an OrchestrationEngine"
@@ -280,7 +282,14 @@ class OrchestrationEngine:
             node_name = start_at or self.entry
             while node_name:
                 node = self.nodes[node_name]
-                state = await node.run(state)
+                prev_state = state
+                next_state = await node.run(state)
+                if node.node_type == NodeType.SUBGRAPH and isinstance(
+                    next_state, GraphState
+                ):
+                    state = _merge_states(prev_state, next_state)
+                else:
+                    state = next_state
                 if hasattr(self.checkpointer, "save"):
                     try:
                         self.checkpointer.save(thread_id, node_name, state)
