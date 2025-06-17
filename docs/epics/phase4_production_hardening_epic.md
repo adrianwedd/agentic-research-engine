@@ -23,8 +23,9 @@ This epic translates the updated Phase 4 blueprint into a structured set of chan
    - Add counters for episodic, semantic, and procedural memory hits/misses.
    - Expose metrics via the monitoring service and update dashboards.
 5. **P4-05R – Procedural Memory Recall Research**
-   - Continue research comparing retrieval-augmented generation with fine-tuning for skill recall.
-   - Document findings in `docs/research` and update the blueprint accordingly.
+   - Compared retrieval-augmented generation with fine-tuning for skill recall.
+   - Findings favor a hybrid approach: use RAG to collect procedures and periodically fine-tune agents.
+   - Results are documented in `docs/research` and reflected in the updated blueprint.
 6. **P4-06R – Fine-Tuning Pipeline**
    - Implement the multi-agent fine-tuning pipeline using existing trainers as references.
    - Ensure jobs run in parallel on agent-specific datasets.

@@ -1911,13 +1911,13 @@ This epic introduces the third layer of the LTM, Procedural Memory, which is the
 * **Effort:** 5 pts  
 * **Owner Hint:** ML  
 * **Dependencies:** P4-01  
-* **Description:** Conduct a research spike to compare two approaches for teaching agents to use procedural memory: Retrieval-Augmented Generation (RAG) where procedures are injected into the context, versus fine-tuning the agent's model to learn procedures implicitly. The goal is to determine the most effective and efficient method.\[1\]  
+* **Description:** Conduct a research spike to compare two approaches for teaching agents to use procedural memory: Retrieval-Augmented Generation (RAG) where procedures are injected into the context, versus fine-tuning the agent's model to learn procedures implicitly. The study concluded that a hybrid strategy—bootstrapping with RAG and periodically fine-tuning agents on high-confidence procedures—offers the best balance of flexibility and performance.
 * **Acceptance Criteria:**  
   `Feature: Procedural Memory Recall Research`  
     `Scenario: Deliver research findings`  
-      `Given the research spike is complete`  
-      `When a report is delivered to technical leadership`  
-      `Then it provides a data-backed recommendation on whether to use RAG, fine-tuning, or a hybrid approach for procedural memory`
+        `Given the research spike is complete`
+      `When a report is delivered to technical leadership`
+      `Then it recommends a hybrid approach using RAG for bootstrapping and fine-tuning for stable recall`
 
 ### **Epic: Agent Specialization**
 
