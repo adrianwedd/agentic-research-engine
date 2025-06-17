@@ -194,3 +194,125 @@ class SemanticMemoryService:
     def close(self) -> None:
         if self._driver:
             self._driver.close()
+
+
+class SpatioTemporalMemoryService(SemanticMemoryService):
+    """Semantic memory with spatio-temporal versioning of facts."""
+
+    def __init__(
+        self,
+        uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
+    ) -> None:
+        super().__init__(uri=uri, user=user, password=password)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Convert plain fact records to versioned format if needed."""
+        if self._facts is None:
+            return
+        for fact in self._facts:
+            if "history" in fact:
+                continue
+            props = fact.pop("properties", {})
+            version = {
+                "value": props.get("value"),
+                "valid_from": props.get("valid_from", time.time()),
+                "valid_to": props.get("valid_to"),
+                "tx_time": props.get("tx_time", time.time()),
+                "location": props.get("location"),
+            }
+            fact["history"] = [version]
+
+    def store_fact(
+        self,
+        subject: str,
+        predicate: str,
+        obj: str,
+        *,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """Store a fact with an initial version."""
+        version = self._build_version(properties or {})
+        if self._driver:
+            # In this simplified implementation we only support the in-memory
+            # backend for versioned facts when the Neo4j driver is not
+            # configured. A production implementation would persist versions in
+            # Neo4j as node properties or linked records.
+            pass
+        fact_id = str(uuid.uuid4())
+        if self._facts is not None:
+            self._facts.append(
+                {
+                    "id": fact_id,
+                    "subject": subject,
+                    "predicate": predicate,
+                    "object": obj,
+                    "history": [version],
+                }
+            )
+        return fact_id
+
+    @staticmethod
+    def _build_version(props: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "value": props.get("value"),
+            "valid_from": props.get("valid_from", time.time()),
+            "valid_to": props.get("valid_to"),
+            "tx_time": props.get("tx_time", time.time()),
+            "location": props.get("location"),
+        }
+
+    def add_version(
+        self,
+        fact_id: str,
+        *,
+        value: Any,
+        valid_from: float,
+        valid_to: float | None = None,
+        tx_time: float | None = None,
+        location: Any | None = None,
+    ) -> None:
+        """Append a new version to the given fact."""
+        if self._facts is None:
+            return
+        for fact in self._facts:
+            if fact["id"] == fact_id:
+                version = {
+                    "value": value,
+                    "valid_from": valid_from,
+                    "valid_to": valid_to,
+                    "tx_time": tx_time if tx_time is not None else time.time(),
+                    "location": location,
+                }
+                fact.setdefault("history", []).append(version)
+                break
+
+    def get_snapshot(self, *, valid_at: float, tx_at: float) -> List[Dict[str, Any]]:
+        """Return facts that were valid at the given time with respect to a transaction time."""
+        results: List[Dict[str, Any]] = []
+        if self._facts is None:
+            return results
+        for fact in self._facts:
+            history = fact.get("history", [])
+            chosen: Dict[str, Any] | None = None
+            for ver in sorted(history, key=lambda v: v["tx_time"], reverse=True):
+                if (
+                    ver["tx_time"] <= tx_at
+                    and ver["valid_from"] <= valid_at
+                    and (ver.get("valid_to") is None or valid_at <= ver["valid_to"])
+                ):
+                    chosen = ver
+                    break
+            if chosen:
+                results.append(
+                    {
+                        "id": fact["id"],
+                        "subject": fact["subject"],
+                        "predicate": fact["predicate"],
+                        "object": fact["object"],
+                        **chosen,
+                    }
+                )
+        return results

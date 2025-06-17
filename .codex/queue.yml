@@ -214,3 +214,16 @@
   - Compute specialization score and route tasks accordingly
   - Log routing decisions and scores
   title: Implement Specialist Agent Selection
+  steps: []
+  
+  title: Add Neo4j consolidation for semantic memory
+- acceptance_criteria:
+  - SELECT queries on SQLite return DataFrame results
+  - Parameterized queries on Postgres return correct results
+  id: CR-P4-17R
+  priority: medium
+  steps:
+  - Implement SqliteQueryTool and PostgresQueryTool classes
+  - Register tools in the registry with RBAC roles
+  - Add tests spinning up SQLite and Postgres instances
+  title: Add Specialized DB Connectors

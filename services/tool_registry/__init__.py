@@ -14,6 +14,8 @@ from opentelemetry.trace import NonRecordingSpan, SpanContext
 
 from services.tracing.tracing_schema import ToolCallTrace
 from tools import (
+    PostgresQueryTool,
+    SqliteQueryTool,
     code_interpreter,
     consolidate_memory,
     fact_check_claim,
@@ -24,6 +26,7 @@ from tools import (
     publish_reputation_event,
     retrieve_memory,
     semantic_consolidate,
+    propagate_subgraph,
     summarize_text,
     web_search,
 )
@@ -169,11 +172,14 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "consolidate_memory": consolidate_memory,
     "retrieve_memory": retrieve_memory,
     "semantic_consolidate": semantic_consolidate,
+    "propagate_subgraph": propagate_subgraph,
     "summarize": summarize_text,
     "fact_check": fact_check_claim,
     "code_interpreter": code_interpreter,
     "knowledge_graph_search": knowledge_graph_search,
     "github_search": github_search,
+    "sqlite_query": SqliteQueryTool,
+    "postgres_query": PostgresQueryTool,
     "reputation_event": publish_reputation_event,
 }
 

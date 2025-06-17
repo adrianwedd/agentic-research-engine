@@ -153,6 +153,15 @@ class MemoryManagerAgent:
                     {"payload": triple, "format": "jsonld"},
                     endpoint=self.endpoint,
                 )
+            entities = state.data.get("entities")
+            relations = state.data.get("relations")
+            if isinstance(entities, list) and isinstance(relations, list):
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "propagate_subgraph",
+                    {"entities": entities, "relations": relations},
+                    endpoint=self.endpoint,
+                )
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state

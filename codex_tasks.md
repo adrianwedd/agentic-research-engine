@@ -1545,4 +1545,16 @@ steps:
 acceptance_criteria:
   - Specialist agent receives a tagged task when its specialization score is highest
   - Generalist agent used when no specialist exceeds threshold
+
+```codex-task
+id: CR-P4-17R
+title: Add Specialized DB Connectors
+priority: medium
+steps:
+  - Implement SqliteQueryTool and PostgresQueryTool classes
+  - Register tools in the registry with RBAC roles
+  - Add tests spinning up SQLite and Postgres instances
+acceptance_criteria:
+  - SELECT queries on SQLite return DataFrame results
+  - Parameterized queries on Postgres return correct results
 ```

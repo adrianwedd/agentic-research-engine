@@ -135,3 +135,21 @@ def test_schema_validation_and_forget():
     assert not resp.json()["results"]
 
     server.httpd.shutdown()
+
+
+def test_propagate_subgraph_endpoint():
+    server, endpoint = _start_server()
+    subgraph = {
+        "entities": [{"id": "E1"}, {"id": "E2"}],
+        "relations": [
+            {"subject": "E1", "predicate": "LINKS_TO", "object": "E2"}
+        ],
+    }
+    resp = requests.post(f"{endpoint}/propagate_subgraph", json=subgraph)
+    assert resp.status_code == 200
+    stored = server.service.retrieve(
+        "semantic",
+        {"subject": "E1", "predicate": "LINKS_TO", "object": "E2"},
+    )
+    assert stored
+    server.httpd.shutdown()
