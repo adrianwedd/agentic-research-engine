@@ -35,3 +35,14 @@ Phase 3 introduced several features that were only partially implemented. The ga
 - Semantic facts persist in Neo4j, surviving service restarts.
 - MemoryManager extracts richer triples from research outputs.
 - Stress tests confirm scratchpad consistency under high concurrency.
+
+## Audit Status
+The Phase 4 audit marks this epic as ⚠ **Partially implemented**.
+Underlying Phase 3 items remain unresolved:
+
+- P3-03 Hierarchical subgraph spawning – ⚠ Partially implemented
+- P3-15 Graph DB for Semantic LTM – ↔ Deviated
+- P3-16 Entity/relation extraction – ⚠ Partially implemented
+- P3-21 Race-condition QA tests – ✗ Missing
+
+_Source: [Phase 4 Implementation Audit](../reports/p4_gap_analysis.md) and [Phase 3 Implementation Audit](../reports/p3_gap_analysis.md)._ 
