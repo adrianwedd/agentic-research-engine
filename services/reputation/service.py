@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from math import exp
 from typing import Any, Dict, List, Optional
@@ -8,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from services.monitoring.events import EvaluationCompletedEvent
+from tools.ltm_client import consolidate_memory, retrieve_memory
 
 from .models import Agent, Assignment, Evaluation, ReputationScore, Task
 
@@ -15,8 +17,35 @@ from .models import Agent, Assignment, Evaluation, ReputationScore, Task
 class ReputationService:
     """Manage reputation data and aggregation logic."""
 
-    def __init__(self, session_factory) -> None:
+    def __init__(self, session_factory, *, ltm_endpoint: str | None = None) -> None:
         self._session_factory = session_factory
+        self._ltm_endpoint = ltm_endpoint or os.getenv("LTM_SERVICE_ENDPOINT")
+
+    def _task_weight(self, context: str | None) -> float:
+        """Determine weight of a new evaluation based on episodic LTM."""
+        if not self._ltm_endpoint or not context:
+            return 1.0
+        try:
+            records = retrieve_memory(
+                {"task_context": {"task_type": context}},
+                memory_type="episodic",
+                limit=20,
+                endpoint=self._ltm_endpoint,
+            )
+        except Exception:
+            return 1.0
+        if not records:
+            return 2.0
+        scores = []
+        for r in records:
+            pv = r.get("execution_trace", {}).get("performance_vector") or {}
+            score = pv.get("accuracy_score") or pv.get("overall_score")
+            if isinstance(score, (int, float)):
+                scores.append(float(score))
+        if not scores:
+            return 1.0
+        avg = sum(scores) / len(scores)
+        return 1.0 + max(0.0, 1.0 - avg)
 
     def add_agent(
         self, agent_type: str, model_base: str | None = None, status: str = "active"
@@ -73,6 +102,21 @@ class ReputationService:
                 return evaluation.evaluation_id
             task = session.get(Task, assignment.task_id)
             context = task.task_type if task else None
+            if self._ltm_endpoint:
+                record = {
+                    "task_context": {
+                        "agent_id": assignment.agent_id,
+                        "task_type": context,
+                    },
+                    "execution_trace": {"performance_vector": performance_vector},
+                    "outcome": {"is_final": is_final},
+                }
+                try:
+                    consolidate_memory(
+                        record, memory_type="episodic", endpoint=self._ltm_endpoint
+                    )
+                except Exception:
+                    pass
             self._update_reputation(
                 session,
                 assignment.agent_id,
@@ -121,6 +165,21 @@ class ReputationService:
                 is_final=event.is_final,
             )
             session.add(evaluation)
+            if self._ltm_endpoint:
+                record = {
+                    "task_context": {
+                        "agent_id": agent.agent_id,
+                        "task_type": task.task_type,
+                    },
+                    "execution_trace": {"performance_vector": event.performance_vector},
+                    "outcome": {"is_final": event.is_final},
+                }
+                try:
+                    consolidate_memory(
+                        record, memory_type="episodic", endpoint=self._ltm_endpoint
+                    )
+                except Exception:
+                    pass
             self._update_reputation(
                 session,
                 agent.agent_id,
@@ -149,17 +208,33 @@ class ReputationService:
                 agent_id=agent_id,
                 context=context,
                 reputation_vector=new_vector,
-                confidence_score=1.0,
+                confidence_score=self._task_weight(context),
                 last_updated_timestamp=timestamp,
             )
             session.add(rep)
             session.flush()
+            if self._ltm_endpoint:
+                fact = {
+                    "subject": agent_id,
+                    "predicate": context or "overall",
+                    "object": "reputation",
+                    "properties": {
+                        **rep.reputation_vector,
+                        "confidence": rep.confidence_score,
+                    },
+                }
+                try:
+                    consolidate_memory(
+                        fact, memory_type="semantic", endpoint=self._ltm_endpoint
+                    )
+                except Exception:
+                    pass
             return
 
         age_days = (timestamp - rep.last_updated_timestamp).total_seconds() / 86400.0
         decay = exp(-age_days / 7.0)
         old_weight = rep.confidence_score * decay
-        new_weight = 1.0
+        new_weight = self._task_weight(context)
         total_weight = old_weight + new_weight
         merged: Dict[str, float] = {}
         keys = set(rep.reputation_vector.keys()) | set(new_vector.keys())
@@ -171,6 +246,22 @@ class ReputationService:
         rep.confidence_score = total_weight
         rep.last_updated_timestamp = timestamp
         session.flush()
+        if self._ltm_endpoint:
+            fact = {
+                "subject": agent_id,
+                "predicate": context or "overall",
+                "object": "reputation",
+                "properties": {
+                    **rep.reputation_vector,
+                    "confidence": rep.confidence_score,
+                },
+            }
+            try:
+                consolidate_memory(
+                    fact, memory_type="semantic", endpoint=self._ltm_endpoint
+                )
+            except Exception:
+                pass
 
     def get_reputation(
         self, agent_id: str, context: str | None = None

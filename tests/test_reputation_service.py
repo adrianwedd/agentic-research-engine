@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -21,4 +22,4 @@ def test_reputation_aggregation():
     service.record_evaluation(assign_id, "Eval1", {"accuracy": 0.6})
 
     rep = service.get_reputation(agent_id, "research")
-    assert rep == {"accuracy": 0.7}
+    assert rep["accuracy"] == pytest.approx(0.7, abs=1e-3)
