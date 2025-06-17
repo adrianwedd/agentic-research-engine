@@ -1408,3 +1408,14 @@ acceptance_criteria:
   - Planner queries the reputation API before assigning tasks
   - Weighted sum considers reputation score, token cost and load
 ```
+
+```codex-task
+id: CR-1.2
+title: Uncertainty & Intent Display
+priority: medium
+steps: []
+acceptance_criteria:
+  - Edges and nodes styled based on agent-provided confidence scores
+  - Agent's primary intended plan visually distinct
+  - Selecting a belief node reveals the evidence chain
+```

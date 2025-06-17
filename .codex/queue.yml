@@ -197,3 +197,11 @@
   - Investigate Supervisor merging logic
   - Add regression test for plan length reduction
   title: Replace deprecated utcnow usage
+- acceptance_criteria:
+  - Edges and nodes styled based on agent-provided confidence scores
+  - Agent's primary intended plan visually distinct
+  - Selecting a belief node reveals the evidence chain
+  id: CR-1.2
+  priority: medium
+  steps: []
+  title: Uncertainty & Intent Display
