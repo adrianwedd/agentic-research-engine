@@ -298,3 +298,10 @@ def test_plan_includes_citation_agent():
     nodes = plan["graph"]["nodes"]
     assert nodes[-1]["agent"] == "CitationAgent"
     assert {"from": "synthesis", "to": "citation"} in plan["graph"]["edges"]
+
+
+def test_plan_contains_spatio_temporal_params():
+    agent = SupervisorAgent()
+    plan = agent.plan_research_task("Flooding in Europe from 2000 to 2010")
+    assert plan.get("time_range") == {"valid_from": 2000, "valid_to": 2010}
+    assert plan.get("bbox") == [-10.0, 35.0, 30.0, 60.0]

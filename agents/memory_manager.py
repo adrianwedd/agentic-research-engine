@@ -4,6 +4,8 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+import requests
+
 from engine.state import State
 from services import load_llm_client
 from services.tool_registry import ToolRegistry, create_default_registry
@@ -18,14 +20,56 @@ class MemoryManagerAgent:
         self,
         *,
         endpoint: Optional[str] = None,
+        ltm_service: Optional[Any] = None,
         pass_threshold: float = 0.5,
         novelty_threshold: float = 0.9,
         tool_registry: ToolRegistry | None = None,
     ) -> None:
         self.endpoint = endpoint
+        self.ltm_service = ltm_service
         self.pass_threshold = pass_threshold
         self.novelty_threshold = novelty_threshold
         self.tool_registry = tool_registry or create_default_registry()
+
+    # ------------------------------------------------------------------
+    # Retrieval helpers
+    # ------------------------------------------------------------------
+    def _spatial_query(
+        self, bbox: List[float], valid_from: float, valid_to: float
+    ) -> List[Dict[str, Any]]:
+        if self.endpoint:
+            try:
+                resp = requests.get(
+                    f"{self.endpoint}/spatial_query",
+                    params={
+                        "bbox": ",".join(str(x) for x in bbox),
+                        "valid_from": valid_from,
+                        "valid_to": valid_to,
+                    },
+                    headers={"X-Role": "viewer"},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+                return resp.json().get("results", [])
+            except Exception:  # pragma: no cover - log only
+                logger.exception("spatial query failed")
+                return []
+        if self.ltm_service:
+            try:
+                return self.ltm_service.spatial_query(bbox, valid_from, valid_to)
+            except Exception:  # pragma: no cover - log only
+                logger.exception("spatial query failed")
+        return []
+
+    def _snapshot_query(self, valid_at: float, tx_at: float) -> List[Dict[str, Any]]:
+        if self.ltm_service:
+            try:
+                module = self.ltm_service._modules.get("semantic")
+                if hasattr(module, "get_snapshot"):
+                    return module.get_snapshot(valid_at=valid_at, tx_at=tx_at)
+            except Exception:  # pragma: no cover - log only
+                logger.exception("snapshot query failed")
+        return []
 
     def _quality_passed(self, state: State) -> bool:
         return True
@@ -162,6 +206,35 @@ class MemoryManagerAgent:
                     {"entities": entities, "relations": relations},
                     endpoint=self.endpoint,
                 )
+            # spatio-temporal retrieval
+            plan = (
+                state.data.get("plan", {})
+                if isinstance(state.data.get("plan"), dict)
+                else {}
+            )
+            bbox = state.data.get("bbox") or plan.get("bbox")
+            time_range = state.data.get("time_range") or plan.get("time_range")
+            if (
+                isinstance(bbox, list)
+                and len(bbox) == 4
+                and isinstance(time_range, dict)
+                and {"valid_from", "valid_to"} <= set(time_range)
+            ):
+                results = self._spatial_query(
+                    [float(x) for x in bbox],
+                    float(time_range["valid_from"]),
+                    float(time_range["valid_to"]),
+                )
+                if results:
+                    state.data["spatial_context"] = results
+            snapshot = state.data.get("snapshot") or plan.get("snapshot")
+            if isinstance(snapshot, dict) and {"valid_at", "tx_at"} <= set(snapshot):
+                results = self._snapshot_query(
+                    float(snapshot["valid_at"]),
+                    float(snapshot["tx_at"]),
+                )
+                if results:
+                    state.data["snapshot_context"] = results
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state

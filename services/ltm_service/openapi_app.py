@@ -173,7 +173,6 @@ def create_app(service: LTMService) -> FastAPI:
         )
         return TemporalConsolidateResponse(id=fid)
 
-
     @app.get("/spatial_query", summary="Query facts by bounding box")
     async def spatial_query(
         bbox: str = Query(..., description="min_lon,min_lat,max_lon,max_lat"),
