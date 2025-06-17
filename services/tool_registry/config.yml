@@ -7,6 +7,8 @@ permissions:
     - WebResearcher
   consolidate_memory:
     - MemoryManager
+  semantic_consolidate:
+    - MemoryManager
   retrieve_memory:
     - MemoryManager
     - WebResearcher

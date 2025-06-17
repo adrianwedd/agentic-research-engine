@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover - fallback for spec generation
     ALLOWED_MEMORY_TYPES = {"episodic", "semantic", "procedural"}
     ROLE_PERMISSIONS = {
         ("POST", "/memory"): {"editor"},
+        ("POST", "/semantic_consolidate"): {"editor"},
         ("GET", "/memory"): {"viewer", "editor"},
         # Deprecated paths kept for one release cycle
         ("POST", "/consolidate"): {"editor"},
@@ -61,6 +62,19 @@ class RetrieveResponse(BaseModel):
 RetrieveResponse.model_rebuild()
 
 
+class SemanticConsolidateRequest(BaseModel):
+    payload: Dict | str = Field(..., description="JSON-LD object or Cypher string")
+    format: str = Field("jsonld", description="Payload format")
+
+
+class SemanticConsolidateResponse(BaseModel):
+    result: List = Field(..., description="Results from consolidation")
+
+
+SemanticConsolidateRequest.model_rebuild()
+SemanticConsolidateResponse.model_rebuild()
+
+
 def create_app(service: LTMService) -> FastAPI:
     app = FastAPI(
         title="LTM Service API",
@@ -85,6 +99,21 @@ def create_app(service: LTMService) -> FastAPI:
             req.record,
         )
         return ConsolidateResponse(id=rec_id)
+
+    @app.post("/semantic_consolidate", summary="Store facts in the knowledge graph")
+    async def semantic_consolidate(
+        req: SemanticConsolidateRequest,
+        x_role: str | None = Header(None),
+    ) -> SemanticConsolidateResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/semantic_consolidate", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        result = await asyncio.to_thread(
+            service.semantic_consolidate,
+            req.payload,
+            fmt=req.format,
+        )
+        return SemanticConsolidateResponse(result=result)
 
     @app.post("/consolidate", include_in_schema=False)
     async def consolidate() -> RedirectResponse:

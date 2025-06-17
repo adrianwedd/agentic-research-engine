@@ -33,6 +33,49 @@ class SemanticMemoryService:
         if self._driver is None:
             self._facts = []
 
+    def run_cypher(
+        self, query: str, parameters: Optional[Dict[str, Any]] | None = None
+    ) -> List[Dict[str, Any]]:
+        """Execute an arbitrary Cypher query when a driver is available."""
+        if not self._driver:
+            raise RuntimeError("Neo4j driver not configured")
+        with self._driver.session() as session:
+            records = session.run(query, parameters or {})
+            return [rec.data() for rec in records]
+
+    def store_jsonld(self, data: Dict[str, Any]) -> List[str]:
+        """Persist a JSON-LD payload as one or more facts."""
+
+        def _iter_triples(item: Dict[str, Any]) -> List[Dict[str, Any]]:
+            triples = []
+            graph = item.get("@graph")
+            if graph:
+                for entry in graph:
+                    triples.extend(_iter_triples(entry))
+                return triples
+
+            if {"subject", "predicate", "object"} <= item.keys():
+                triple = {
+                    "subject": item["subject"],
+                    "predicate": item["predicate"],
+                    "object": item["object"],
+                    "properties": item.get("properties", {}),
+                }
+                triples.append(triple)
+            return triples
+
+        ids: List[str] = []
+        for triple in _iter_triples(data):
+            ids.append(
+                self.store_fact(
+                    triple["subject"],
+                    triple["predicate"],
+                    triple["object"],
+                    properties=triple.get("properties"),
+                )
+            )
+        return ids
+
     def store_fact(
         self,
         subject: str,

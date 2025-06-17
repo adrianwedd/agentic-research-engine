@@ -61,3 +61,28 @@ def retrieve_memory(
             if attempt >= retries:
                 raise ValueError(f"Memory retrieval failed: {exc}") from exc
             time.sleep(backoff * 2**attempt)
+
+
+def semantic_consolidate(
+    payload: Dict | str,
+    *,
+    fmt: str = "jsonld",
+    endpoint: Optional[str] = None,
+    retries: int = 2,
+    backoff: float = 1.0,
+) -> List:
+    url = f"{_endpoint(endpoint)}/semantic_consolidate"
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url,
+                json={"payload": payload, "format": fmt},
+                headers={"X-Role": "editor"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("result", [])
+        except requests.RequestException as exc:
+            if attempt >= retries:
+                raise ValueError(f"Semantic consolidation failed: {exc}") from exc
+            time.sleep(backoff * 2**attempt)

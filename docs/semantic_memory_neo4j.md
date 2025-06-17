@@ -56,3 +56,15 @@ collapsed into a single edge.
 
 Once connected, the LTM service can call `store_fact()` whenever the
 MemoryManager extracts a new fact from verified research outputs.
+
+## API endpoint
+
+Facts can also be written via the `/semantic_consolidate` HTTP endpoint of the
+LTM service. Send either a JSON-LD object describing the triple or a raw Cypher
+statement:
+
+```bash
+curl -X POST http://localhost:8081/semantic_consolidate \
+     -H 'Content-Type: application/json' \
+     -d '{"payload": {"subject": "Transformer", "predicate": "IS_A", "object": "Model"}}'
+```

@@ -23,6 +23,7 @@ from tools import (
     pdf_extract,
     publish_reputation_event,
     retrieve_memory,
+    semantic_consolidate,
     summarize_text,
     web_search,
 )
@@ -167,6 +168,7 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "html_scraper": html_scraper,
     "consolidate_memory": consolidate_memory,
     "retrieve_memory": retrieve_memory,
+    "semantic_consolidate": semantic_consolidate,
     "summarize": summarize_text,
     "fact_check": fact_check_claim,
     "code_interpreter": code_interpreter,

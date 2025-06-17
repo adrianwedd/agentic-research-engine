@@ -149,9 +149,8 @@ class MemoryManagerAgent:
             for triple in self._extract_triples(state):
                 self.tool_registry.invoke(
                     "MemoryManager",
-                    "consolidate_memory",
-                    triple,
-                    memory_type="semantic",
+                    "semantic_consolidate",
+                    {"payload": triple, "format": "jsonld"},
                     endpoint=self.endpoint,
                 )
         except Exception:  # pragma: no cover - log only

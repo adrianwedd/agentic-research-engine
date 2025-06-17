@@ -10,7 +10,6 @@ components:
           title: Memory Type
           type: string
         record:
-          additionalProperties: true
           description: Record to store
           title: Record
           type: object
@@ -41,15 +40,13 @@ components:
       properties:
         query:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           description: Query to match
           title: Query
         task_context:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           description: Deprecated alternative query field
           title: Task Context
@@ -60,13 +57,40 @@ components:
         results:
           description: Matching records
           items:
-            additionalProperties: true
             type: object
           title: Results
           type: array
       required:
       - results
       title: RetrieveResponse
+      type: object
+    SemanticConsolidateRequest:
+      properties:
+        format:
+          default: jsonld
+          description: Payload format
+          title: Format
+          type: string
+        payload:
+          anyOf:
+          - type: object
+          - type: string
+          description: JSON-LD object or Cypher string
+          title: Payload
+      required:
+      - payload
+      title: SemanticConsolidateRequest
+      type: object
+    SemanticConsolidateResponse:
+      properties:
+        result:
+          description: Results from consolidation
+          items: {}
+          title: Result
+          type: array
+      required:
+      - result
+      title: SemanticConsolidateResponse
       type: object
     ValidationError:
       properties:
@@ -95,37 +119,6 @@ info:
 openapi: 3.1.0
 paths:
   /memory:
-    post:
-      operationId: create_memory_memory_post
-      parameters:
-      - in: header
-        name: x-role
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: X-Role
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConsolidateRequest'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConsolidateResponse'
-          description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      summary: Store an experience
     get:
       operationId: get_memory_memory_get
       parameters:
@@ -172,3 +165,66 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Retrieve similar experiences
+    post:
+      operationId: create_memory_memory_post
+      parameters:
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsolidateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidateResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Store an experience
+  /semantic_consolidate:
+    post:
+      operationId: semantic_consolidate_semantic_consolidate_post
+      parameters:
+      - in: header
+        name: x-role
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SemanticConsolidateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SemanticConsolidateResponse'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Store facts in the knowledge graph

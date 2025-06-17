@@ -6,7 +6,7 @@ import requests
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService, LTMServiceServer
 from services.tool_registry import AccessDeniedError, create_default_registry
-from tools.ltm_client import consolidate_memory
+from tools.ltm_client import consolidate_memory, semantic_consolidate
 
 
 def _start_server() -> tuple[LTMServiceServer, str]:
@@ -50,6 +50,25 @@ def test_consolidate_and_retrieve(monkeypatch):
 
     with pytest.raises(AccessDeniedError):
         registry.get_tool("Supervisor", "retrieve_memory")
+
+
+def test_semantic_consolidate_endpoint():
+    server, endpoint = _start_server()
+    triple = {"subject": "Transformer", "predicate": "IS_A", "object": "Model"}
+    resp = requests.post(
+        f"{endpoint}/semantic_consolidate",
+        json={"payload": triple},
+    )
+    assert resp.status_code == 201
+    semantic_consolidate(triple, endpoint=endpoint)
+    resp = requests.get(
+        f"{endpoint}/memory",
+        json={"query": triple},
+        params={"memory_type": "semantic"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["results"]
+    server.httpd.shutdown()
 
 
 def test_invalid_memory_type_and_rbac():
