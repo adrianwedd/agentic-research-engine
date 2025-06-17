@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 
 from engine.collaboration.group_chat import DynamicGroupChat

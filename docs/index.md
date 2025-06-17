@@ -5,6 +5,7 @@ This site contains design docs, research papers, and project reports for the Age
 ## Guides
 
 - [Semantic Memory with Neo4j](semantic_memory_neo4j.md)
+- [Concurrency Testing Approach](concurrency_testing.md)
 
 ## Research
 
