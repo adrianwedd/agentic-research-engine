@@ -6,7 +6,7 @@ This document outlines the findings of the audit of the Continuous Integration (
 
 The repository utilizes GitHub Actions for its CI/CD processes. Key workflows include:
 
-*   **`ci.yml`**: The main CI pipeline triggered on pull requests and pushes to `main`. It performs linting, runs a comprehensive test suite (including integration tests with coverage reporting via `pytest --cov`), specific tests for a 'judge' pipeline, core system tests, and a security dependency check using `pip-audit`. Coverage reports and test logs are uploaded as artifacts.
+*   **`ci.yml`**: The main CI pipeline triggered on pull requests and pushes to `main`. It performs linting, runs a comprehensive test suite (including integration tests with coverage reporting via `pytest --cov`), core system tests, and a security dependency check using `pip-audit`. Coverage reports and test logs are uploaded as artifacts.
 *   **`cd.yml`**: Manages deployments. It deploys to a 'staging' environment automatically on pushes to `main` and allows for manual promotion to 'production' via `workflow_dispatch`. The deployment process uses Terraform and Helm, orchestrated by `scripts/deploy.sh`.
 *   **`minimal-ci.yml`**: A lighter CI workflow, also triggered on pushes to `main` and pull requests (and manually). It runs linters and the test suite with coverage, similar to `ci.yml` but potentially with a subset of tests or a faster execution path. It also uploads a coverage report.
 *   **`dependency-audit.yml`**: A dedicated workflow for dependency checking, running `pip-audit` weekly and on demand. It automatically creates a GitHub issue if vulnerabilities are detected.
@@ -31,9 +31,9 @@ The repository utilizes GitHub Actions for its CI/CD processes. Key workflows in
 *   **Build Times:**
     *   Without access to historical run data, it's hard to pinpoint exact build times. However, the `ci.yml` workflow is comprehensive and might be lengthy.
     *   The `minimal-ci.yml` seems to be an attempt to provide a faster feedback loop. It's worth evaluating if its triggers are optimal or if it causes redundant runs alongside `ci.yml`.
-    *   Consider if all jobs in `ci.yml` need to run for every PR. For example, `core` tests or `judge-pipeline` tests might be skippable if unrelated paths are changed, using `paths` filters.
+    *   Consider if all jobs in `ci.yml` need to run for every PR. For example, `core` tests might be skippable if unrelated paths are changed, using `paths` filters.
 *   **Redundancy:**
-    *   There appears to be an overlap between the `judge-pipeline` job in `ci.yml` and the dedicated `judge-pipeline.yml` workflow. Both run tests for the judge pipeline. This could lead to redundant computations and resource usage. It's worth clarifying their distinct purposes or consolidating them.
+    *   The `judge-pipeline` job previously duplicated work already handled by `judge-pipeline.yml`. That job has since been removed to avoid redundant compute.
     *   The `security-dependencies` job in `ci.yml` and the `dependency-audit.yml` workflow both run `pip-audit`. While the latter creates issues and runs weekly, the former runs on every PR/push to main. This might be desired for immediate feedback, but ensure the configurations are consistent.
 *   **Resource Utilization:**
     *   The installation of tools like Terraform and Helm in the `cd.yml` happens on every run. These could potentially be containerized in a custom Docker image used by the runner for faster startup.
@@ -51,9 +51,9 @@ The repository utilizes GitHub Actions for its CI/CD processes. Key workflows in
 
 *   **Review Workflow Triggers:**
     *   Evaluate the triggers for `ci.yml` and `minimal-ci.yml` to ensure they align with the desired feedback speed and resource usage. Clarify the role of `minimal-ci.yml` – if it's meant for PRs, `ci.yml` might only need to run on merges to `main` or nightly.
-    *   Add `paths` or `paths-ignore` filters to jobs within `ci.yml` (like `core` tests, `judge-pipeline` tests) so they only run when relevant code changes.
+    *   Add `paths` or `paths-ignore` filters to jobs within `ci.yml` (like `core` tests) so they only run when relevant code changes.
 *   **Consolidate Redundant Workflows/Jobs:**
-    *   Clarify the purpose of the `judge-pipeline` job in `ci.yml` versus the `judge-pipeline.yml` workflow. If they serve the same purpose, consolidate them to a single, well-defined trigger.
+    *   The `judge-pipeline` job was removed from `ci.yml`; `judge-pipeline.yml` is now the sole workflow for those tests.
     *   Review the `pip-audit` runs in `ci.yml` and `dependency-audit.yml`. If the configuration and reporting are similar, perhaps the one in `ci.yml` is sufficient for PR/push feedback, with the weekly run in `dependency-audit.yml` focusing on issue creation for persistent vulnerabilities.
 *   **Optimize `cd.yml`:**
     *   Consider using a custom Docker image with Terraform and Helm pre-installed for the `deploy-staging` and `promote-production` jobs to reduce setup time.

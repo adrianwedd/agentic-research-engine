@@ -5,6 +5,10 @@ on:
     paths:
       - 'pipelines/judge/**'
       - 'data/golden_judge_dataset/**'
+  pull_request:
+    paths:
+      - 'pipelines/judge/**'
+      - 'data/golden_judge_dataset/**'
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:

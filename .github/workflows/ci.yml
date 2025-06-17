@@ -103,45 +103,6 @@ jobs:
       - name: Check codex queue
         run: python scripts/validate_queue.py
 
-  judge-pipeline:
-    needs: changes
-    if: needs.changes.outputs.judge == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Setup environment
-        run: bash scripts/agent-setup.sh
-      - name: Run judge pipeline contract tests
-        id: run-judge
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          pytest pipelines/judge/tests -v | tee judge.log
-          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-      - name: Upload test log
-        uses: actions/upload-artifact@v4
-        with:
-          name: judge-test-log
-          path: judge.log
-      - name: Summarize failures
-        if: always()
-        run: python scripts/ci_summary.py judge.log coverage.xml
-      - name: Fail if tests failed
-        if: steps.run-judge.outputs.exitcode != '0'
-        run: exit 1
 
   core:
     needs: changes
