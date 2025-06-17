@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
@@ -54,6 +52,11 @@ jobs:
         run: pre-commit run --all-files
 
   integration:
+    needs: changes
+    if: |
+      needs.changes.outputs.core == 'true' ||
+      needs.changes.outputs.judge == 'true' ||
+      needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
