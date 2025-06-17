@@ -289,6 +289,46 @@ class SpatioTemporalMemoryService(SemanticMemoryService):
                 fact.setdefault("history", []).append(version)
                 break
 
+    def merge_version(
+        self,
+        subject: str,
+        predicate: str,
+        obj: str,
+        *,
+        value: Any,
+        valid_from: float,
+        valid_to: float | None = None,
+        location: Any | None = None,
+    ) -> str:
+        """Store or update a fact with a new temporal version."""
+        if self._facts is None:
+            raise RuntimeError("No in-memory store configured")
+        for fact in self._facts:
+            if (
+                fact["subject"] == subject
+                and fact["predicate"] == predicate
+                and fact["object"] == obj
+            ):
+                self.add_version(
+                    fact["id"],
+                    value=value,
+                    valid_from=valid_from,
+                    valid_to=valid_to,
+                    location=location,
+                )
+                return fact["id"]
+        return self.store_fact(
+            subject,
+            predicate,
+            obj,
+            properties={
+                "value": value,
+                "valid_from": valid_from,
+                "valid_to": valid_to,
+                "location": location,
+            },
+        )
+
     def get_snapshot(self, *, valid_at: float, tx_at: float) -> List[Dict[str, Any]]:
         """Return facts that were valid at the given time with respect to a transaction time."""
         results: List[Dict[str, Any]] = []

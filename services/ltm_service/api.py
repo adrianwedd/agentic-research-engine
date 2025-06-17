@@ -35,13 +35,14 @@ from services.monitoring.system_monitor import SystemMonitor
 
 from .episodic_memory import EpisodicMemoryService
 from .procedural_memory import ProceduralMemoryService
-from .semantic_memory import SemanticMemoryService
+from .semantic_memory import SemanticMemoryService, SpatioTemporalMemoryService
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
     ("POST", "/semantic_consolidate"): {"editor"},
+    ("POST", "/temporal_consolidate"): {"editor"},
     ("POST", "/propagate_subgraph"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
@@ -77,6 +78,30 @@ else:  # pragma: no cover
     class RetrieveBody:
         query: Optional[Dict] = None
         task_context: Optional[Dict] = None
+
+
+if _HAS_PYDANTIC:
+
+    class TemporalConsolidateRequest(BaseModel):
+        subject: str
+        predicate: str
+        object: str
+        value: Any | None = None
+        valid_from: float
+        valid_to: float | None = None
+        location: Any | None = None
+
+else:  # pragma: no cover
+
+    @dataclass
+    class TemporalConsolidateRequest:
+        subject: str
+        predicate: str
+        object: str
+        value: Any | None = None
+        valid_from: float = 0.0
+        valid_to: float | None = None
+        location: Any | None = None
 
 
 if _HAS_PYDANTIC:
@@ -165,6 +190,21 @@ class LTMService:
                 )
             )
         return ids
+
+    def temporal_consolidate(self, fact: Dict[str, Any]) -> str:
+        """Merge a fact version into spatio-temporal memory."""
+        module = self._modules.get("semantic")
+        if not isinstance(module, SpatioTemporalMemoryService):
+            raise ValueError("Spatio-temporal memory module not available")
+        return module.merge_version(
+            fact["subject"],
+            fact["predicate"],
+            fact["object"],
+            value=fact.get("value"),
+            valid_from=fact["valid_from"],
+            valid_to=fact.get("valid_to"),
+            location=fact.get("location"),
+        )
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -278,6 +318,20 @@ class LTMServiceServer:
                         self._send_json(400, {"error": str(exc)})
                         return
                     self._send_json(201, {"result": result})
+                    return
+                if parsed.path == "/temporal_consolidate":
+                    if not self._check_role("POST", "/temporal_consolidate"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    try:
+                        req = TemporalConsolidateRequest(**data)
+                        fact = getattr(req, "model_dump", req.__dict__)()
+                        fid = service.temporal_consolidate(fact)
+                    except (ValidationError, ValueError) as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(201, {"id": fid})
                     return
                 if parsed.path == "/consolidate":
                     # Temporary redirect to new noun-based endpoint

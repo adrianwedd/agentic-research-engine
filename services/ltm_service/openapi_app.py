@@ -14,6 +14,7 @@ except Exception:  # pragma: no cover - fallback for spec generation
     ROLE_PERMISSIONS = {
         ("POST", "/memory"): {"editor"},
         ("POST", "/semantic_consolidate"): {"editor"},
+        ("POST", "/temporal_consolidate"): {"editor"},
         ("POST", "/propagate_subgraph"): {"editor"},
         ("GET", "/memory"): {"viewer", "editor"},
         # Deprecated paths kept for one release cycle
@@ -89,6 +90,24 @@ SemanticConsolidateRequest.model_rebuild()
 SemanticConsolidateResponse.model_rebuild()
 
 
+class TemporalConsolidateRequest(BaseModel):
+    subject: str = Field(..., description="Fact subject")
+    predicate: str = Field(..., description="Relation type")
+    object: str = Field(..., description="Fact object")
+    value: Optional[str] = Field(None, description="Fact value")
+    valid_from: float = Field(..., description="Start of validity")
+    valid_to: Optional[float] = Field(None, description="End of validity")
+    location: Optional[Dict] = Field(None, description="Location context")
+
+
+class TemporalConsolidateResponse(BaseModel):
+    id: str = Field(..., description="Stored fact identifier")
+
+
+TemporalConsolidateRequest.model_rebuild()
+TemporalConsolidateResponse.model_rebuild()
+
+
 def create_app(service: LTMService) -> FastAPI:
     app = FastAPI(
         title="LTM Service API",
@@ -139,6 +158,20 @@ def create_app(service: LTMService) -> FastAPI:
             raise HTTPException(status_code=403, detail="forbidden")
         ids = await asyncio.to_thread(service.propagate_subgraph, req.model_dump())
         return PropagateSubgraphResponse(ids=ids)
+
+    @app.post("/temporal_consolidate", summary="Merge fact versions")
+    async def temporal_consolidate(
+        req: TemporalConsolidateRequest,
+        x_role: str | None = Header(None),
+    ) -> TemporalConsolidateResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/temporal_consolidate", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        fid = await asyncio.to_thread(
+            service.temporal_consolidate,
+            req.model_dump(),
+        )
+        return TemporalConsolidateResponse(id=fid)
 
     @app.post("/consolidate", include_in_schema=False)
     async def consolidate() -> RedirectResponse:
