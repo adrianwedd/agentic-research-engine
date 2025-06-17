@@ -9,6 +9,7 @@ if TYPE_CHECKING:  # pragma: no cover - for type checkers only
     from .ppo_policy_optimizer import PPOPolicyOptimizer
     from .rlaif_system import RLAIFSystem
     from .skill_discovery import SkillDiscoveryModule
+    from .skill_spec import SkillSpec, generate_skill_specs, store_skill_specs
 
 
 def __getattr__(name: str):
@@ -20,6 +21,12 @@ def __getattr__(name: str):
         return import_module(".marl_trainer", __name__).MARLTrainer
     if name == "SkillDiscoveryModule":
         return import_module(".skill_discovery", __name__).SkillDiscoveryModule
+    if name == "SkillSpec":
+        return import_module(".skill_spec", __name__).SkillSpec
+    if name == "generate_skill_specs":
+        return import_module(".skill_spec", __name__).generate_skill_specs
+    if name == "store_skill_specs":
+        return import_module(".skill_spec", __name__).store_skill_specs
     if name == "ConfigurationError":
         return import_module(".exceptions", __name__).ConfigurationError
     raise AttributeError(name)
@@ -30,5 +37,8 @@ __all__ = [
     "PPOPolicyOptimizer",
     "MARLTrainer",
     "SkillDiscoveryModule",
+    "SkillSpec",
+    "generate_skill_specs",
+    "store_skill_specs",
     "ConfigurationError",
 ]
