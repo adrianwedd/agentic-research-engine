@@ -19,12 +19,16 @@ class SkillLibrary:
         self.embedding_client = embedding_client or SimpleEmbeddingClient()
         self.vector_store = vector_store or InMemoryVectorStore()
         self._skills: Dict[str, Dict[str, Any]] = {}
+        self._frozen: set[str] = set()
 
     def add_skill(
         self,
         skill_policy: Dict[str, Any],
         skill_representation: str | List[float],
         skill_metadata: Dict[str, Any] | None = None,
+        *,
+        skill_id: str | None = None,
+        overwrite: bool = False,
     ) -> str:
         """Store a skill and return its id."""
 
@@ -32,7 +36,12 @@ class SkillLibrary:
             vector = self.embedding_client.embed([skill_representation])[0]
         else:
             vector = list(skill_representation)
-        skill_id = str(uuid.uuid4())
+        skill_id = skill_id or str(uuid.uuid4())
+        if skill_id in self._skills:
+            if skill_id in self._frozen:
+                raise ValueError("cannot overwrite frozen skill")
+            if not overwrite:
+                raise ValueError("skill already exists")
         metadata = skill_metadata or {}
         self._skills[skill_id] = {
             "id": skill_id,
@@ -74,3 +83,27 @@ class SkillLibrary:
 
     def all_skills(self) -> Iterable[Dict[str, Any]]:
         return list(self._skills.values())
+
+    # --------------------------------------------------------------
+    # Skill management helpers
+    # --------------------------------------------------------------
+    def freeze_skill(self, skill_id: str) -> None:
+        """Prevent ``skill_id`` from being modified."""
+
+        if skill_id in self._skills:
+            self._frozen.add(skill_id)
+
+    def is_frozen(self, skill_id: str) -> bool:
+        return skill_id in self._frozen
+
+    def compose_skill(self, skill_ids: List[str], prompt: str) -> str:
+        """Compose a new skill from ``skill_ids`` using a primitive prompt."""
+
+        actions: List[Any] = []
+        for sid in skill_ids:
+            skill = self._skills.get(sid)
+            if skill:
+                actions.extend(skill["skill_policy"].get("actions", []))
+        policy = {"actions": actions}
+        metadata = {"prompt": prompt, "base_skills": skill_ids}
+        return self.add_skill(policy, prompt, metadata)
