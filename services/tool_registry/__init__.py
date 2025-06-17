@@ -21,6 +21,7 @@ from tools import (
     html_scraper,
     knowledge_graph_search,
     pdf_extract,
+    publish_reputation_event,
     retrieve_memory,
     summarize_text,
     web_search,
@@ -171,6 +172,7 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "code_interpreter": code_interpreter,
     "knowledge_graph_search": knowledge_graph_search,
     "github_search": github_search,
+    "reputation_event": publish_reputation_event,
 }
 
 
