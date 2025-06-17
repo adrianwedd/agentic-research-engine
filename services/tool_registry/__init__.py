@@ -24,6 +24,7 @@ from tools import (
     publish_reputation_event,
     retrieve_memory,
     semantic_consolidate,
+    propagate_subgraph,
     summarize_text,
     web_search,
 )
@@ -169,6 +170,7 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "consolidate_memory": consolidate_memory,
     "retrieve_memory": retrieve_memory,
     "semantic_consolidate": semantic_consolidate,
+    "propagate_subgraph": propagate_subgraph,
     "summarize": summarize_text,
     "fact_check": fact_check_claim,
     "code_interpreter": code_interpreter,
