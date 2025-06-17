@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import requests
 import yaml
 from pykwalify.core import Core
 
@@ -19,16 +21,30 @@ class PlannerAgent:
         Path(__file__).resolve().parent.parent / "schemas" / "supervisor_plan.yaml"
     )
 
+    DEFAULT_WEIGHTS = {"reputation": 0.6, "cost": 0.3, "load": 0.1}
+
     def __init__(
         self,
         available_agents: Optional[List[str]] | None = None,
         *,
         agent_skills: Optional[Dict[str, List[str]]] | None = None,
         objective_metric: str = "cost",
+        weights: Optional[Dict[str, float]] | None = None,
+        reputation_api_url: str | None = None,
+        reputation_api_token: str | None = None,
     ) -> None:
         self.available_agents = available_agents or ["WebResearcher"]
         self.agent_skills = agent_skills or {}
         self.objective_metric = objective_metric
+        self.weights = weights or self.DEFAULT_WEIGHTS.copy()
+        self.reputation_api_url = reputation_api_url or os.getenv(
+            "REPUTATION_API_URL",
+            "http://localhost:8000/api/v1/reputation/query",
+        )
+        self.reputation_api_token = reputation_api_token or os.getenv(
+            "REPUTATION_API_TOKEN",
+            "planner-token",
+        )
         try:
             with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
                 self.plan_schema = yaml.safe_load(f) or {}
@@ -58,6 +74,30 @@ class PlannerAgent:
     def _tokenize(self, text: str) -> set[str]:
         return set(re.findall(r"\w+", text.lower()))
 
+    def _fetch_reputations(self, context: str) -> Dict[str, Dict[str, Any]]:
+        if not self.reputation_api_url:
+            return {}
+        headers = {}
+        if self.reputation_api_token:
+            headers["Authorization"] = f"Bearer {self.reputation_api_token}"
+        try:
+            resp = requests.get(
+                self.reputation_api_url,
+                params={"context": context, "top_n": len(self.available_agents)},
+                headers=headers,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception:
+            return {}
+        results = data.get("results", [])
+        return {
+            r.get("agent_id"): r.get("reputation_vector", {})
+            for r in results
+            if r.get("agent_id")
+        }
+
     def _skill_score(self, task: str, agent: str) -> int:
         skills = self.agent_skills.get(agent, [])
         if not skills:
@@ -69,16 +109,20 @@ class PlannerAgent:
     def _allocate_tasks(self, tasks: List[str]) -> List[Dict[str, Any]]:
         nodes: List[Dict[str, Any]] = []
         load: Dict[str, int] = {name: 0 for name in self.available_agents}
+        reputations = self._fetch_reputations("research")
         for idx, topic in enumerate(tasks):
             best_agent = None
-            best_score = -1
+            best_score = float("-inf")
             for agent in self.available_agents:
-                score = self._skill_score(topic, agent)
-                if (
-                    best_agent is None
-                    or score > best_score
-                    or (score == best_score and load[agent] < load[best_agent])
-                ):
+                rep = reputations.get(agent, {})
+                rep_score = float(rep.get("accuracy", 0.0))
+                cost = float(rep.get("token_cost", 0.0))
+                score = (
+                    self.weights.get("reputation", 0.0) * rep_score
+                    - self.weights.get("cost", 0.0) * cost
+                    - self.weights.get("load", 0.0) * load[agent]
+                )
+                if best_agent is None or score > best_score:
                     best_agent = agent
                     best_score = score
             load[best_agent] += 1
