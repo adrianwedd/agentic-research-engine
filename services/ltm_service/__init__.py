@@ -6,6 +6,7 @@ from .episodic_memory import EpisodicMemoryService, InMemoryStorage
 from .openapi_app import create_app
 from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService, SpatioTemporalMemoryService
+from .skill_library import Skill, SkillLibrary
 from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
 
 __all__ = [
@@ -15,6 +16,8 @@ __all__ = [
     "EpisodicMemoryService",
     "InMemoryStorage",
     "ProceduralMemoryService",
+    "Skill",
+    "SkillLibrary",
     "SemanticMemoryService",
     "SpatioTemporalMemoryService",
     "EmbeddingClient",

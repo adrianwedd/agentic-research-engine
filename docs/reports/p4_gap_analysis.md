@@ -27,7 +27,7 @@ Status codes:
 | **P4‑15R** – MAST test for Information Withholding | ✔ Implemented | refusal policy in MAST suite【F:tests/test_mast_suite.py†L37-L47】 |
 | **P4‑16R** – MAST test for Incorrect Verification | ✔ Implemented | Evaluator flags Moon cheese claim【F:tests/test_mast_suite.py†L50-L55】 |
 | **P4‑17R** – Specialized DB connectors | ✗ Missing | Tool Registry lacks SQL connectors |
-| **P4‑18R** – Spatio-temporal memory research | ✗ Missing | No research doc present |
+| **P4‑18R** – Spatio-temporal memory research | ✔ Implemented | Research doc outlines time/location LTM【F:docs/research/2025-spatio-temporal-memory.md†L1-L9】 |
 
 ## Recommended Follow-up Change Requests
 The following high‑priority backlog items address the gaps above:
