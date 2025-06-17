@@ -8,19 +8,23 @@ from typing import Any, Callable, Dict, List, Optional
 
 from engine.orchestration_engine import GraphState
 from engine.state import State
-from services.tracing.tracing_schema import ToolCallTrace
+from services.tool_registry import ToolRegistry
+
+from .base import BaseAgent
 
 
-class WebResearcherAgent:
+class WebResearcherAgent(BaseAgent):
     def __init__(
         self,
-        tool_registry: Dict[str, Callable[..., Any]],
+        tool_registry: Dict[str, Callable[..., Any]] | ToolRegistry,
         *,
         rate_limit_per_minute: int = 5,
         max_retries: int = 2,
+        ltm_endpoint: str | None = None,
     ) -> None:
         """Initialize with secure tool access and rate limiting."""
-        self.tool_registry = tool_registry
+        super().__init__("WebResearcher", tool_registry, ltm_endpoint=ltm_endpoint)
+        self.tool_registry = tool_registry  # type: ignore[assignment]
         self.rate_limit = rate_limit_per_minute
         self.max_retries = max_retries
         self.call_times: List[float] = []
@@ -42,7 +46,12 @@ class WebResearcherAgent:
             "Summarize the following text focusing only on information "
             f"relevant to '{task}'. Limit the summary to 200 words or fewer:\n{text}"
         )
-        summary = self._call_with_retry(self.summarize, prompt)
+        summary = self._call_with_retry(
+            self.summarize,
+            prompt,
+            tool_name="summarize",
+            trace_kwargs={"agent_id": "", "tool_input": prompt},
+        )
         if isinstance(summary, str) and len(summary.split()) > 200:
             summary = " ".join(summary.split()[:200])
         return summary
@@ -75,13 +84,23 @@ class WebResearcherAgent:
         self.call_times.append(now)
 
     def _call_with_retry(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        tool_name: str | None = None,
+        trace_kwargs: Dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Call ``func`` with simple exponential backoff retries."""
         backoff = 1.0
         for attempt in range(self.max_retries):
             try:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if tool_name:
+                    self._log_tool(
+                        tool_name, list(args), kwargs, result, **(trace_kwargs or {})
+                    )
+                return result
             except Exception as exc:
                 if attempt >= self.max_retries - 1:
                     raise RuntimeError(
@@ -96,7 +115,13 @@ class WebResearcherAgent:
         if self.knowledge_graph_search:
             try:
                 facts = self._call_with_retry(
-                    self.knowledge_graph_search, {"text": topic}
+                    self.knowledge_graph_search,
+                    {"text": topic},
+                    tool_name="knowledge_graph_search",
+                    trace_kwargs={
+                        "agent_id": context.get("agent_id", ""),
+                        "tool_input": {"text": topic},
+                    },
                 )
             except Exception:
                 facts = []
@@ -111,18 +136,16 @@ class WebResearcherAgent:
         start = time.perf_counter()
         search_results = self._call_with_retry(self.web_search, topic)
         latency_ms = (time.perf_counter() - start) * 1000
-        input_tokens = len(str(topic).split())
-        output_tokens = len(str(search_results).split())
-        ToolCallTrace(
+        self._log_tool(
+            "web_search",
+            [topic],
+            {},
+            search_results,
             agent_id=str(context.get("agent_id", "")),
-            agent_role="WebResearcher",
-            tool_name="web_search",
-            tool_input=topic,
-            tool_output=search_results,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
+            input_tokens=len(str(topic).split()),
+            output_tokens=len(str(search_results).split()),
             latency_ms=latency_ms,
-        ).record()
+        )
         processed: List[Dict[str, Any]] = []
         for r in search_results:
             url = r.get("url")
@@ -134,9 +157,25 @@ class WebResearcherAgent:
 
             content: Optional[str] = None
             if url.lower().endswith(".pdf") and self.pdf_extract:
-                content = self._call_with_retry(self.pdf_extract, url)
+                content = self._call_with_retry(
+                    self.pdf_extract,
+                    url,
+                    tool_name="pdf_extract",
+                    trace_kwargs={
+                        "agent_id": str(context.get("agent_id", "")),
+                        "tool_input": url,
+                    },
+                )
             elif self.html_scraper:
-                content = self._call_with_retry(self.html_scraper, url)
+                content = self._call_with_retry(
+                    self.html_scraper,
+                    url,
+                    tool_name="html_scraper",
+                    trace_kwargs={
+                        "agent_id": str(context.get("agent_id", "")),
+                        "tool_input": url,
+                    },
+                )
             if not content:
                 continue
 
@@ -181,4 +220,5 @@ class WebResearcherAgent:
 
         result = self.research_topic(query, {"agent_id": state.data.get("agent_id")})
         state.update({"research_result": result})
+        self._store_procedure(state)
         return state
