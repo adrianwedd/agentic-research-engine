@@ -111,3 +111,77 @@ def propagate_subgraph(
             if attempt >= retries:
                 raise ValueError(f"Subgraph propagation failed: {exc}") from exc
             time.sleep(backoff * 2**attempt)
+
+
+def add_skill(
+    skill: Dict,
+    *,
+    endpoint: Optional[str] = None,
+    retries: int = 2,
+    backoff: float = 1.0,
+) -> str:
+    url = f"{_endpoint(endpoint)}/skill"
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url,
+                json=skill,
+                headers={"X-Role": "editor"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("id", "")
+        except requests.RequestException as exc:
+            if attempt >= retries:
+                raise ValueError(f"Skill add failed: {exc}") from exc
+            time.sleep(backoff * 2**attempt)
+
+
+def skill_vector_query(
+    query: str | List[float],
+    *,
+    limit: int = 5,
+    endpoint: Optional[str] = None,
+    retries: int = 2,
+    backoff: float = 1.0,
+) -> List[Dict]:
+    url = f"{_endpoint(endpoint)}/skill_vector_query"
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url,
+                json={"query": query, "limit": limit},
+                headers={"X-Role": "viewer"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("results", [])
+        except requests.RequestException as exc:
+            if attempt >= retries:
+                raise ValueError(f"Skill query failed: {exc}") from exc
+            time.sleep(backoff * 2**attempt)
+
+
+def skill_metadata_query(
+    metadata: Dict,
+    *,
+    limit: int = 5,
+    endpoint: Optional[str] = None,
+    retries: int = 2,
+    backoff: float = 1.0,
+) -> List[Dict]:
+    url = f"{_endpoint(endpoint)}/skill_metadata_query"
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url,
+                json={"query": metadata, "limit": limit},
+                headers={"X-Role": "viewer"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("results", [])
+        except requests.RequestException as exc:
+            if attempt >= retries:
+                raise ValueError(f"Skill metadata query failed: {exc}") from exc
+            time.sleep(backoff * 2**attempt)

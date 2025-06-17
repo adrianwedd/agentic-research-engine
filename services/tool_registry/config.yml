@@ -13,6 +13,12 @@ permissions:
     - MemoryManager
     - WebResearcher
     - CodeResearcher
+  add_skill:
+    - MemoryManager
+  skill_vector_query:
+    - MemoryManager
+  skill_metadata_query:
+    - MemoryManager
   fact_check:
     - Evaluator
   code_interpreter:

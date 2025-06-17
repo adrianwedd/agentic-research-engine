@@ -16,6 +16,7 @@ from services.tracing.tracing_schema import ToolCallTrace
 from tools import (
     PostgresQueryTool,
     SqliteQueryTool,
+    add_skill,
     code_interpreter,
     consolidate_memory,
     fact_check_claim,
@@ -27,6 +28,8 @@ from tools import (
     publish_reputation_event,
     retrieve_memory,
     semantic_consolidate,
+    skill_metadata_query,
+    skill_vector_query,
     summarize_text,
     web_search,
 )
@@ -172,6 +175,9 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "consolidate_memory": consolidate_memory,
     "retrieve_memory": retrieve_memory,
     "semantic_consolidate": semantic_consolidate,
+    "add_skill": add_skill,
+    "skill_vector_query": skill_vector_query,
+    "skill_metadata_query": skill_metadata_query,
     "propagate_subgraph": propagate_subgraph,
     "summarize": summarize_text,
     "fact_check": fact_check_claim,
