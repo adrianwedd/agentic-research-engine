@@ -21,6 +21,9 @@ class Dummy:
     def retrieve(self, memory_type, query, limit=5):
         return []
 
+    def semantic_consolidate(self, payload, fmt="jsonld"):
+        return []
+
 
 app = module.create_app(Dummy())
 path = pathlib.Path(__file__).resolve().parents[2] / "docs" / "openapi.yaml"

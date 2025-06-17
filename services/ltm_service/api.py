@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 try:
@@ -41,6 +41,7 @@ ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
+    ("POST", "/semantic_consolidate"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
     # Deprecated paths kept for one release cycle
@@ -133,6 +134,20 @@ class LTMService:
             )
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
+    def semantic_consolidate(
+        self, payload: Dict | str, *, fmt: str = "jsonld"
+    ) -> List[str] | List[Dict[str, Any]]:
+        module: SemanticMemoryService = self._modules.get("semantic")  # type: ignore[assignment]
+        if module is None:
+            raise ValueError("Semantic memory module not available")
+        if fmt == "cypher":
+            if not isinstance(payload, str):
+                raise ValueError("Cypher payload must be a string")
+            return module.run_cypher(payload)
+        if not isinstance(payload, dict):
+            raise ValueError("JSON-LD payload must be a dictionary")
+        return module.store_jsonld(payload)
+
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise ValueError(f"Unsupported memory type: {memory_type}")
@@ -218,9 +233,22 @@ class LTMServiceServer:
                 allowed = ROLE_PERMISSIONS.get((method, path), set())
                 return role in allowed
 
-            @_rbac("POST", "/memory")
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
+                if parsed.path == "/semantic_consolidate":
+                    if not self._check_role("POST", "/semantic_consolidate"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    payload = data.get("payload")
+                    fmt = data.get("format", "jsonld")
+                    try:
+                        result = service.semantic_consolidate(payload, fmt=fmt)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(201, {"result": result})
+                    return
                 if parsed.path == "/consolidate":
                     # Temporary redirect to new noun-based endpoint
                     self.send_response(308)
@@ -230,6 +258,9 @@ class LTMServiceServer:
                 if parsed.path != "/memory":
                     self.send_response(404)
                     self.end_headers()
+                    return
+                if not self._check_role("POST", "/memory"):
+                    self._send_json(403, {"error": "forbidden"})
                     return
                 data = self._json_body()
                 try:

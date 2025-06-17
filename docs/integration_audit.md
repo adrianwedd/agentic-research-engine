@@ -53,7 +53,7 @@ All measurements meet the <300 ms P95 target with negligible error rates.
 |------|--------|-------|
 | User → Supervisor → Planner → MemoryManager → Evaluator | ✅ Implemented | Covered by existing E2E tests and docs |
 | Continuous feedback loop with Reputation Service | ⚠ Partial | Event publishing hooks exist but Reputation integration is stubbed |
-| Semantic LTM graph consolidation | ❌ Missing | MemoryManager does not currently store relationships in Neo4j |
+| Semantic LTM graph consolidation | ✅ Implemented | `/semantic_consolidate` endpoint writes facts to Neo4j |
 
 ### Follow-up Change Requests
 

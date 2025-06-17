@@ -250,3 +250,9 @@
   - Validate schemas and benchmark pipelines
   - Record gaps and follow-up CRs
   title: End-to-End Integration & Pipeline Audit
+- acceptance_criteria:
+  - Neo4j consolidation endpoint stores triples
+  id: CR-P4-07A2
+  priority: high
+  steps: []
+  title: Add Neo4j consolidation for semantic memory
