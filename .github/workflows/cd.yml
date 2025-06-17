@@ -21,6 +21,11 @@ jobs:
     environment: staging
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
       - name: Install tools
         run: |
           set -e
@@ -35,6 +40,19 @@ jobs:
             sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
           sudo apt-get update
           sudo apt-get install -y helm terraform
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Run pip-audit
+        run: |
+          mkdir -p security
+          pip-audit -r requirements.txt -f json -o security/pip_audit_report.json
+      - name: Check vulnerabilities
+        run: python scripts/check_pip_audit.py security/pip_audit_report.json
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: security/pip_audit_report.json
       - name: Deploy to staging
         run: |
           bash scripts/deploy.sh staging ${{ github.sha }}
@@ -45,6 +63,11 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
       - name: Install tools
         run: |
           set -e
@@ -59,6 +82,19 @@ jobs:
             sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
           sudo apt-get update
           sudo apt-get install -y helm terraform
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Run pip-audit
+        run: |
+          mkdir -p security
+          pip-audit -r requirements.txt -f json -o security/pip_audit_report.json
+      - name: Check vulnerabilities
+        run: python scripts/check_pip_audit.py security/pip_audit_report.json
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: security/pip_audit_report.json
       - name: Deploy to production
         run: |
           IMAGE_TAG=${{ inputs.image_tag }}

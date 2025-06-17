@@ -8,6 +8,8 @@ from typing import Dict
 
 from transformers import AutoTokenizer
 
+from tools.validation import validate_path_or_url
+
 try:  # pragma: no cover - optional dependency
     from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer
 except Exception:  # pragma: no cover - fallback
@@ -27,7 +29,11 @@ class PPOPolicyOptimizer:
         if PPOTrainer is None:
             raise ImportError("trl library is required")
         self.model_name = model_name
-        self.log_dir = Path(log_dir or "ppo_logs")
+        if log_dir is not None:
+            sanitized = validate_path_or_url(str(log_dir), allowed_schemes={"file"})
+        else:
+            sanitized = "ppo_logs"
+        self.log_dir = Path(sanitized)
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.config = PPOConfig(model_name=model_name, learning_rate=lr)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -51,7 +57,11 @@ class PPOPolicyOptimizer:
 
     def save(self, path: str | Path | None = None) -> None:
         """Persist the current policy model to ``path``."""
-        dest = Path(path or self.log_dir / "policy")
+        if path is not None:
+            sanitized = validate_path_or_url(str(path), allowed_schemes={"file"})
+            dest = Path(sanitized)
+        else:
+            dest = self.log_dir / "policy"
         dest.mkdir(parents=True, exist_ok=True)
         self.model.save_pretrained(dest)
         self.tokenizer.save_pretrained(dest)

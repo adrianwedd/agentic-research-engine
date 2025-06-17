@@ -143,7 +143,16 @@ If the pages contain only images, the function can perform OCR using
 ``PDF_READER_ENABLE_OCR`` environment variable to ``true``. OCR requires the
 Tesseract binary to be installed and accessible on the system.
 
-## **7. Continuous Deployment**
+## **7. Secrets Management**
+
+Store API keys and credentials in a dedicated secrets manager such as
+**HashiCorp Vault** or **AWS Secrets Manager**. For local testing, export the
+values as environment variables or populate a `.env` file that is sourced before
+running the tools. In CI, add the keys as repository secrets and reference them
+in workflow steps. See [docs/security.md](docs/security.md) for detailed
+guidance.
+
+## **8. Continuous Deployment**
 
 All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
 The pipeline uses Terraform and Helm configurations under `infra/` to perform
@@ -159,7 +168,7 @@ environment automatically. After verification, an operator can trigger the
 `promote-production` job to roll out the same release to production. In case of
 issues, `scripts/rollback.sh` reverts the selector to the previous color.
 
-## **8. Project Roadmap**
+## **9. Project Roadmap**
 
 This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see [docs/change_request_ledger.md](docs/change_request_ledger.md).
 
@@ -176,7 +185,7 @@ This project is being executed in a phased approach to manage complexity and del
   * **Objective**: Refine the system for production use, focusing on efficiency and robustness.
   * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.[1]
 
-## **9. Contributing**
+## **10. Contributing**
 
 Contributions are welcome and encouraged! Please follow these steps to contribute:
 
@@ -192,6 +201,6 @@ All pull requests will be automatically validated by the CI pipeline (P1-02), wh
 Branch protection rules on `main` enforce these checks so direct pushes are rejected. You can verify the policy by running `scripts/check_branch_protection.py` with a GitHub token.
 For instructions on running the pipeline locally and the required 80% coverage threshold, see [docs/ci.md](docs/ci.md).
 
-## **10. License**
+## **11. License**
 
 This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.

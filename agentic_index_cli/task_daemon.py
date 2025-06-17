@@ -4,6 +4,8 @@ from typing import Iterable
 
 import yaml
 
+from tools.validation import validate_path_or_url
+
 from .internal.issue_logger import format_agent_log, post_markdown_comment
 
 
@@ -13,7 +15,8 @@ class TaskDaemon:
     def __init__(
         self, queue_path: str = ".codex/queue.yml", poll_interval: int = 30
     ) -> None:
-        self.queue = Path(queue_path)
+        sanitized = validate_path_or_url(queue_path, allowed_schemes={"file"})
+        self.queue = Path(sanitized)
         self.poll_interval = poll_interval
         self.seen: set[str] = set()
 
