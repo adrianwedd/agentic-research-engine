@@ -6,20 +6,24 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from engine.orchestration_engine import GraphState
-from services.tracing.tracing_schema import ToolCallTrace
+from services.tool_registry import ToolRegistry
+
+from .base import BaseAgent
 
 
-class CodeResearcherAgent:
+class CodeResearcherAgent(BaseAgent):
     """Agent specializing in code analysis and execution."""
 
     def __init__(
         self,
-        tool_registry: Dict[str, Callable[..., Any]],
+        tool_registry: Dict[str, Callable[..., Any]] | ToolRegistry,
         *,
         rate_limit_per_minute: int = 5,
         max_retries: int = 3,
+        ltm_endpoint: str | None = None,
     ) -> None:
-        self.tool_registry = tool_registry
+        super().__init__("CodeResearcher", tool_registry, ltm_endpoint=ltm_endpoint)
+        self.tool_registry = tool_registry  # type: ignore[assignment]
         self.rate_limit = rate_limit_per_minute
         self.max_retries = max_retries
         self.call_times: List[float] = []
@@ -40,12 +44,22 @@ class CodeResearcherAgent:
         self.call_times.append(now)
 
     def _call_with_retry(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+        self,
+        func: Callable[..., Any],
+        *args: Any,
+        tool_name: str | None = None,
+        trace_kwargs: Dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> Any:
         backoff = 1.0
         for attempt in range(self.max_retries):
             try:
-                return func(*args, **kwargs)
+                result = func(*args, **kwargs)
+                if tool_name:
+                    self._log_tool(
+                        tool_name, list(args), kwargs, result, **(trace_kwargs or {})
+                    )
+                return result
             except Exception as exc:
                 if attempt >= self.max_retries - 1:
                     raise RuntimeError(
@@ -61,18 +75,21 @@ class CodeResearcherAgent:
         self._check_rate_limit()
         start = time.perf_counter()
         try:
-            result = self._call_with_retry(self.code_interpreter, code, args=args or [])
+            result = self._call_with_retry(
+                self.code_interpreter,
+                code,
+                args=args or [],
+            )
         except Exception as exc:
             result = {"stdout": "", "stderr": str(exc), "returncode": -1}
         latency_ms = (time.perf_counter() - start) * 1000
-        ToolCallTrace(
-            agent_id="",
-            agent_role="CodeResearcher",
-            tool_name="code_interpreter",
-            tool_input=code,
-            tool_output=result,
+        self._log_tool(
+            "code_interpreter",
+            [code],
+            {"args": args or []},
+            result,
             latency_ms=latency_ms,
-        ).record()
+        )
         return result
 
     # ------------------------------------------------------------------
@@ -85,4 +102,5 @@ class CodeResearcherAgent:
         args = state.data.get("code_args", [])
         result = self.analyze_code(code, args)
         state.update({"code_result": result})
+        self._store_procedure(state)
         return state
