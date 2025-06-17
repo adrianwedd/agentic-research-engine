@@ -20,4 +20,6 @@ permissions:
   knowledge_graph_search:
     - Supervisor
     - WebResearcher
+  reputation_event:
+    - Evaluator
 

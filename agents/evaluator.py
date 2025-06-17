@@ -8,6 +8,8 @@ and drives the iterative correction cycle.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -17,6 +19,7 @@ import yaml
 
 from agents.critique import Critique
 from services.monitoring.events import EvaluationCompletedEvent, publish_event
+from tools.reputation_client import publish_reputation_event
 
 
 class EvaluatorAgent:
@@ -55,6 +58,12 @@ class EvaluatorAgent:
         config = self._load_source_quality_config()
         self.allowlist = set(config.get("allowlist", []))
         self.blocklist = set(config.get("blocklist", []))
+
+        self.reputation_url = os.getenv(
+            "REPUTATION_API_URL",
+            "http://localhost:8000/api/v1/evaluations",
+        )
+        self.reputation_token = os.getenv("REPUTATION_API_TOKEN", "evaluator-token")
 
     # ------------------------------------------------------------------
     # Default evaluation helpers
@@ -228,6 +237,21 @@ class EvaluatorAgent:
             metadata=metadata or {},
         )
         publish_event(event)
+        try:
+            payload = {
+                "agent_id": worker_agent_id,
+                "workflow_id": task_id,
+                "evaluation_score": float(vector.get("accuracy_score", 0.0)),
+                "timestamp": event.timestamp.isoformat(),
+            }
+            publish_reputation_event(
+                payload,
+                url=self.reputation_url,
+                token=self.reputation_token,
+                retries=2,
+            )
+        except Exception:
+            logging.exception("Failed to publish reputation event")
         return vector
 
     # ------------------------------------------------------------------

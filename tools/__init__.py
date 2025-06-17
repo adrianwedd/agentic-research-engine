@@ -8,6 +8,7 @@ from .html_scraper import html_scraper
 from .knowledge_graph_search import knowledge_graph_search
 from .ltm_client import consolidate_memory, retrieve_memory
 from .pdf_reader import pdf_extract
+from .reputation_client import publish_reputation_event
 from .summarizer import summarize_text
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "summarize_text",
     "fact_check_claim",
     "code_interpreter",
+    "publish_reputation_event",
 ]
