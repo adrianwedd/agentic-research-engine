@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -36,19 +37,30 @@ def _extract_main_text(html: str) -> str:
     return text.strip()
 
 
-def html_scraper(url: str, *, timeout: int = 10) -> str:
+def html_scraper(
+    url: str, *, timeout: int = 10, retries: int = 2, backoff: float = 1.0
+) -> str:
     """Return main body text extracted from a web page URL or file."""
 
     validated = validate_path_or_url(url)
     parsed = urlparse(url)
 
     if parsed.scheme in {"http", "https"}:
-        try:
-            resp = requests.get(validated, timeout=timeout)
-            resp.raise_for_status()
-            html_text = resp.text
-        except requests.RequestException as exc:  # pragma: no cover - network errors
-            raise ValueError(f"Failed to fetch HTML: {exc}") from exc
+        html_text = None
+        for attempt in range(retries + 1):
+            try:
+                resp = requests.get(validated, timeout=timeout)
+                resp.raise_for_status()
+                html_text = resp.text
+                break
+            except (
+                requests.RequestException
+            ) as exc:  # pragma: no cover - network errors
+                if attempt >= retries:
+                    raise ValueError(f"Failed to fetch HTML: {exc}") from exc
+                time.sleep(backoff * 2**attempt)
+        if html_text is None:
+            raise ValueError("Failed to fetch HTML")
     else:
         if not os.path.exists(validated):
             raise FileNotFoundError(validated)
@@ -67,16 +79,21 @@ def html_scraper(url: str, *, timeout: int = 10) -> str:
 
     if not text:
         # Attempt JS-rendered snapshot via remote service
-        try:
-            resp = requests.get(f"https://r.jina.ai/{validated}", timeout=timeout)
-            resp.raise_for_status()
-            rendered = resp.text
-            md_index = rendered.find("Markdown Content:")
-            if md_index != -1:
-                rendered = rendered[md_index + len("Markdown Content:") :]
-            text = rendered.strip()
-        except requests.RequestException:
-            text = ""
+        for attempt in range(retries + 1):
+            try:
+                resp = requests.get(f"https://r.jina.ai/{validated}", timeout=timeout)
+                resp.raise_for_status()
+                rendered = resp.text
+                md_index = rendered.find("Markdown Content:")
+                if md_index != -1:
+                    rendered = rendered[md_index + len("Markdown Content:") :]
+                text = rendered.strip()
+                break
+            except requests.RequestException:
+                if attempt >= retries:
+                    text = ""
+                else:
+                    time.sleep(backoff * 2**attempt)
 
     if not text:
         raise ValueError("No extractable text found in HTML")

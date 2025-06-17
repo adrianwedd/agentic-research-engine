@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+import time
 from urllib.parse import urlparse
 
 import pdfplumber
@@ -14,7 +15,12 @@ from .validation import validate_path_or_url
 
 
 def pdf_extract(
-    path_or_url: str, *, timeout: int = 10, use_ocr: bool | None = None
+    path_or_url: str,
+    *,
+    timeout: int = 10,
+    use_ocr: bool | None = None,
+    retries: int = 2,
+    backoff: float = 1.0,
 ) -> str:
     """Return the text content of a PDF from ``path_or_url``.
 
@@ -38,12 +44,21 @@ def pdf_extract(
     validated = validate_path_or_url(path_or_url)
     parsed = urlparse(path_or_url)
     if parsed.scheme in {"http", "https"}:
-        try:
-            resp = requests.get(validated, timeout=timeout)
-            resp.raise_for_status()
-            file_obj: str | io.BytesIO = io.BytesIO(resp.content)
-        except requests.RequestException as exc:  # pragma: no cover - network errors
-            raise ValueError(f"Failed to download PDF: {exc}") from exc
+        file_obj: str | io.BytesIO | None = None
+        for attempt in range(retries + 1):
+            try:
+                resp = requests.get(validated, timeout=timeout)
+                resp.raise_for_status()
+                file_obj = io.BytesIO(resp.content)
+                break
+            except (
+                requests.RequestException
+            ) as exc:  # pragma: no cover - network errors
+                if attempt >= retries:
+                    raise ValueError(f"Failed to download PDF: {exc}") from exc
+                time.sleep(backoff * 2**attempt)
+        if file_obj is None:
+            raise ValueError("Failed to download PDF")
     else:
         file_obj = validated
 
