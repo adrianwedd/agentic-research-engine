@@ -1273,7 +1273,12 @@ notes: |
 id: CR-001
 title: SkillLibrary-based MemoryManager overhaul
 priority: medium
-steps: []
+steps:
+  - Design SkillLibrary schema with policy, representation and metadata fields
+  - Refactor MemoryManager to use the SkillLibrary for storage and retrieval
+  - Implement semantic lookup APIs by embedding or metadata filters
+  - Ensure compatibility with episodic and semantic memory modules
+  - Add unit tests and update documentation
 acceptance_criteria:
   - MemoryManager stores skills with policy, embedding and metadata
 ```
@@ -1282,7 +1287,12 @@ acceptance_criteria:
 id: CR-002
 title: Unsupervised SkillDiscoveryModule
 priority: medium
-steps: []
+steps:
+  - Research and select a URL framework focusing on the DUSDi algorithm
+  - Integrate environment interface for reward-free exploration
+  - Implement mutual-information objective for disentangled skill learning
+  - Store discovered skills and metadata in the SkillLibrary
+  - Evaluate diversity and disentanglement metrics
 acceptance_criteria:
   - URL discovers disentangled skills for the SkillLibrary
 ```
@@ -1291,7 +1301,12 @@ acceptance_criteria:
 id: CR-003
 title: LLM-guided semantic skill decomposition
 priority: medium
-steps: []
+steps:
+  - Define interface and prompt templates for the LLM to describe sub-tasks
+  - Translate LLM output into reward functions and termination conditions
+  - Integrate L2S/LDSC framework to generate structured skill specs
+  - Persist semantic scaffolding in skill metadata
+  - Test with sample tasks and refine prompts
 acceptance_criteria:
   - LLM-generated sub-tasks and rewards stored in skill metadata
 ```
@@ -1300,7 +1315,12 @@ acceptance_criteria:
 id: CR-004
 title: Hierarchical Policy Executor
 priority: medium
-steps: []
+steps:
+  - Design two-level FuN architecture with Manager and Worker policies
+  - Implement goal-conditioned Worker using intrinsic rewards
+  - Sequence skills using SkillLibrary embeddings for goal selection
+  - Validate integration with MemoryManager and other modules
+  - Add integration tests for long-horizon tasks
 acceptance_criteria:
   - Manager selects goals and Worker executes skills via HRL
 ```
@@ -1309,7 +1329,11 @@ acceptance_criteria:
 id: CR-005
 title: Lifelong skill generalization support
 priority: medium
-steps: []
+steps:
+  - Diversify training environments to learn invariant features
+  - Freeze existing skills and modularize SkillLibrary for expansion
+  - Compose new skills via Primitive Prompt Learning
+  - Continuously evaluate transfer and generalization
 acceptance_criteria:
   - New skills added without overwriting existing ones
 ```
