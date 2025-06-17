@@ -42,6 +42,7 @@ ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
     ("POST", "/semantic_consolidate"): {"editor"},
+    ("POST", "/propagate_subgraph"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
     # Deprecated paths kept for one release cycle
@@ -148,6 +149,23 @@ class LTMService:
             raise ValueError("JSON-LD payload must be a dictionary")
         return module.store_jsonld(payload)
 
+    def propagate_subgraph(self, subgraph: Dict[str, Any]) -> List[str]:
+        """Store all relations from a subgraph into semantic memory."""
+        module: SemanticMemoryService = self._modules.get("semantic")  # type: ignore[assignment]
+        if module is None:
+            raise ValueError("Semantic memory module not available")
+        ids: List[str] = []
+        for rel in subgraph.get("relations", []):
+            ids.append(
+                module.store_fact(
+                    rel.get("subject"),
+                    rel.get("predicate"),
+                    rel.get("object"),
+                    properties=rel.get("properties", {}),
+                )
+            )
+        return ids
+
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise ValueError(f"Unsupported memory type: {memory_type}")
@@ -235,6 +253,18 @@ class LTMServiceServer:
 
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
+                if parsed.path == "/propagate_subgraph":
+                    if not self._check_role("POST", "/propagate_subgraph"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    try:
+                        ids = service.propagate_subgraph(data)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"ids": ids})
+                    return
                 if parsed.path == "/semantic_consolidate":
                     if not self._check_role("POST", "/semantic_consolidate"):
                         self._send_json(403, {"error": "forbidden"})

@@ -86,3 +86,27 @@ def semantic_consolidate(
             if attempt >= retries:
                 raise ValueError(f"Semantic consolidation failed: {exc}") from exc
             time.sleep(backoff * 2**attempt)
+
+def propagate_subgraph(
+    subgraph: Dict,
+    *,
+    endpoint: Optional[str] = None,
+    retries: int = 2,
+    backoff: float = 1.0,
+) -> List[str]:
+    """Send a subgraph consisting of entities and relations to the LTM service."""
+    url = f"{_endpoint(endpoint)}/propagate_subgraph"
+    for attempt in range(retries + 1):
+        try:
+            resp = requests.post(
+                url,
+                json=subgraph,
+                headers={"X-Role": "editor"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            return resp.json().get("ids", [])
+        except requests.RequestException as exc:
+            if attempt >= retries:
+                raise ValueError(f"Subgraph propagation failed: {exc}") from exc
+            time.sleep(backoff * 2**attempt)

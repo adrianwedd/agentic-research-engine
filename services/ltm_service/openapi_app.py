@@ -14,6 +14,7 @@ except Exception:  # pragma: no cover - fallback for spec generation
     ROLE_PERMISSIONS = {
         ("POST", "/memory"): {"editor"},
         ("POST", "/semantic_consolidate"): {"editor"},
+        ("POST", "/propagate_subgraph"): {"editor"},
         ("GET", "/memory"): {"viewer", "editor"},
         # Deprecated paths kept for one release cycle
         ("POST", "/consolidate"): {"editor"},
@@ -71,6 +72,19 @@ class SemanticConsolidateResponse(BaseModel):
     result: List = Field(..., description="Results from consolidation")
 
 
+class PropagateSubgraphRequest(BaseModel):
+    entities: List[Dict] = Field(default_factory=list)
+    relations: List[Dict] = Field(default_factory=list)
+
+
+class PropagateSubgraphResponse(BaseModel):
+    ids: List[str] = Field(..., description="Stored relation ids")
+
+
+PropagateSubgraphRequest.model_rebuild()
+PropagateSubgraphResponse.model_rebuild()
+
+
 SemanticConsolidateRequest.model_rebuild()
 SemanticConsolidateResponse.model_rebuild()
 
@@ -114,6 +128,17 @@ def create_app(service: LTMService) -> FastAPI:
             fmt=req.format,
         )
         return SemanticConsolidateResponse(result=result)
+
+    @app.post("/propagate_subgraph", summary="Propagate a completed subgraph")
+    async def propagate_subgraph(
+        req: PropagateSubgraphRequest,
+        x_role: str | None = Header(None),
+    ) -> PropagateSubgraphResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/propagate_subgraph", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        ids = await asyncio.to_thread(service.propagate_subgraph, req.model_dump())
+        return PropagateSubgraphResponse(ids=ids)
 
     @app.post("/consolidate", include_in_schema=False)
     async def consolidate() -> RedirectResponse:
