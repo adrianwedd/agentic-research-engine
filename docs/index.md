@@ -9,3 +9,7 @@ This site contains design docs, research papers, and project reports for the Age
 ## Research
 
 - [An Internal Economy for Computational Resource Allocation in Multi-Agent Systems](research/2025-computational-economy-for-multi-agents.md) - *future development*
+
+## Epics
+
+- [Interactive Agent Cockpit](epics/interactive_agent_cockpit_epic.md)
