@@ -115,7 +115,7 @@ class PlannerAgent:
             best_score = float("-inf")
             for agent in self.available_agents:
                 rep = reputations.get(agent, {})
-                rep_score = float(rep.get("accuracy", 0.0))
+                rep_score = float(rep.get("accuracy_score", 0.0))
                 cost = float(rep.get("token_cost", 0.0))
                 score = (
                     self.weights.get("reputation", 0.0) * rep_score

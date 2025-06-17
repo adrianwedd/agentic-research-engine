@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/performance_vector.json",
+  "title": "Evaluator Performance Vector",
+  "type": "object",
+  "properties": {
+    "accuracy_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "completeness_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "coherence_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "citation_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "source_quality_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "token_cost": {"type": "number", "minimum": 0},
+    "completion_time_sec": {"type": "number", "minimum": 0},
+    "tool_success_rate": {"type": "number", "minimum": 0, "maximum": 1}
+  },
+  "required": [
+    "accuracy_score",
+    "completeness_score",
+    "coherence_score",
+    "citation_score",
+    "source_quality_score",
+    "token_cost",
+    "completion_time_sec",
+    "tool_success_rate"
+  ],
+  "additionalProperties": true
+}

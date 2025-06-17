@@ -56,11 +56,11 @@ def test_task_allocation_balances_load(monkeypatch):
             "results": [
                 {
                     "agent_id": "A1",
-                    "reputation_vector": {"accuracy": 0.8, "token_cost": 1},
+                    "reputation_vector": {"accuracy_score": 0.8, "token_cost": 1},
                 },
                 {
                     "agent_id": "A2",
-                    "reputation_vector": {"accuracy": 0.8, "token_cost": 1},
+                    "reputation_vector": {"accuracy_score": 0.8, "token_cost": 1},
                 },
             ]
         }
@@ -92,11 +92,11 @@ def test_planner_uses_reputation_api(monkeypatch):
             "results": [
                 {
                     "agent_id": "A1",
-                    "reputation_vector": {"accuracy": 0.9, "token_cost": 2},
+                    "reputation_vector": {"accuracy_score": 0.9, "token_cost": 2},
                 },
                 {
                     "agent_id": "A2",
-                    "reputation_vector": {"accuracy": 0.6, "token_cost": 1},
+                    "reputation_vector": {"accuracy_score": 0.6, "token_cost": 1},
                 },
             ]
         }

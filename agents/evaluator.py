@@ -40,6 +40,7 @@ class EvaluatorAgent:
         self.evaluation_framework.setdefault(
             "completeness", self._evaluate_completeness
         )
+        self.evaluation_framework.setdefault("coherence", self._evaluate_coherence)
         self.evaluation_framework.setdefault("bias", self._evaluate_bias)
         self.evaluation_framework.setdefault("citations", self._evaluate_citations)
         self.evaluation_framework.setdefault(
@@ -73,6 +74,18 @@ class EvaluatorAgent:
         missing: List[str] = [p for p in required if p.lower() not in text]
         score = 1.0 if not required else max(0.0, 1.0 - len(missing) / len(required))
         return {"score": score, "missing_points": missing}
+
+    def _evaluate_coherence(self, output: Dict, criteria: Dict) -> Dict:
+        text = output.get("text", "")
+        if not text.strip():
+            return {"score": 0.0}
+        sentences = [s for s in re.split(r"[.!?]", text) if s.strip()]
+        lengths = [len(s.split()) for s in sentences]
+        if not lengths:
+            return {"score": 1.0}
+        avg_len = sum(lengths) / len(lengths)
+        score = max(0.0, min(1.0, 1.0 - abs(avg_len - 20) / 20))
+        return {"score": round(score, 3)}
 
     def _evaluate_bias(self, output: Dict, criteria: Dict) -> Dict:
         text = output.get("text", "").lower()
@@ -167,6 +180,26 @@ class EvaluatorAgent:
         critique.validate()
         return critique
 
+    def build_performance_vector(
+        self, results: Dict[str, Dict], metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Convert raw evaluation results and metadata to the performance vector schema."""
+        meta = metadata or {}
+        return {
+            "accuracy_score": float(results.get("accuracy", {}).get("score", 0.0)),
+            "completeness_score": float(
+                results.get("completeness", {}).get("score", 0.0)
+            ),
+            "coherence_score": float(results.get("coherence", {}).get("score", 0.0)),
+            "citation_score": float(results.get("citations", {}).get("score", 0.0)),
+            "source_quality_score": float(
+                results.get("source_quality", {}).get("score", 0.0)
+            ),
+            "token_cost": float(meta.get("token_cost", 0.0)),
+            "completion_time_sec": float(meta.get("completion_time_sec", 0.0)),
+            "tool_success_rate": float(meta.get("tool_success_rate", 0.0)),
+        }
+
     def evaluate_and_publish(
         self,
         output: Dict,
@@ -179,20 +212,23 @@ class EvaluatorAgent:
         is_final: bool = False,
         metadata: Dict[str, Any] | None = None,
     ) -> Dict:
-        """Evaluate output and publish an EvaluationCompletedEvent."""
+        """Evaluate output and publish an EvaluationCompletedEvent.
+
+        Returns the structured performance vector."""
 
         results = self.evaluate_research_output(output, evaluation_criteria)
+        vector = self.build_performance_vector(results, metadata)
         event = EvaluationCompletedEvent(
             task_id=task_id,
             worker_agent_id=worker_agent_id,
             evaluator_id=evaluator_id,
-            performance_vector=results,
+            performance_vector=vector,
             task_type=task_type,
             is_final=is_final,
             metadata=metadata or {},
         )
         publish_event(event)
-        return results
+        return vector
 
     # ------------------------------------------------------------------
     # Factual Verification
