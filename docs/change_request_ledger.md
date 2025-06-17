@@ -25,3 +25,9 @@ This ledger tracks open change requests across the project. Each entry lists the
 | CR-005 | Lifelong skill generalization support | Open |
 | CR-006 | Adopt RLlib and Isaac Lab tooling | Open |
 | CR-05c | Enable Continuous Monitoring & Auditing | Open |
+| CR-EA-01 | Multi-layered guardrail orchestration service | Open |
+| CR-EA-02 | Dedicated Safeguard Agent | Open |
+| CR-EA-03 | Machine-readable ethical constitution | Open |
+| CR-EA-04 | Constitutionally aligned RL loop | Open |
+| CR-EA-05 | Continuous adversarial benchmarking pipeline | Open |
+| CR-EA-06 | AI assurance lifecycle framework | Open |
