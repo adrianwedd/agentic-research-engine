@@ -32,6 +32,7 @@ except Exception:  # pragma: no cover - fallback for test stubs
 
 
 from .episodic_memory import EpisodicMemoryService
+from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
@@ -93,9 +94,13 @@ class LTMService:
         self,
         episodic_memory: EpisodicMemoryService,
         semantic_memory: SemanticMemoryService | None = None,
+        procedural_memory: ProceduralMemoryService | None = None,
     ) -> None:
         self._modules: Dict[str, object] = {"episodic": episodic_memory}
         self._modules["semantic"] = semantic_memory or SemanticMemoryService()
+        self._modules["procedural"] = procedural_memory or ProceduralMemoryService(
+            episodic_memory.storage
+        )
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -116,6 +121,12 @@ class LTMService:
                 record["object"],
                 properties=record.get("properties", {}),
             )
+        if memory_type == "procedural":
+            return module.store_procedure(
+                record.get("task_context", {}),
+                record.get("procedure", []),
+                record.get("outcome", {}),
+            )
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
@@ -128,6 +139,8 @@ class LTMService:
             return module.retrieve_similar_experiences(query, limit=limit)
         if memory_type == "semantic":
             return module.query_facts(**query)[:limit]
+        if memory_type == "procedural":
+            return module.retrieve_similar_procedures(query, limit=limit)
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
     def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
@@ -142,6 +155,9 @@ class LTMService:
         if memory_type == "semantic":
             if hasattr(module, "forget_fact"):
                 return module.forget_fact(identifier, hard=hard)
+        if memory_type == "procedural":
+            if hasattr(module, "forget_procedure"):
+                return module.forget_procedure(identifier, hard=hard)
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
 
