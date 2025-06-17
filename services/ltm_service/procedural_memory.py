@@ -1,6 +1,7 @@
 """Procedural memory module built on top of episodic memory semantics."""
 from __future__ import annotations
 
+import logging
 from typing import Any, Callable, Dict, Iterable, List
 
 from .episodic_memory import EpisodicMemoryService
@@ -26,6 +27,8 @@ class ProceduralMemoryService(EpisodicMemoryService):
             "add": lambda a, b: a + b,
             "mul": lambda a, b: a * b,
         }
+        self.agent_metadata: Dict[str, Dict[str, Any]] = {}
+        self.logger = logging.getLogger(__name__)
 
     def store_procedure(
         self, task_context: Dict, procedure: Iterable[Dict], outcome: Dict
@@ -61,3 +64,31 @@ class ProceduralMemoryService(EpisodicMemoryService):
             kwargs = step.get("kwargs", {})
             results.append(func(*args, **kwargs))
         return results
+
+    # --------------------------------------------------------------
+    # Agent skill metadata helpers
+    # --------------------------------------------------------------
+    def register_agent(
+        self,
+        agent_id: str,
+        *,
+        domains: Iterable[str] | None = None,
+        success_rate: float = 1.0,
+    ) -> None:
+        """Register or update metadata for an agent."""
+
+        self.agent_metadata[agent_id] = {
+            "domains": list(domains or []),
+            "success_rate": float(success_rate),
+        }
+        self.logger.debug("Registered agent %s with domains=%s", agent_id, domains)
+
+    def get_agent_metadata(self, agent_id: str) -> Dict[str, Any]:
+        """Return stored metadata for the agent, if any."""
+
+        return self.agent_metadata.get(agent_id, {})
+
+    def all_agent_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Return metadata for all registered agents."""
+
+        return self.agent_metadata
