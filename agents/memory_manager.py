@@ -41,15 +41,23 @@ class MemoryManagerAgent:
         }
 
     def _extract_triples(self, state: State) -> List[Dict[str, Any]]:
-        """Extract knowledge triples from ``state.data['report']`` using an LLM."""
+        """Extract knowledge triples from ``state.data['report']`` using an LLM.
+
+        The LLM may return nested structures grouping multiple relations under a
+        single subject. This method flattens such structures so callers always
+        receive a list of ``{"subject", "predicate", "object", "properties"}``
+        dictionaries.
+        """
         text = state.data.get("report", "")
         if not isinstance(text, str):
             return []
+
         client = load_llm_client()
         system_msg = (
             "You are a knowledge extraction engine. "
             "Extract all factual relationships as JSON array of objects "
-            "with 'subject', 'predicate', 'object' and optional 'properties'."
+            "with 'subject', 'predicate', 'object' and optional 'properties'. "
+            "Nested relation groups are allowed using a 'relations' array."
         )
         examples = [
             (
@@ -93,10 +101,31 @@ class MemoryManagerAgent:
         try:
             resp = client.invoke(messages)
             data = json.loads(resp)
+
             triples: List[Dict[str, Any]] = []
-            for item in data:
+
+            def _collect(item: Any, subject: Optional[str] = None) -> None:
                 if isinstance(item, dict):
-                    triples.append(item)
+                    if {"subject", "predicate", "object"} <= item.keys():
+                        triples.append(item)
+                    elif "subject" in item and "relations" in item:
+                        subj = item["subject"]
+                        for rel in item.get("relations", []):
+                            _collect(rel, subj)
+                    elif subject and {"predicate", "object"} <= item.keys():
+                        triple = {
+                            "subject": subject,
+                            "predicate": item["predicate"],
+                            "object": item["object"],
+                        }
+                        if "properties" in item:
+                            triple["properties"] = item["properties"]
+                        triples.append(triple)
+                elif isinstance(item, list):
+                    for sub in item:
+                        _collect(sub, subject)
+
+            _collect(data)
             return triples
         except Exception:  # pragma: no cover - log only
             logger.exception("LLM relation extraction failed")
