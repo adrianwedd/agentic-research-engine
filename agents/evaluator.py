@@ -10,12 +10,13 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 import yaml
 
 from agents.critique import Critique
+from services.monitoring.events import EvaluationCompletedEvent, publish_event
 
 
 class EvaluatorAgent:
@@ -165,6 +166,33 @@ class EvaluatorAgent:
         )
         critique.validate()
         return critique
+
+    def evaluate_and_publish(
+        self,
+        output: Dict,
+        evaluation_criteria: Dict,
+        *,
+        task_id: str,
+        worker_agent_id: str,
+        evaluator_id: str,
+        task_type: str | None = None,
+        is_final: bool = False,
+        metadata: Dict[str, Any] | None = None,
+    ) -> Dict:
+        """Evaluate output and publish an EvaluationCompletedEvent."""
+
+        results = self.evaluate_research_output(output, evaluation_criteria)
+        event = EvaluationCompletedEvent(
+            task_id=task_id,
+            worker_agent_id=worker_agent_id,
+            evaluator_id=evaluator_id,
+            performance_vector=results,
+            task_type=task_type,
+            is_final=is_final,
+            metadata=metadata or {},
+        )
+        publish_event(event)
+        return results
 
     # ------------------------------------------------------------------
     # Factual Verification

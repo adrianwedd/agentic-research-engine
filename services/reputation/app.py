@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import os
 from typing import Any, Dict, List, Optional
 
@@ -7,6 +9,8 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from services.monitoring.events import event_stream
 
 from .models import Base
 from .service import ReputationService
@@ -18,6 +22,24 @@ Base.metadata.create_all(engine)
 
 service = ReputationService(SessionLocal)
 app = FastAPI(title="Reputation Service", version="1.0.0")
+
+
+@app.on_event("startup")
+async def _start_listener() -> None:
+    async def _run() -> None:
+        async for evt in event_stream():
+            service.handle_evaluation_event(evt)
+
+    app.state.listener_task = asyncio.create_task(_run())
+
+
+@app.on_event("shutdown")
+async def _stop_listener() -> None:
+    task = getattr(app.state, "listener_task", None)
+    if task:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 def _parse_api_keys(raw: str) -> Dict[str, str]:
