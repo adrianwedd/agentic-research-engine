@@ -100,6 +100,8 @@ jobs:
       - name: Summarize failures
         if: always()
         run: python scripts/ci_summary.py tests.log coverage.xml
+      - name: Check validation errors
+        run: python scripts/check_validation_errors.py tests.log
       - name: Fail if tests failed
         if: steps.run-tests.outputs.exitcode != '0'
         run: exit 1
