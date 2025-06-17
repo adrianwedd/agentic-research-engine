@@ -99,3 +99,32 @@ def test_spatial_query_endpoint():
     results = resp.json()["results"]
     assert len(results) == 1
     assert results[0]["value"] == "v2"
+
+
+def test_skill_endpoints():
+    client, _ = _create_client()
+
+    skill = {
+        "skill_policy": {"steps": ["a", "b"]},
+        "skill_representation": "demo skill",
+        "skill_metadata": {"domain": "demo"},
+    }
+    resp = client.post("/skill", json=skill, headers={"X-Role": "editor"})
+    assert resp.status_code == 200 or resp.status_code == 201
+    sid = resp.json()["id"]
+
+    resp = client.post(
+        "/skill_vector_query",
+        json={"query": "demo skill", "limit": 1},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["results"][0]["id"] == sid
+
+    resp = client.post(
+        "/skill_metadata_query",
+        json={"query": {"domain": "demo"}, "limit": 1},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["results"][0]["id"] == sid

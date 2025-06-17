@@ -1,79 +1,76 @@
 from __future__ import annotations
 
-"""Simple skill library for storing reusable policies with embeddings."""
+import uuid
+from typing import Any, Dict, Iterable, List
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-
-from .episodic_memory import InMemoryStorage, StorageBackend
+from .embedding_client import EmbeddingClient, SimpleEmbeddingClient
 from .vector_store import InMemoryVectorStore, VectorStore
 
 
-@dataclass
-class Skill:
-    """Container for a single skill."""
-
-    policy: Any
-    embedding: List[float]
-    metadata: Dict[str, Any]
-
-
 class SkillLibrary:
-    """Store and retrieve skills with vector search support."""
+    """Store and retrieve skills with vector search and metadata filters."""
 
     def __init__(
         self,
-        storage_backend: StorageBackend | None = None,
         *,
+        embedding_client: EmbeddingClient | None = None,
         vector_store: VectorStore | None = None,
     ) -> None:
-        self.storage = storage_backend or InMemoryStorage()
+        self.embedding_client = embedding_client or SimpleEmbeddingClient()
         self.vector_store = vector_store or InMemoryVectorStore()
+        self._skills: Dict[str, Dict[str, Any]] = {}
 
-    def add(self, skill: Skill, skill_id: Optional[str] = None) -> str:
-        record = {
-            "skill": {
-                "policy": skill.policy,
-                "embedding": skill.embedding,
-                "metadata": skill.metadata,
-            }
+    def add_skill(
+        self,
+        skill_policy: Dict[str, Any],
+        skill_representation: str | List[float],
+        skill_metadata: Dict[str, Any] | None = None,
+    ) -> str:
+        """Store a skill and return its id."""
+
+        if isinstance(skill_representation, str):
+            vector = self.embedding_client.embed([skill_representation])[0]
+        else:
+            vector = list(skill_representation)
+        skill_id = str(uuid.uuid4())
+        metadata = skill_metadata or {}
+        self._skills[skill_id] = {
+            "id": skill_id,
+            "skill_policy": skill_policy,
+            "skill_representation": skill_representation,
+            "skill_metadata": metadata,
         }
-        if skill_id:
-            record["id"] = skill_id
-        sid = self.storage.save(record)
-        self.vector_store.add(skill.embedding, {"id": sid})
-        return sid
+        self.vector_store.add(vector, {"id": skill_id, **metadata})
+        return skill_id
 
-    def get(self, skill_id: str) -> Skill | None:
-        rec = self.storage._data.get(skill_id)
-        if not rec or rec.get("deleted_at"):
-            return None
-        data = rec.get("skill", {})
-        if not data:
-            return None
-        return Skill(
-            policy=data.get("policy"),
-            embedding=list(data.get("embedding", [])),
-            metadata=dict(data.get("metadata", {})),
-        )
+    def get_skill(self, skill_id: str) -> Dict[str, Any] | None:
+        return self._skills.get(skill_id)
 
-    def query(self, embedding: List[float], *, limit: int = 5) -> List[Skill]:
-        results = self.vector_store.query(embedding, limit)
-        skills: List[Skill] = []
-        for rec in results:
-            sk = self.get(rec["id"])
-            if sk:
-                skills.append(sk)
-        return skills
+    def query_by_vector(
+        self, representation: str | List[float], limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        if isinstance(representation, str):
+            vector = self.embedding_client.embed([representation])[0]
+        else:
+            vector = list(representation)
+        results = []
+        for rec in self.vector_store.query(vector, limit):
+            skill = self._skills.get(rec["id"])
+            if skill:
+                results.append(skill)
+        return results
 
-    def search_metadata(self, key: str, value: Any) -> List[Skill]:
-        skills = []
-        for sid, rec in self.storage._data.items():
-            if rec.get("deleted_at"):
-                continue
-            meta = rec.get("skill", {}).get("metadata", {})
-            if meta.get(key) == value:
-                sk = self.get(sid)
-                if sk:
-                    skills.append(sk)
-        return skills
+    def query_by_metadata(
+        self, metadata_filter: Dict[str, Any], limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+        for skill in self._skills.values():
+            meta = skill.get("skill_metadata", {})
+            if all(meta.get(k) == v for k, v in metadata_filter.items()):
+                results.append(skill)
+                if len(results) >= limit:
+                    break
+        return results
+
+    def all_skills(self) -> Iterable[Dict[str, Any]]:
+        return list(self._skills.values())

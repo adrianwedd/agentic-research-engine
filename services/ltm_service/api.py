@@ -36,6 +36,7 @@ from services.monitoring.system_monitor import SystemMonitor
 from .episodic_memory import EpisodicMemoryService
 from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService, SpatioTemporalMemoryService
+from .skill_library import SkillLibrary
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
 
@@ -46,6 +47,9 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/propagate_subgraph"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
     ("GET", "/spatial_query"): {"viewer", "editor"},
+    ("POST", "/skill"): {"editor"},
+    ("POST", "/skill_vector_query"): {"viewer", "editor"},
+    ("POST", "/skill_metadata_query"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
     # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
@@ -110,11 +114,31 @@ if _HAS_PYDANTIC:
     class ForgetRequest(BaseModel):
         hard: bool = False
 
+    class SkillRequest(BaseModel):
+        skill_policy: Dict
+        skill_representation: str | List[float]
+        skill_metadata: Dict = Field(default_factory=dict)
+
+    class SkillQuery(BaseModel):
+        query: str | List[float] | Dict
+        limit: int = 5
+
 else:  # pragma: no cover
 
     @dataclass
     class ForgetRequest:
         hard: bool = False
+
+    @dataclass
+    class SkillRequest:
+        skill_policy: Dict
+        skill_representation: str | List[float]
+        skill_metadata: Dict
+
+    @dataclass
+    class SkillQuery:
+        query: str | List[float] | Dict
+        limit: int = 5
 
 
 class LTMService:
@@ -132,6 +156,7 @@ class LTMService:
         self._modules["procedural"] = procedural_memory or ProceduralMemoryService(
             episodic_memory.storage
         )
+        self.skill_library = SkillLibrary()
         self._monitor = monitor
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
@@ -214,6 +239,24 @@ class LTMService:
         if not isinstance(module, SpatioTemporalMemoryService):
             raise ValueError("Spatio-temporal memory module not available")
         return module.query_spatial_range(bbox, valid_from, valid_to)
+
+    def add_skill(
+        self,
+        policy: Dict[str, Any],
+        representation: str | List[float],
+        metadata: Dict[str, Any],
+    ) -> str:
+        return self.skill_library.add_skill(policy, representation, metadata)
+
+    def skill_vector_query(
+        self, query: str | List[float], *, limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        return self.skill_library.query_by_vector(query, limit=limit)
+
+    def skill_metadata_query(
+        self, metadata: Dict[str, Any], *, limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        return self.skill_library.query_by_metadata(metadata, limit=limit)
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -341,6 +384,53 @@ class LTMServiceServer:
                         self._send_json(400, {"error": str(exc)})
                         return
                     self._send_json(201, {"id": fid})
+                    return
+                if parsed.path == "/skill":
+                    if not self._check_role("POST", "/skill"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    try:
+                        req = SkillRequest(**data)
+                        sid = service.add_skill(
+                            req.skill_policy,
+                            req.skill_representation,
+                            req.skill_metadata,
+                        )
+                    except (ValidationError, ValueError) as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(201, {"id": sid})
+                    return
+                if parsed.path == "/skill_vector_query":
+                    if not self._check_role("POST", "/skill_vector_query"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    try:
+                        req = SkillQuery(**data)
+                        results = service.skill_vector_query(req.query, limit=req.limit)
+                    except (ValidationError, ValueError) as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"results": results})
+                    return
+                if parsed.path == "/skill_metadata_query":
+                    if not self._check_role("POST", "/skill_metadata_query"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    try:
+                        req = SkillQuery(**data)
+                        if not isinstance(req.query, dict):
+                            raise ValueError("metadata query must be dict")
+                        results = service.skill_metadata_query(
+                            req.query, limit=req.limit
+                        )
+                    except (ValidationError, ValueError) as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"results": results})
                     return
                 if parsed.path == "/consolidate":
                     # Temporary redirect to new noun-based endpoint

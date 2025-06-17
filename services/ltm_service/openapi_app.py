@@ -108,6 +108,23 @@ TemporalConsolidateRequest.model_rebuild()
 TemporalConsolidateResponse.model_rebuild()
 
 
+class SkillRequest(BaseModel):
+    skill_policy: Dict = Field(..., description="Skill policy data")
+    skill_representation: str | List[float] = Field(
+        ..., description="Vector or text rep"
+    )
+    skill_metadata: Dict = Field(default_factory=dict, description="Arbitrary metadata")
+
+
+class SkillQuery(BaseModel):
+    query: str | List[float] | Dict = Field(..., description="Vector or metadata")
+    limit: int = Field(5, description="Max results")
+
+
+SkillRequest.model_rebuild()
+SkillQuery.model_rebuild()
+
+
 def create_app(service: LTMService) -> FastAPI:
     app = FastAPI(
         title="LTM Service API",
@@ -228,6 +245,51 @@ def create_app(service: LTMService) -> FastAPI:
     ) -> RedirectResponse:
         query = f"memory_type={memory_type}&limit={limit}"
         return RedirectResponse(url=f"/memory?{query}", status_code=308)
+
+    @app.post("/skill", summary="Store a skill")
+    async def store_skill(
+        req: SkillRequest, x_role: str | None = Header(None)
+    ) -> ConsolidateResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/skill", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        sid = await asyncio.to_thread(
+            service.add_skill,
+            req.skill_policy,
+            req.skill_representation,
+            req.skill_metadata,
+        )
+        return ConsolidateResponse(id=sid)
+
+    @app.post("/skill_vector_query", summary="Query skills by vector")
+    async def skill_vector_query(
+        req: SkillQuery, x_role: str | None = Header(None)
+    ) -> RetrieveResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/skill_vector_query", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        results = await asyncio.to_thread(
+            service.skill_vector_query,
+            req.query,
+            limit=req.limit,
+        )
+        return RetrieveResponse(results=results)
+
+    @app.post("/skill_metadata_query", summary="Query skills by metadata")
+    async def skill_metadata_query(
+        req: SkillQuery, x_role: str | None = Header(None)
+    ) -> RetrieveResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/skill_metadata_query", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        if not isinstance(req.query, dict):
+            raise HTTPException(status_code=400, detail="metadata query must be dict")
+        results = await asyncio.to_thread(
+            service.skill_metadata_query,
+            req.query,
+            limit=req.limit,
+        )
+        return RetrieveResponse(results=results)
 
     return app
 

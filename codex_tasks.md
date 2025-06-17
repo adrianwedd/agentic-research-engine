@@ -1281,6 +1281,7 @@ steps:
   - Add unit tests and update documentation
 acceptance_criteria:
   - MemoryManager stores skills with policy, embedding and metadata
+  - SkillLibrary exposes vector and metadata query endpoints
 ```
 
 ```codex-task

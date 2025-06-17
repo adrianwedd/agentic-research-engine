@@ -71,6 +71,32 @@ class MemoryManagerAgent:
                 logger.exception("snapshot query failed")
         return []
 
+    def _add_skill(self, skill: Dict[str, Any]) -> None:
+        self.tool_registry.invoke(
+            "MemoryManager",
+            "add_skill",
+            skill,
+            endpoint=self.endpoint,
+        )
+
+    def _query_skill_vector(self, query: Any, limit: int = 5) -> List[Dict[str, Any]]:
+        return self.tool_registry.invoke(
+            "MemoryManager",
+            "skill_vector_query",
+            {"query": query, "limit": limit},
+            endpoint=self.endpoint,
+        )
+
+    def _query_skill_metadata(
+        self, query: Dict[str, Any], limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        return self.tool_registry.invoke(
+            "MemoryManager",
+            "skill_metadata_query",
+            {"query": query, "limit": limit},
+            endpoint=self.endpoint,
+        )
+
     def _quality_passed(self, state: State) -> bool:
         return True
 
@@ -190,6 +216,9 @@ class MemoryManagerAgent:
                 record,
                 endpoint=self.endpoint,
             )
+            skill = state.data.get("skill")
+            if isinstance(skill, dict):
+                self._add_skill(skill)
             for triple in self._extract_triples(state):
                 self.tool_registry.invoke(
                     "MemoryManager",
@@ -235,6 +264,16 @@ class MemoryManagerAgent:
                 )
                 if results:
                     state.data["snapshot_context"] = results
+            if "skill_query_vector" in state.data:
+                results = self._query_skill_vector(state.data["skill_query_vector"])
+                if results:
+                    state.data["skill_results"] = results
+            if "skill_query_metadata" in state.data:
+                query = state.data["skill_query_metadata"]
+                if isinstance(query, dict):
+                    results = self._query_skill_metadata(query)
+                    if results:
+                        state.data.setdefault("skill_results", []).extend(results)
         except Exception:  # pragma: no cover - log only
             logger.exception("Failed to consolidate memory")
         return state
