@@ -21,7 +21,7 @@ import yaml
 
 from agents.critique import Critique
 from services.monitoring.events import EvaluationCompletedEvent, publish_event
-from tools.reputation_client import publish_reputation_event
+from services.tool_registry import ToolRegistry, create_default_registry
 
 
 class EvaluatorAgent:
@@ -32,6 +32,7 @@ class EvaluatorAgent:
         *,
         endpoint: str | None = None,
         ltm_service: Any | None = None,
+        tool_registry: ToolRegistry | None = None,
     ) -> None:
         """Initialize with comprehensive evaluation capabilities.
 
@@ -63,6 +64,8 @@ class EvaluatorAgent:
         config = self._load_source_quality_config()
         self.allowlist = set(config.get("allowlist", []))
         self.blocklist = set(config.get("blocklist", []))
+
+        self.tool_registry = tool_registry or create_default_registry()
 
         self.reputation_url = os.getenv(
             "REPUTATION_API_URL",
@@ -252,7 +255,9 @@ class EvaluatorAgent:
                 "evaluation_score": float(vector.get("accuracy_score", 0.0)),
                 "timestamp": event.timestamp.isoformat(),
             }
-            publish_reputation_event(
+            self.tool_registry.invoke(
+                "Evaluator",
+                "reputation_event",
                 payload,
                 url=self.reputation_url,
                 token=self.reputation_token,
