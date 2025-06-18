@@ -169,3 +169,26 @@ def test_provenance_endpoint():
     assert resp.status_code == 200
     assert resp.json()["provenance"]["source"] == "tester"
     server.httpd.shutdown()
+
+
+def test_rbac_and_memory_type_validation_on_forget_and_provenance():
+    server, endpoint = _start_server()
+
+    # unauthorized role for forget
+    resp = requests.delete(f"{endpoint}/forget/abc", headers={"X-Role": "viewer"})
+    assert resp.status_code == 403
+
+    # invalid memory type for forget
+    resp = requests.delete(
+        f"{endpoint}/forget/abc",
+        headers={"X-Role": "editor"},
+        params={"memory_type": "bad"},
+        json={"hard": False},
+    )
+    assert resp.status_code == 400
+
+    # invalid memory type for provenance
+    resp = requests.get(f"{endpoint}/provenance/bad/123", headers={"X-Role": "viewer"})
+    assert resp.status_code == 400
+
+    server.httpd.shutdown()
