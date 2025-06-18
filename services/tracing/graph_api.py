@@ -2,14 +2,19 @@ from __future__ import annotations
 
 """Expose execution graph derived from OpenTelemetry spans."""
 
+import asyncio
 import json
-from typing import Any, Dict, List, Set
+from typing import Any, AsyncGenerator, Dict, List, Set
 
 try:  # optional dependency
     from fastapi import FastAPI, HTTPException
+    from fastapi.responses import StreamingResponse
+    from fastapi.staticfiles import StaticFiles
 except Exception:  # pragma: no cover - fallback objects
     FastAPI = object
     HTTPException = Exception
+    StreamingResponse = object
+    StaticFiles = object
 
 try:
     from opentelemetry.sdk.trace import ReadableSpan
@@ -37,15 +42,30 @@ def _extract_node_states(spans: List[ReadableSpan]) -> Dict[str, Dict[str, Any]]
     return states
 
 
+def _span_to_dict(span: ReadableSpan) -> Dict[str, Any]:
+    """Convert a ``ReadableSpan`` to a JSON-serializable dict."""
+    return {
+        "name": span.name,
+        "start": span.start_time / 1e9,
+        "end": span.end_time / 1e9,
+        "attributes": dict(span.attributes),
+    }
+
+
 def spans_to_graph(spans: List[ReadableSpan]) -> Dict[str, List[Dict[str, Any]]]:
     """Convert spans to a graph representation with node metadata."""
     states = _extract_node_states(spans)
     nodes_set: Set[str] = set(states)
+    node_times: Dict[str, Dict[str, float]] = {}
     edges: List[Dict[str, Any]] = []
     for span in spans:
         if span.name.startswith("node:"):
             node = span.name.split(":", 1)[1]
             nodes_set.add(node)
+            node_times[node] = {
+                "start": span.start_time / 1e9,
+                "end": span.end_time / 1e9,
+            }
         elif span.name == "edge":
             start = span.attributes.get("from")
             end = span.attributes.get("to")
@@ -64,21 +84,35 @@ def spans_to_graph(spans: List[ReadableSpan]) -> Dict[str, List[Dict[str, Any]]]
         state = states.get(name, {})
         conf = state.get("scratchpad", {}).get("confidence")
         intent = state.get("scratchpad", {}).get("intent")
-        nodes.append({"id": name, "confidence": conf, "intent": intent})
+        timing = node_times.get(name, {})
+        nodes.append(
+            {
+                "id": name,
+                "confidence": conf,
+                "intent": intent,
+                **timing,
+            }
+        )
 
     return {"nodes": nodes, "edges": edges}
 
 
 class GraphTraceExporter(SpanExporter):
-    """Collect spans in memory for graph extraction."""
+    """Collect spans in memory for graph extraction and streaming."""
 
     def __init__(self) -> None:
         self.spans: List[ReadableSpan] = []
+        self.events: asyncio.Queue[ReadableSpan] = asyncio.Queue()
 
     def export(
         self, spans: List[ReadableSpan]
     ) -> SpanExportResult:  # pragma: no cover - OTLP interface
         self.spans.extend(spans)
+        for span in spans:
+            try:
+                self.events.put_nowait(span)
+            except Exception:
+                pass
         return SpanExportResult.SUCCESS
 
     def shutdown(self) -> None:  # pragma: no cover - interface req
@@ -90,7 +124,9 @@ class GraphTraceExporter(SpanExporter):
         return True
 
 
-def create_app(exporter: GraphTraceExporter) -> FastAPI:
+def create_app(
+    exporter: GraphTraceExporter, dashboard_path: str | None = None
+) -> FastAPI:
     """Return a FastAPI app exposing the current execution graph."""
 
     app = FastAPI(title="Graph Trace API", version="1.0.0")
@@ -98,6 +134,15 @@ def create_app(exporter: GraphTraceExporter) -> FastAPI:
     @app.get("/graph")
     def get_graph() -> Dict[str, List[Dict[str, Any]]]:
         return spans_to_graph(exporter.spans)
+
+    @app.get("/events")
+    async def stream_events() -> StreamingResponse:
+        async def generator() -> AsyncGenerator[str, None]:
+            while True:
+                span = await exporter.events.get()
+                yield f"data: {json.dumps(_span_to_dict(span))}\n\n"
+
+        return StreamingResponse(generator(), media_type="text/event-stream")
 
     @app.get("/belief/{node}/{key}")
     def get_belief(node: str, key: str) -> Dict[str, Any]:
@@ -111,5 +156,12 @@ def create_app(exporter: GraphTraceExporter) -> FastAPI:
         elif key in state.get("scratchpad", {}):
             value = state["scratchpad"][key]
         return {"value": value, "history": state.get("history", [])}
+
+    if dashboard_path:
+        app.mount(
+            "/dashboard",
+            StaticFiles(directory=dashboard_path, html=True),
+            name="dashboard",
+        )
 
     return app
