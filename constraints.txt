@@ -37,4 +37,6 @@ SQLAlchemy==2.0.29
 asyncpg==0.29.0
 neo4j==5.19.0
 scikit-learn==1.7.0
+pymilvus==2.5.11
+milvus-lite==2.4.12
 

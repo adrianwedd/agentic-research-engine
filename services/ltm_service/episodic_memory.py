@@ -52,7 +52,12 @@ from .embedding_client import (
     EmbeddingError,
     SimpleEmbeddingClient,
 )
-from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
+from .vector_store import (
+    InMemoryVectorStore,
+    MilvusVectorStore,
+    VectorStore,
+    WeaviateVectorStore,
+)
 
 
 class StorageBackend:
@@ -115,10 +120,12 @@ class EpisodicMemoryService:
                 self.embedding_client, cache_size
             )
         if vector_store is None:
-            try:
-                self.vector_store = WeaviateVectorStore()
-            except Exception:
-                self.vector_store = InMemoryVectorStore()
+            for cls in (WeaviateVectorStore, MilvusVectorStore, InMemoryVectorStore):
+                try:
+                    self.vector_store = cls()
+                    break
+                except Exception:
+                    continue
         else:
             self.vector_store = vector_store
         self.text_splitter = RecursiveCharacterTextSplitter(

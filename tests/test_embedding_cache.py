@@ -26,13 +26,13 @@ def test_service_cache_integration(monkeypatch):
     from services.ltm_service.episodic_memory import (
         EpisodicMemoryService,
         InMemoryStorage,
-        InMemoryVectorStore,
+        MilvusVectorStore,
     )
 
     monkeypatch.setenv("EMBED_CACHE_SIZE", "4")
     base = CountingEmbeddingClient()
     service = EpisodicMemoryService(
-        InMemoryStorage(), embedding_client=base, vector_store=InMemoryVectorStore()
+        InMemoryStorage(), embedding_client=base, vector_store=MilvusVectorStore()
     )
     ctx = {"description": "cached"}
     service.store_experience(ctx, {}, {"success": True})

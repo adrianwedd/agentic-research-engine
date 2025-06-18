@@ -8,13 +8,12 @@ sys.modules.setdefault(
 )
 
 from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
-from services.ltm_service.vector_store import InMemoryVectorStore
+from services.ltm_service.vector_store import MilvusVectorStore
 
 
-def test_anomaly_monitor_background_job():
+def test_anomaly_monitor_background_job(milvus_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
-    service = EpisodicMemoryService(storage, vector_store=vector_store)
+    service = EpisodicMemoryService(storage, vector_store=milvus_vector_store)
 
     embeds = [[0.1 * i, 0.1 * i] for i in range(5)] + [[10.0, 10.0]]
     idx = 0

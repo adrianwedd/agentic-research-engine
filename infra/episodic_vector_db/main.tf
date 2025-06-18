@@ -11,14 +11,9 @@ provider "helm" {
 resource "helm_release" "episodic_vector_db" {
   name       = "episodic-vector-db"
   namespace  = var.namespace
-  repository = "https://qdrant.github.io/qdrant-helm"
-  chart      = "qdrant"
-  version    = var.qdrant_version
-
-  set_sensitive {
-    name  = "apiKey"
-    value = var.api_key
-  }
+  repository = "https://milvus-io.github.io/milvus-helm"
+  chart      = "milvus"
+  version    = var.milvus_version
 
   values = [
     yamlencode({
@@ -31,5 +26,5 @@ resource "helm_release" "episodic_vector_db" {
 }
 
 output "endpoint" {
-  value = "http://episodic-vector-db.${var.namespace}.svc.cluster.local:6333"
+  value = "tcp://episodic-vector-db.${var.namespace}.svc.cluster.local:19530"
 }

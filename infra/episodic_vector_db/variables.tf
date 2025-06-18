@@ -9,14 +9,8 @@ variable "namespace" {
   default     = "ltm"
 }
 
-variable "qdrant_version" {
+variable "milvus_version" {
   description = "Helm chart version to deploy"
   type        = string
-  default     = "0.6.2"
-}
-
-variable "api_key" {
-  description = "Admin API key for qdrant"
-  type        = string
-  sensitive   = true
+  default     = "4.0.5"
 }

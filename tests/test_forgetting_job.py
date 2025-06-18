@@ -41,7 +41,7 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
-from services.ltm_service.vector_store import InMemoryVectorStore
+from services.ltm_service.vector_store import MilvusVectorStore
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -59,10 +59,9 @@ class InMemorySpanExporter(SpanExporter):
         return True
 
 
-def test_prune_stale_memories():
+def test_prune_stale_memories(milvus_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
-    service = EpisodicMemoryService(storage, vector_store=vector_store)
+    service = EpisodicMemoryService(storage, vector_store=milvus_vector_store)
 
     old_ts = time.time() - 31 * 24 * 3600
     recent_ts = time.time() - 5 * 24 * 3600
@@ -98,10 +97,9 @@ def test_prune_stale_memories():
     assert exporter.spans
 
 
-def test_decay_relevance_soft_delete():
+def test_decay_relevance_soft_delete(milvus_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
-    service = EpisodicMemoryService(storage, vector_store=vector_store)
+    service = EpisodicMemoryService(storage, vector_store=milvus_vector_store)
 
     rec_id = service.store_experience({}, {}, {})
     storage.update(

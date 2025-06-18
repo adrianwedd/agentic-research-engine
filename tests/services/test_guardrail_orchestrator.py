@@ -2,17 +2,20 @@ from importlib import import_module, reload
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-app_module = import_module("services.guardrail_orchestrator.app")
 from services.guardrail_orchestrator.models import AuditLog, Base
 from services.guardrail_orchestrator.service import GuardrailService
+
+app_module = import_module("services.guardrail_orchestrator.app")
 
 
 def _create_client():
     engine = create_engine(
-        "sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)

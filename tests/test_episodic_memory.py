@@ -3,7 +3,6 @@ import pytest
 from services.ltm_service import (
     EpisodicMemoryService,
     InMemoryStorage,
-    InMemoryVectorStore,
     SimpleEmbeddingClient,
     WeaviateVectorStore,
 )
@@ -32,11 +31,12 @@ def test_store_and_retrieve():
     assert descriptions == {"Write a blog post", "Write unit tests"}
 
 
-def test_embedding_and_vector_storage():
+def test_embedding_and_vector_storage(milvus_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
     service = EpisodicMemoryService(
-        storage, embedding_client=SimpleEmbeddingClient(), vector_store=vector_store
+        storage,
+        embedding_client=SimpleEmbeddingClient(),
+        vector_store=milvus_vector_store,
     )
 
     ctx = {"description": "Vector test", "category": "testing"}
@@ -60,12 +60,11 @@ class FlakyEmbeddingClient(SimpleEmbeddingClient):
         return super().embed(texts)
 
 
-def test_embedding_retry():
+def test_embedding_retry(milvus_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
     client = FlakyEmbeddingClient()
     service = EpisodicMemoryService(
-        storage, embedding_client=client, vector_store=vector_store
+        storage, embedding_client=client, vector_store=milvus_vector_store
     )
 
     ctx = {"description": "Retry test"}

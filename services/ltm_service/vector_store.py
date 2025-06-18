@@ -14,6 +14,19 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover - optional dependency missing
     weaviate = None
 
+try:  # pragma: no cover - optional dependency
+    from milvus_lite.server import Server as MilvusLiteServer
+    from pymilvus import (
+        Collection,
+        CollectionSchema,
+        DataType,
+        FieldSchema,
+        connections,
+        utility,
+    )
+except Exception:  # pragma: no cover - optional dependency missing
+    MilvusLiteServer = None  # type: ignore
+
 
 class VectorStore:
     """Minimal vector storage interface."""
@@ -142,5 +155,80 @@ class WeaviateVectorStore(VectorStore):
     def delete(self, vec_id: str) -> None:
         try:
             self._collection.data.delete(uuid=vec_id)
+        except Exception:  # pragma: no cover - best effort cleanup
+            pass
+
+
+class MilvusVectorStore(VectorStore):
+    """Persistent vector store backed by a local Milvus Lite instance."""
+
+    def __init__(self, *, persistence_path: str | None = None, dim: int = 768) -> None:
+        if MilvusLiteServer is None:  # pragma: no cover - dependency missing
+            raise RuntimeError("pymilvus not installed")
+
+        db_file = os.path.join(persistence_path or "/tmp", "milvus.db")
+        self._server = MilvusLiteServer(db_file)
+        self._server.init()
+        self._server.start()
+        connections.connect(alias="default", uri=self._server.uds_path)
+        self._dim = dim
+
+        if utility.has_collection("Memory"):
+            self._collection = Collection("Memory")
+        else:
+            fields = [
+                FieldSchema(
+                    "id",
+                    DataType.VARCHAR,
+                    is_primary=True,
+                    auto_id=False,
+                    max_length=64,
+                ),
+                FieldSchema("vector", DataType.FLOAT_VECTOR, dim=dim),
+                FieldSchema("meta", DataType.JSON),
+            ]
+            schema = CollectionSchema(fields)
+            self._collection = Collection("Memory", schema)
+            self._collection.create_index(
+                "vector", {"metric_type": "L2", "index_type": "FLAT"}
+            )
+
+    def close(self) -> None:
+        try:
+            connections.disconnect("default")
+        except Exception:
+            pass
+        if self._server:
+            self._server.stop()
+            self._server = None
+
+    def add(self, vector: List[float], metadata: Dict) -> str:
+        vec_id = metadata.get("id", str(uuid.uuid4()))
+        meta = metadata.copy()
+        meta.pop("id", None)
+        self._collection.insert([[vec_id], [vector], [meta]])
+        self._collection.flush()
+        return vec_id
+
+    def query(self, vector: List[float], limit: int = 5) -> List[Dict]:
+        results = self._collection.search(
+            [vector],
+            "vector",
+            output_fields=["meta"],
+            param={"metric_type": "L2"},
+            limit=limit,
+        )[0]
+        records = []
+        for hit in results:
+            meta = hit.entity.get("meta", {})
+            meta.setdefault("id", hit.id)
+            meta["similarity"] = 1.0 - hit.distance
+            records.append(meta)
+        records.sort(key=lambda r: r["similarity"], reverse=True)
+        return records
+
+    def delete(self, vec_id: str) -> None:
+        try:
+            self._collection.delete(f"id == '{vec_id}'")
         except Exception:  # pragma: no cover - best effort cleanup
             pass
