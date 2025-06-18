@@ -1,0 +1,19 @@
+# Exclude version control and configuration
+.git
+.gitignore
+
+# Exclude documentation and tests
+/docs
+/tests
+
+# Exclude virtual environments and caches
+ENV/
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# Exclude build artifacts
+*.egg-info/
+
