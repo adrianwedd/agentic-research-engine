@@ -223,6 +223,7 @@ class OrchestrationEngine:
     ] = field(init=False, default_factory=dict)
     on_complete: Callable[[State], Awaitable[State] | State] | None = None
     error_logger: Callable[[Exception, str, State], None] | None = None
+    last_metrics: Dict[str, float] | None = field(init=False, default=None)
 
     def add_node(
         self,
@@ -391,11 +392,64 @@ class OrchestrationEngine:
         task_span.set_attribute("self_correction_loops", self_corrections)
         task_span.set_attribute("communication_overhead", communication_tokens)
 
+        self.last_metrics = {
+            "total_messages_sent": float(total_messages),
+            "average_message_latency": float(avg_latency),
+            "action_advancement_rate": float(action_rate),
+            "total_tokens_consumed": float(tokens),
+            "tool_call_count": float(tool_calls),
+            "self_correction_loops": float(self_corrections),
+            "communication_overhead": float(communication_tokens),
+        }
+
         return state
 
     def run(self, state: GraphState, *, thread_id: str = "default") -> GraphState:
         """Synchronous wrapper around :meth:`run_async`."""
         return asyncio.run(self.run_async(state, thread_id=thread_id))
+
+    async def run_sandbox_async(
+        self,
+        state: State,
+        *,
+        thread_id: str = "simulation",
+        modify_state: Callable[[State], None] | None = None,
+    ) -> tuple[State, Dict[str, float]]:
+        """Execute the graph on a forked state with isolated tracing."""
+
+        cloned = State(
+            data=state.data.copy(),
+            messages=list(state.messages),
+            history=list(state.history),
+            scratchpad=state.scratchpad.copy(),
+            status=state.status,
+        )
+        if modify_state:
+            modify_state(cloned)
+
+        # configure isolated tracer
+        try:
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        except Exception:  # pragma: no cover - fallback
+            return await self.run_async(cloned, thread_id=thread_id), {}
+
+        from services.tracing.graph_api import GraphTraceExporter
+        from services.tracing.simulations import save_simulation
+
+        exporter = GraphTraceExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        original = trace.get_tracer_provider()
+        trace.set_tracer_provider(provider)
+        try:
+            result = await self.run_async(cloned, thread_id=thread_id)
+            metrics = self.last_metrics or {}
+        finally:
+            trace.set_tracer_provider(original)
+
+        save_simulation(thread_id, result, metrics, exporter.spans)
+        return result, metrics
 
     async def resume_from_queue_async(self, run_id: str) -> State:
         if not self.review_queue:

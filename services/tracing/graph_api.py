@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, AsyncGenerator, Dict, List, Set
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Dict, List, Set
+
+if TYPE_CHECKING:  # pragma: no cover - for type hints
+    from engine.orchestration_engine import GraphState as _GraphState  # noqa: F401
+    from engine.orchestration_engine import OrchestrationEngine
 
 try:  # optional dependency
     from fastapi import FastAPI, HTTPException
@@ -125,7 +129,9 @@ class GraphTraceExporter(SpanExporter):
 
 
 def create_app(
-    exporter: GraphTraceExporter, dashboard_path: str | None = None
+    exporter: GraphTraceExporter,
+    dashboard_path: str | None = None,
+    engine: "OrchestrationEngine" | None = None,
 ) -> FastAPI:
     """Return a FastAPI app exposing the current execution graph."""
 
@@ -156,6 +162,33 @@ def create_app(
         elif key in state.get("scratchpad", {}):
             value = state["scratchpad"][key]
         return {"value": value, "history": state.get("history", [])}
+
+    if engine:
+
+        @app.post("/simulate")
+        async def run_simulation(payload: Dict[str, Any]) -> Dict[str, Any]:
+            state_data = payload.get("state", {})
+            plan = payload.get("plan")
+            from engine.orchestration_engine import GraphState as RuntimeGraphState
+
+            state: _GraphState = RuntimeGraphState.model_validate(state_data)
+            if plan is not None:
+                state.update({"plan": plan})
+            result, metrics = await engine.run_sandbox_async(state)
+            return {"state": result.model_dump(), "metrics": metrics}
+
+        from services.tracing.simulations import load_simulation
+
+        @app.get("/compare/{run_id}")
+        def compare(run_id: str) -> Dict[str, Any]:
+            try:
+                sim = load_simulation(run_id)
+            except Exception as exc:
+                raise HTTPException(status_code=404, detail=str(exc))
+            return {
+                "live": engine.last_metrics or {},
+                "simulation": sim.get("metrics", {}),
+            }
 
     if dashboard_path:
         app.mount(
