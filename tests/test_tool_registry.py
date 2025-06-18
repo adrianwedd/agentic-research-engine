@@ -151,3 +151,26 @@ def test_tool_invocation_audit_blocked(caplog):
             registry.invoke("WebResearcher", "dummy", intent="demo")
     entries = [json.loads(r.message) for r in caplog.records]
     assert any(e.get("outcome") == "blocked" for e in entries)
+
+
+def test_tool_init_failure_recorded():
+    exporter = InMemorySpanExporter()
+    trace.set_tracer_provider(TracerProvider())
+    provider = trace.get_tracer_provider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+
+    registry = ToolRegistry()
+
+    class FailingDict(dict):
+        def __setitem__(self, key, value):  # pragma: no cover - triggered in test
+            raise RuntimeError("boom")
+
+    registry._tools = FailingDict()
+
+    with pytest.raises(RuntimeError):
+        registry.register_tool("dummy", dummy_tool, allowed_roles=["A"])
+
+    span = next(s for s in exporter.spans if s.name == "tool.init")
+    assert span.attributes.get("init.failed") is True
+    assert span.attributes.get("allowed_roles") == "A"
+    assert any(evt.name == "exception" for evt in span.events)
