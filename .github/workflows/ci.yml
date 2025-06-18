@@ -51,6 +51,20 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
+  api-spec:
+    needs: changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install fastapi pydantic PyYAML
+      - name: Check OpenAPI spec
+        run: python scripts/validate_openapi.py
+
   integration:
     needs: changes
     if: |
