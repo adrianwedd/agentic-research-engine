@@ -10,8 +10,12 @@ from opentelemetry.sdk.trace.export import (
     SpanExportResult,
 )
 
-from engine.orchestration_engine import GraphState, create_orchestration_engine
-from engine.routing import make_edge_type_router
+from engine.orchestration_engine import (
+    GraphState,
+    InMemorySaver,
+    create_orchestration_engine,
+)
+from engine.routing import RoutingError, make_edge_type_router
 
 pytestmark = pytest.mark.core
 
@@ -136,3 +140,46 @@ def test_typed_edges_routing_and_lookup():
     engine.build()
     dot = engine.export_dot()
     assert '"Start" -> "B" [label="success"];' in dot
+
+
+def test_edge_type_router_missing_edge_raises():
+    engine = create_orchestration_engine()
+    engine.add_node("Start", lambda s, sp: s)
+    engine.add_node("A", lambda s, sp: s)
+    engine.add_edge("Start", "A", edge_type="ok")
+
+    router = make_edge_type_router(engine, "Start", state_key="label")
+    engine.add_router("Start", router)
+
+    state = GraphState(data={"label": "bad"})
+    with pytest.raises(RoutingError):
+        asyncio.run(engine.run_async(state))
+
+
+def test_resume_after_failure_recovery():
+    cp = InMemorySaver()
+    engine = create_orchestration_engine()
+    engine.checkpointer = cp
+
+    fail = {"flag": True}
+
+    def start(state: GraphState, _):
+        state.update({"count": 1})
+        return state
+
+    def maybe_fail(state: GraphState, _):
+        if fail["flag"]:
+            raise RuntimeError("boom")
+        state.update({"count": state.data["count"] + 1})
+        return state
+
+    engine.add_node("Start", start)
+    engine.add_node("Next", maybe_fail)
+    engine.add_edge("Start", "Next")
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(engine.run_async(GraphState(), thread_id="t1"))
+
+    fail["flag"] = False
+    resumed = asyncio.run(engine.resume_from_checkpoint_async("t1"))
+    assert resumed.data["count"] == 2

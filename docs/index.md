@@ -6,6 +6,7 @@ This site contains design docs, research papers, and project reports for the Age
 
 - [Semantic Memory with Neo4j](semantic_memory_neo4j.md)
 - [Concurrency Testing Approach](concurrency_testing.md)
+- [Contributing Agents](contributing_agents.md)
 
 ## Research
 

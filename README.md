@@ -152,7 +152,21 @@ running the tools. In CI, add the keys as repository secrets and reference them
 in workflow steps. See [docs/security.md](docs/security.md) for detailed
 guidance.
 
-## **8. Continuous Deployment**
+## **8. Error Logging Middleware**
+
+The orchestration engine supports optional structured error logging. Enable it
+by attaching an `ErrorLoggingMiddleware` instance to the engine:
+
+```python
+from services.error_logging import ErrorLoggingMiddleware
+engine = create_orchestration_engine()
+engine.error_logger = ErrorLoggingMiddleware()
+```
+
+Set `engine.error_logger = None` to disable logging. The middleware records the
+node name, exception, and serialized state for easier debugging.
+
+## **9. Continuous Deployment**
 
 All services are deployed via an automated CD pipeline defined in `.github/workflows/cd.yml`.
 The pipeline uses Terraform and Helm configurations under `infra/` to perform
@@ -168,7 +182,7 @@ environment automatically. After verification, an operator can trigger the
 `promote-production` job to roll out the same release to production. In case of
 issues, `scripts/rollback.sh` reverts the selector to the previous color.
 
-## **9. Project Roadmap**
+## **10. Project Roadmap**
 
 This project is being executed in a phased approach to manage complexity and deliver value incrementally. For a complete list of all change requests, see [docs/change_request_ledger.md](docs/change_request_ledger.md).
 
@@ -185,7 +199,7 @@ This project is being executed in a phased approach to manage complexity and del
   * **Objective**: Refine the system for production use, focusing on efficiency and robustness.
   * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.[1]
 
-## **10. Contributing**
+## **11. Contributing**
 
 Contributions are welcome and encouraged! Please follow these steps to contribute:
 
@@ -201,6 +215,6 @@ All pull requests will be automatically validated by the CI pipeline (P1-02), wh
 Branch protection rules on `main` enforce these checks so direct pushes are rejected. You can verify the policy by running `scripts/check_branch_protection.py` with a GitHub token.
 For instructions on running the pipeline locally and the required 80% coverage threshold, see [docs/ci.md](docs/ci.md).
 
-## **11. License**
+## **12. License**
 
 This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.
