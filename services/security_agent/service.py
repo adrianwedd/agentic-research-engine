@@ -40,7 +40,7 @@ class SecurityAgentService:
                 session.add(record)
             else:
                 record.score = score
-                record.last_updated = datetime.utcnow()
+                record.last_updated = datetime.now(datetime.UTC)
             session.commit()
         return score
 

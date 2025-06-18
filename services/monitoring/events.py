@@ -14,7 +14,7 @@ class EvaluationCompletedEvent:
     performance_vector: Dict[str, Any]
     task_type: Optional[str] = None
     is_final: bool = False
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
