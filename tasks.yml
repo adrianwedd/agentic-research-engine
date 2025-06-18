@@ -1,0 +1,15 @@
+- id: 1
+  description: Add unit test for src.example.hello
+  component: tests
+  dependencies: []
+  priority: 3
+- id: 2
+  description: Update starlette to 0.40.0 in requirements and constraints
+  component: deps
+  dependencies: []
+  priority: 4
+- id: 3
+  description: Upgrade langchain to 0.2.5
+  component: deps
+  dependencies: []
+  priority: 4
