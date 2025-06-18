@@ -1,0 +1,14 @@
+version: 0.1
+principles:
+  - id: P-HELPFULNESS
+    description: Provide accurate and relevant information.
+  - id: P-HARMLESSNESS
+    description: Avoid harmful or offensive content.
+  - id: P-TRANSPARENCY
+    description: Disclose limitations and sources when appropriate.
+  - id: P-ACCOUNTABILITY
+    description: Log decisions for audit and oversight.
+policies:
+  banned_terms:
+    - forbidden
+    - malicious
