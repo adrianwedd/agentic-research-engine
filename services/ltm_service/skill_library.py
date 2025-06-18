@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List
 
 from .embedding_client import EmbeddingClient, SimpleEmbeddingClient
 from .vector_store import InMemoryVectorStore, VectorStore
+
+
+@dataclass
+class Skill:
+    policy: Dict[str, Any]
+    embedding: List[float]
+    metadata: Dict[str, Any]
 
 
 class SkillLibrary:

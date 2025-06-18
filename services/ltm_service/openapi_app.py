@@ -121,6 +121,18 @@ class SkillQuery(BaseModel):
     limit: int = Field(5, description="Max results")
 
 
+class CritiqueRequest(BaseModel):
+    critique: Dict = Field(..., description="Critique record")
+
+
+class CritiqueQuery(BaseModel):
+    query: Optional[Dict] = None
+
+
+CritiqueRequest.model_rebuild()
+CritiqueQuery.model_rebuild()
+
+
 SkillRequest.model_rebuild()
 SkillQuery.model_rebuild()
 
@@ -288,6 +300,33 @@ def create_app(service: LTMService) -> FastAPI:
             service.skill_metadata_query,
             req.query,
             limit=req.limit,
+        )
+        return RetrieveResponse(results=results)
+
+    @app.post("/evaluator_memory", summary="Store evaluator critique")
+    async def evaluator_memory_store(
+        req: CritiqueRequest, x_role: str | None = Header(None)
+    ) -> ConsolidateResponse:
+        role = x_role or ""
+        if not _check_role("POST", "/evaluator_memory", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        cid = await asyncio.to_thread(service.store_evaluator_memory, req.critique)
+        return ConsolidateResponse(id=cid)
+
+    @app.get("/evaluator_memory", summary="Retrieve evaluator critiques")
+    async def evaluator_memory_get(
+        limit: int = Query(5, ge=1, le=50),
+        req: CritiqueQuery = Body(default_factory=CritiqueQuery),
+        x_role: str | None = Header(None),
+    ) -> RetrieveResponse:
+        role = x_role or ""
+        if not _check_role("GET", "/evaluator_memory", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        query = req.query or {}
+        results = await asyncio.to_thread(
+            service.retrieve_evaluator_memory,
+            query,
+            limit=limit,
         )
         return RetrieveResponse(results=results)
 

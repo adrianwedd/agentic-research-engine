@@ -2,8 +2,22 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Evaluator Critique",
   "type": "object",
-  "required": ["overall_score", "criteria_breakdown", "feedback_text"],
+  "required": [
+    "prompt",
+    "outcome",
+    "risk_categories",
+    "created_at",
+    "updated_at",
+    "overall_score",
+    "criteria_breakdown",
+    "feedback_text"
+  ],
   "properties": {
+    "prompt": {"type": "string"},
+    "outcome": {"type": "string"},
+    "risk_categories": {"type": "array", "items": {"type": "string"}},
+    "created_at": {"type": "number"},
+    "updated_at": {"type": "number"},
     "overall_score": {
       "type": "number",
       "minimum": 0,

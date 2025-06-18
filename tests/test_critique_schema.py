@@ -12,6 +12,11 @@ def test_schema_file_fields():
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
     assert set(data.get("required", [])) == {
+        "prompt",
+        "outcome",
+        "risk_categories",
+        "created_at",
+        "updated_at",
         "overall_score",
         "criteria_breakdown",
         "feedback_text",
@@ -24,9 +29,14 @@ def test_schema_file_fields():
 
 def test_critique_validation_passes():
     crit = Critique(
+        prompt="p",
+        outcome="pass",
+        risk_categories=["test"],
         overall_score=0.8,
         criteria_breakdown={"accuracy": 0.9},
         feedback_text="ok",
+        created_at=1.0,
+        updated_at=1.0,
     )
     crit.validate()
 

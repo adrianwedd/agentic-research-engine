@@ -38,7 +38,7 @@ from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService, SpatioTemporalMemoryService
 from .skill_library import SkillLibrary
 
-ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural"}
+ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural", "evaluator"}
 
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
@@ -51,6 +51,9 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/skill_vector_query"): {"viewer", "editor"},
     ("POST", "/skill_metadata_query"): {"viewer", "editor"},
     ("DELETE", "/forget"): {"editor"},
+    ("POST", "/evaluator_memory"): {"editor"},
+    ("GET", "/evaluator_memory"): {"viewer", "editor"},
+    ("DELETE", "/forget_evaluator"): {"editor"},
     # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
     ("GET", "/retrieve"): {"viewer", "editor"},
@@ -149,11 +152,15 @@ class LTMService:
         episodic_memory: EpisodicMemoryService,
         semantic_memory: SemanticMemoryService | None = None,
         procedural_memory: ProceduralMemoryService | None = None,
+        evaluator_memory: EpisodicMemoryService | None = None,
         monitor: SystemMonitor | None = None,
     ) -> None:
         self._modules: Dict[str, object] = {"episodic": episodic_memory}
         self._modules["semantic"] = semantic_memory or SemanticMemoryService()
         self._modules["procedural"] = procedural_memory or ProceduralMemoryService(
+            episodic_memory.storage
+        )
+        self._modules["evaluator"] = evaluator_memory or EpisodicMemoryService(
             episodic_memory.storage
         )
         self.skill_library = SkillLibrary()
@@ -257,6 +264,20 @@ class LTMService:
         self, metadata: Dict[str, Any], *, limit: int = 5
     ) -> List[Dict[str, Any]]:
         return self.skill_library.query_by_metadata(metadata, limit=limit)
+
+    def store_evaluator_memory(self, critique: Dict[str, Any]) -> str:
+        module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
+        return module.store_experience({"prompt": critique.get("prompt")}, {}, critique)
+
+    def retrieve_evaluator_memory(
+        self, query: Dict[str, Any], *, limit: int = 5
+    ) -> List[Dict]:
+        module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
+        return module.retrieve_similar_experiences(query, limit=limit)
+
+    def forget_evaluator_memory(self, identifier: str, *, hard: bool = False) -> bool:
+        module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
+        return module.forget_experience(identifier, hard=hard)
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -432,6 +453,22 @@ class LTMServiceServer:
                         return
                     self._send_json(200, {"results": results})
                     return
+                if parsed.path == "/evaluator_memory":
+                    if not self._check_role("POST", "/evaluator_memory"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    data = self._json_body()
+                    critique = data.get("critique")
+                    if critique is None:
+                        self._send_json(422, {"error": "critique required"})
+                        return
+                    try:
+                        cid = service.store_evaluator_memory(critique)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(201, {"id": cid})
+                    return
                 if parsed.path == "/consolidate":
                     # Temporary redirect to new noun-based endpoint
                     self.send_response(308)
@@ -491,6 +528,21 @@ class LTMServiceServer:
                     self.send_header("Location", new_path)
                     self.end_headers()
                     return
+                if parsed.path == "/evaluator_memory":
+                    if not self._check_role("GET", "/evaluator_memory"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    params = parse_qs(parsed.query)
+                    limit = int(params.get("limit", ["5"])[0])
+                    data = self._json_body()
+                    query = (data.get("query") if isinstance(data, dict) else {}) or {}
+                    try:
+                        results = service.retrieve_evaluator_memory(query, limit=limit)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"results": results})
+                    return
                 if parsed.path != "/memory":
                     self.send_response(404)
                     self.end_headers()
@@ -515,6 +567,19 @@ class LTMServiceServer:
             @_rbac("DELETE", "/forget")
             def do_DELETE(self) -> None:
                 parsed = urlparse(self.path)
+                if parsed.path.startswith("/forget_evaluator/"):
+                    if not self._check_role("DELETE", "/forget_evaluator"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    identifier = parsed.path.split("/", 2)[2]
+                    data = self._json_body()
+                    hard = bool(data.get("hard"))
+                    success = service.forget_evaluator_memory(identifier, hard=hard)
+                    if not success:
+                        self._send_json(404, {"error": "not found"})
+                        return
+                    self._send_json(200, {"status": "forgotten"})
+                    return
                 if not parsed.path.startswith("/forget/"):
                     self.send_response(404)
                     self.end_headers()
