@@ -209,3 +209,19 @@ def test_retrieval_filters_trigger_phrases():
     payload = json.dumps(results[0])
     assert "AGENTPOISON" not in payload
     assert service.quarantine_log
+
+
+def test_skill_queries_filter_trigger_phrases():
+    client, service = _create_client()
+
+    sid = service.add_skill(
+        {"steps": ["a"]},
+        "use skill TRIGGER PHRASE",
+        {"domain": "demo"},
+    )
+
+    results = service.skill_vector_query("use skill", limit=1)
+    assert results
+    assert results[0]["id"] == sid
+    assert "TRIGGER PHRASE" not in json.dumps(results[0])
+    assert service.quarantine_log
