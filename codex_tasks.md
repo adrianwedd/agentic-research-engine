@@ -1969,3 +1969,52 @@ acceptance_criteria:
   - "Coverage report artifact shows ≥85% on `engine/`."
   - "CI job fails if coverage drops below threshold."
 ```
+
+```codex-task
+id: DEVEXP-001
+title: Improve Onboarding Guide with Troubleshooting Tips
+priority: low
+steps:
+  - Document common pip resolver failures and Docker setup quirks
+  - Reference `scripts/bootstrap_minimal.sh` for a lightweight environment
+  - Highlight environment variables for proxy and GPU configuration
+acceptance_criteria:
+  - "docs/onboarding.md includes a troubleshooting section with pip and Docker tips"
+  - Quick start mentions the minimal bootstrap script
+```
+
+```codex-task
+id: DEVEXP-002
+title: Add Tracing Spans for Tool Initialization
+priority: medium
+steps:
+  - Instrument each tool wrapper to emit a span when the tool is constructed
+  - Capture initialization parameters and any failures
+  - Verify spans appear in the observability backend during tests
+acceptance_criteria:
+  - Tool initialization is traceable end-to-end in collected spans
+  - Unit tests cover a failure case and ensure span emission
+```
+
+```codex-task
+id: DEVEXP-003
+title: Clarify CI Output Summary
+priority: low
+steps:
+  - Update CI scripts to print a final summary of failing checks
+  - Link directly to coverage and other artifacts in the summary
+acceptance_criteria:
+  - CI logs end with a concise table of failed steps and artifact URLs
+```
+
+```codex-task
+id: DEVEXP-004
+title: Trim or Group Optional Tests
+priority: low
+steps:
+  - Mark expensive tests with a custom pytest marker
+  - Add a script or docs to run only the core test suite
+acceptance_criteria:
+  - Developers can run `pytest -m "core"` to skip optional tests
+```
+

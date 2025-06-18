@@ -537,7 +537,39 @@
   priority: low
   steps:
   - Write unit tests for edge conditions in `engine/orchestration_engine.py` (e.g.
-    missing node IDs, circular graphs).
-  - Add integration tests that exercise a three-node sample graph end-to-end.
-  - "Report coverage metric in CI and enforce \u226585%."
-  title: Improve Test Coverage for Orchestration Engine
+- acceptance_criteria:
+  - docs/onboarding.md includes a troubleshooting section with pip and Docker tips
+  - Quick start mentions the minimal bootstrap script
+  id: DEVEXP-001
+  priority: low
+  steps:
+  - Document common pip resolver failures and Docker setup quirks
+  - Reference `scripts/bootstrap_minimal.sh` for a lightweight environment
+  - Highlight environment variables for proxy and GPU configuration
+  title: Improve Onboarding Guide with Troubleshooting Tips
+- acceptance_criteria:
+  - Tool initialization is traceable end-to-end in collected spans
+  - Unit tests cover a failure case and ensure span emission
+  id: DEVEXP-002
+  priority: medium
+  steps:
+  - Instrument each tool wrapper to emit a span when the tool is constructed
+  - Capture initialization parameters and any failures
+  - Verify spans appear in the observability backend during tests
+  title: Add Tracing Spans for Tool Initialization
+- acceptance_criteria:
+  - CI logs end with a concise table of failed steps and artifact URLs
+  id: DEVEXP-003
+  priority: low
+  steps:
+  - Update CI scripts to print a final summary of failing checks
+  - Link directly to coverage and other artifacts in the summary
+  title: Clarify CI Output Summary
+- acceptance_criteria:
+  - Developers can run `pytest -m "core"` to skip optional tests
+  id: DEVEXP-004
+  priority: low
+  steps:
+  - Mark expensive tests with a custom pytest marker
+  - Add a script or docs to run only the core test suite
+  title: Trim or Group Optional Tests
