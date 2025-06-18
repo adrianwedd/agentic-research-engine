@@ -20,6 +20,61 @@
   - Add regression test for plan length reduction
   title: Replace deprecated utcnow usage
 - acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  - SkillLibrary exposes vector and metadata query endpoints
+  id: CR-001
+  priority: medium
+  steps:
+  - Design SkillLibrary schema with policy, representation and metadata fields
+  - Refactor MemoryManager to use the SkillLibrary for storage and retrieval
+  - Implement semantic lookup APIs by embedding or metadata filters
+  - Ensure compatibility with episodic and semantic memory modules
+  - Add unit tests and update documentation
+  title: SkillLibrary-based MemoryManager overhaul
+- acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+  id: CR-002
+  priority: medium
+  steps:
+  - Research and select a URL framework focusing on the DUSDi algorithm
+  - Integrate environment interface for reward-free exploration
+  - Implement mutual-information objective for disentangled skill learning
+  - Store discovered skills and metadata in the SkillLibrary
+  - Evaluate diversity and disentanglement metrics
+  title: Unsupervised SkillDiscoveryModule
+- acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+  id: CR-003
+  priority: medium
+  steps:
+  - Define interface and prompt templates for the LLM to describe sub-tasks
+  - Translate LLM output into reward functions and termination conditions
+  - Integrate L2S/LDSC framework to generate structured skill specs
+  - Persist semantic scaffolding in skill metadata
+  - Test with sample tasks and refine prompts
+  title: LLM-guided semantic skill decomposition
+- acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+  id: CR-004
+  priority: medium
+  steps:
+  - Design two-level FuN architecture with Manager and Worker policies
+  - Implement goal-conditioned Worker using intrinsic rewards
+  - Sequence skills using SkillLibrary embeddings for goal selection
+  - Validate integration with MemoryManager and other modules
+  - Add integration tests for long-horizon tasks
+  title: Hierarchical Policy Executor
+- acceptance_criteria:
+  - New skills added without overwriting existing ones
+  id: CR-005
+  priority: medium
+  steps:
+  - Diversify training environments to learn invariant features
+  - Freeze existing skills and modularize SkillLibrary for expansion
+  - Compose new skills via Primitive Prompt Learning
+  - Continuously evaluate transfer and generalization
+  title: Lifelong skill generalization support
+- acceptance_criteria:
   - RL training uses Ray RLlib and NVIDIA Isaac Lab
   id: CR-006
   priority: medium
@@ -179,18 +234,11 @@
   - Generalist agent used when no specialist exceeds threshold
   id: CR-P4-07R
   priority: high
-  steps: []
-  title: Add Neo4j consolidation for semantic memory
-- acceptance_criteria:
-  - SELECT queries on SQLite return DataFrame results
-  - Parameterized queries on Postgres return correct results
-  id: CR-P4-17R
-  priority: medium
   steps:
-  - Implement SqliteQueryTool and PostgresQueryTool classes
-  - Register tools in the registry with RBAC roles
-  - Add tests spinning up SQLite and Postgres instances
-  title: Add Specialized DB Connectors
+  - Extend Supervisor to query ProceduralMemoryService for agent skill metadata
+  - Compute specialization score and route tasks accordingly
+  - Log routing decisions and scores
+  title: Implement Specialist Agent Selection
 - acceptance_criteria:
   - Evaluator persists structured critique records after each run
   - Retrieval API returns relevant risk cases for new prompts
@@ -298,61 +346,16 @@
   - Audit inter-agent messaging for adherence to defined schema
   - Block or log any attempt to use emergent private languages
   title: Enforce LLM-grounded communication protocols
-  id: CR-001
-  priority: medium
-  steps:
-  - Design SkillLibrary schema with policy, representation and metadata fields
-  - Refactor MemoryManager to use the SkillLibrary for storage and retrieval
-  - Implement semantic lookup APIs by embedding or metadata filters
-  - Ensure compatibility with episodic and semantic memory modules
-  - Add unit tests and update documentation
-  acceptance_criteria:
-  - MemoryManager stores skills with policy, embedding and metadata
-  - SkillLibrary exposes vector and metadata query endpoints
-  title: SkillLibrary-based MemoryManager overhaul
 - acceptance_criteria:
-  - URL discovers disentangled skills for the SkillLibrary
-  id: CR-002
-  priority: medium
+  - Provenance query returns full history for a memory id
+  - CI tests verify metadata recorded on ingestion
+  id: CR-5.3
+  priority: high
   steps:
-  - Research and select a URL framework focusing on the DUSDi algorithm
-  - Integrate environment interface for reward-free exploration
-  - Implement mutual-information objective for disentangled skill learning
-  - Store discovered skills and metadata in the SkillLibrary
-  - Evaluate diversity and disentanglement metrics
-  title: Unsupervised SkillDiscoveryModule
-- acceptance_criteria:
-  - LLM-generated sub-tasks and rewards stored in skill metadata
-  id: CR-003
-  priority: medium
-  steps:
-  - Define interface and prompt templates for the LLM to describe sub-tasks
-  - Translate LLM output into reward functions and termination conditions
-  - Integrate L2S/LDSC framework to generate structured skill specs
-  - Persist semantic scaffolding in skill metadata
-  - Test with sample tasks and refine prompts
-  title: LLM-guided semantic skill decomposition
-- acceptance_criteria:
-  - Manager selects goals and Worker executes skills via HRL
-  id: CR-004
-  priority: medium
-  steps:
-  - Design two-level FuN architecture with Manager and Worker policies
-  - Implement goal-conditioned Worker using intrinsic rewards
-  - Sequence skills using SkillLibrary embeddings for goal selection
-  - Validate integration with MemoryManager and other modules
-  - Add integration tests for long-horizon tasks
-  title: Hierarchical Policy Executor
-- acceptance_criteria:
-  - New skills added without overwriting existing ones
-  id: CR-005
-  priority: medium
-  steps:
-  - Diversify training environments to learn invariant features
-  - Freeze existing skills and modularize SkillLibrary for expansion
-  - Compose new skills via Primitive Prompt Learning
-  - Continuously evaluate transfer and generalization
-  title: Lifelong skill generalization support
+  - Track origin and transformations of data stored in LTM
+  - Persist provenance metadata alongside memory records
+  - Provide API to query provenance for any item
+  title: Implement ML-BOM data provenance tracking
 - acceptance_criteria:
   - Service blocks unsafe prompts and masks sensitive data
   - Audit logs capture original prompt and moderation result
@@ -463,15 +466,6 @@
   - Add tests verifying message delivery and retries
   title: Integrate Message Bus for Inter-Agent Communication
 - acceptance_criteria:
-  - Provenance query returns full history for a memory id
-  - CI tests verify metadata recorded on ingestion
-  id: CR-5.3
-  priority: high
-  steps:
-  - Track origin and transformations of data stored in LTM
-  - Persist provenance metadata alongside memory records
-  - Provide API to query provenance for any item
-  title: Implement ML-BOM data provenance tracking
   - Documentation builds successfully
   - Readers can follow the steps to create a new agent folder with working config
   id: FI-04
@@ -501,3 +495,49 @@
   - Format logs with structured data for better tracing
   - Update the README with configuration instructions
   title: Introduce Error Logging Middleware
+- acceptance_criteria:
+  - '`docs/ARCHITECTURE.md` in the repo root, linked from README.'
+  - Diagram files under `docs/diagrams/` in SVG or Markdown mermaid format.
+  id: CR-ARCH-001
+  priority: high
+  steps:
+  - 'Create `docs/ARCHITECTURE.md` describing core components: Orchestrator, Agents,
+    Memory, Tool Registry, Tracing.'
+  - "Illustrate data flows with at least one sequence diagram (e.g. \"web_researcher\
+    \ \u2192 orchestrator \u2192 memory \u2192 trace\")."
+  - Add 'Getting Started' section showing how to spin up services locally (vector
+    DB stub, tracing backend).
+  title: Draft High-Level System Design & Onboarding Guide
+- acceptance_criteria:
+  - 'No `# type: ignore` in `agents/` or `engine/`.'
+  - CI fails on any new type errors.
+  id: CR-TYPING-002
+  priority: medium
+  steps:
+  - Audit all `agents/*.py` and `engine/orchestration_engine.py` for missing function
+    and class type hints.
+  - Add Pydantic models or `typing.Protocols` for message payloads and state objects.
+  - Enforce via mypy in CI (add `mypy.ini` and `ci.yml` step).
+  title: Add Type Annotations to Public APIs
+- acceptance_criteria:
+  - A new 'schema-validation' workflow in `.github/workflows/`.
+  - Tests under `tests/schema/` that assert validity.
+  id: CR-CI-003
+  priority: medium
+  steps:
+  - Add a CI job that loads the graph and tool-registry OpenAPI specs and validates
+    them against sample requests in `tests/fixtures/`.
+  - Use `jsonschema` or `openapi-core` to fail the build on schema drift.
+  - Cover at least memory service, tool registry and tracing schemas.
+  title: Enforce End-to-End Schema Validation
+- acceptance_criteria:
+  - "Coverage report artifact shows \u226585% on `engine/`."
+  - CI job fails if coverage drops below threshold.
+  id: CR-COVERAGE-004
+  priority: low
+  steps:
+  - Write unit tests for edge conditions in `engine/orchestration_engine.py` (e.g.
+    missing node IDs, circular graphs).
+  - Add integration tests that exercise a three-node sample graph end-to-end.
+  - "Report coverage metric in CI and enforce \u226585%."
+  title: Improve Test Coverage for Orchestration Engine

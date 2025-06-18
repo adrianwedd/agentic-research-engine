@@ -1917,3 +1917,55 @@ acceptance_criteria:
   - Middleware logs errors with useful context
   - README shows how to enable/disable the middleware
 ```
+
+```codex-task
+id: CR-ARCH-001
+title: Draft High-Level System Design & Onboarding Guide
+priority: high
+steps:
+  - "Create `docs/ARCHITECTURE.md` describing core components: Orchestrator, Agents, Memory, Tool Registry, Tracing."
+  - 'Illustrate data flows with at least one sequence diagram (e.g. "web_researcher → orchestrator → memory → trace").'
+  - "Add 'Getting Started' section showing how to spin up services locally (vector DB stub, tracing backend)."
+acceptance_criteria:
+  - "`docs/ARCHITECTURE.md` in the repo root, linked from README."
+  - "Diagram files under `docs/diagrams/` in SVG or Markdown mermaid format."
+```
+
+```codex-task
+id: CR-TYPING-002
+title: Add Type Annotations to Public APIs
+priority: medium
+steps:
+  - "Audit all `agents/*.py` and `engine/orchestration_engine.py` for missing function and class type hints."
+  - "Add Pydantic models or `typing.Protocols` for message payloads and state objects."
+  - "Enforce via mypy in CI (add `mypy.ini` and `ci.yml` step)."
+acceptance_criteria:
+  - "No `# type: ignore` in `agents/` or `engine/`."
+  - "CI fails on any new type errors."
+```
+
+```codex-task
+id: CR-CI-003
+title: Enforce End-to-End Schema Validation
+priority: medium
+steps:
+  - "Add a CI job that loads the graph and tool-registry OpenAPI specs and validates them against sample requests in `tests/fixtures/`."
+  - "Use `jsonschema` or `openapi-core` to fail the build on schema drift."
+  - "Cover at least memory service, tool registry and tracing schemas."
+acceptance_criteria:
+  - "A new 'schema-validation' workflow in `.github/workflows/`."
+  - "Tests under `tests/schema/` that assert validity."
+```
+
+```codex-task
+id: CR-COVERAGE-004
+title: Improve Test Coverage for Orchestration Engine
+priority: low
+steps:
+  - "Write unit tests for edge conditions in `engine/orchestration_engine.py` (e.g. missing node IDs, circular graphs)."
+  - "Add integration tests that exercise a three-node sample graph end-to-end."
+  - "Report coverage metric in CI and enforce ≥85%."
+acceptance_criteria:
+  - "Coverage report artifact shows ≥85% on `engine/`."
+  - "CI job fails if coverage drops below threshold."
+```
