@@ -359,3 +359,15 @@ class EvaluatorAgent:
             except Exception:
                 logging.exception("Failed to retrieve critiques")
         return []
+
+    def query_risk_cases(self, prompt: str, limit: int = 5) -> List[Dict]:
+        """Retrieve similar risk cases from LTM sorted by relevance."""
+
+        results = self.fetch_past_critiques(prompt, limit=limit)
+
+        if any("relevance" in r or "similarity" in r for r in results):
+            results.sort(
+                key=lambda r: r.get("relevance", r.get("similarity", 0)),
+                reverse=True,
+            )
+        return results
