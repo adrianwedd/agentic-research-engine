@@ -1,0 +1,4 @@
+agent_name: "SafeguardAgent"
+role: "Monitor policy compliance and block unsafe actions"
+max_retries: 0
+rbac: []
