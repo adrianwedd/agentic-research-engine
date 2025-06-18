@@ -11,10 +11,12 @@ import json
 import logging
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
+import requests
 import yaml
 
 from agents.critique import Critique
@@ -27,6 +29,9 @@ class EvaluatorAgent:
         self,
         evaluation_framework: Optional[Dict[str, Callable]] = None,
         fact_check_llm: Optional[Callable[[str], str]] = None,
+        *,
+        endpoint: str | None = None,
+        ltm_service: Any | None = None,
     ) -> None:
         """Initialize with comprehensive evaluation capabilities.
 
@@ -64,6 +69,8 @@ class EvaluatorAgent:
             "http://localhost:8000/api/v1/evaluations",
         )
         self.reputation_token = os.getenv("REPUTATION_API_TOKEN", "evaluator-token")
+        self.endpoint = endpoint
+        self.ltm_service = ltm_service
 
     # ------------------------------------------------------------------
     # Default evaluation helpers
@@ -252,6 +259,19 @@ class EvaluatorAgent:
             )
         except Exception:
             logging.exception("Failed to publish reputation event")
+        critique = self.generate_correction_feedback(results)
+        meta = metadata or {}
+        record = critique.to_dict()
+        record.update(
+            {
+                "prompt": meta.get("prompt", ""),
+                "outcome": output.get("text", ""),
+                "risk_categories": meta.get("risk_categories", []),
+                "created_at": time.time(),
+                "updated_at": time.time(),
+            }
+        )
+        self._store_critique(record)
         return vector
 
     # ------------------------------------------------------------------
@@ -295,3 +315,47 @@ class EvaluatorAgent:
                 unsupported.append(claim)
 
         return {"unsupported_facts": unsupported}
+
+    # ------------------------------------------------------------------
+    # Critique storage helpers
+    # ------------------------------------------------------------------
+    def _store_critique(self, data: Dict[str, Any]) -> None:
+        if self.endpoint:
+            try:
+                resp = requests.post(
+                    f"{self.endpoint}/evaluator_memory",
+                    json={"critique": data},
+                    headers={"X-Role": "editor"},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+            except Exception:
+                logging.exception("Failed to store critique")
+        elif self.ltm_service:
+            try:
+                self.ltm_service.store_evaluator_memory(data)
+            except Exception:
+                logging.exception("Failed to store critique")
+
+    def fetch_past_critiques(self, prompt: str, limit: int = 5) -> List[Dict]:
+        query = {"prompt": prompt}
+        if self.endpoint:
+            try:
+                resp = requests.get(
+                    f"{self.endpoint}/evaluator_memory",
+                    params={"limit": str(limit)},
+                    json={"query": query},
+                    headers={"X-Role": "viewer"},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+                return resp.json().get("results", [])
+            except Exception:
+                logging.exception("Failed to retrieve critiques")
+                return []
+        if self.ltm_service:
+            try:
+                return self.ltm_service.retrieve_evaluator_memory(query, limit=limit)
+            except Exception:
+                logging.exception("Failed to retrieve critiques")
+        return []
