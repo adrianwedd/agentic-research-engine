@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Dict, Iterable, List
 
-from .episodic_memory import EpisodicMemoryService, InMemoryStorage
+from .episodic_memory import EpisodicMemoryService
 from .skill_library import Skill, SkillLibrary
 
 
@@ -30,7 +30,6 @@ class ProceduralMemoryService(EpisodicMemoryService):
             "mul": lambda a, b: a * b,
         }
         self.skill_library = skill_library or SkillLibrary(
-            storage_backend=InMemoryStorage(),
             vector_store=self.vector_store,
         )
         self.agent_metadata: Dict[str, Dict[str, Any]] = {}
