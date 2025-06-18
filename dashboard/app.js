@@ -3,6 +3,7 @@ const { useState, useEffect, useRef } = React;
 function Dashboard() {
   const graphRef = useRef(null);
   const [graphData, setGraphData] = useState({nodes: [], edges: []});
+  const [comparison, setComparison] = useState(null);
 
   useEffect(() => {
     fetch('/graph').then(r => r.json()).then(data => {
@@ -64,9 +65,18 @@ function Dashboard() {
     return () => fg && fg._destructor && fg._destructor();
   }, [graphData]);
 
+  const runSimulation = () => {
+    fetch('/simulate', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({})})
+      .then(() => fetch('/compare/simulation'))
+      .then(r => r.json())
+      .then(setComparison);
+  };
+
   return React.createElement('div', null,
+    React.createElement('button', {onClick: runSimulation}, 'Run Simulation'),
     React.createElement('div', {id: 'graph', ref: graphRef}),
-    React.createElement('div', {id: 'gantt'}, 'Gantt view TBD')
+    React.createElement('div', {id: 'gantt'}, 'Gantt view TBD'),
+    comparison && React.createElement('pre', null, JSON.stringify(comparison, null, 2))
   );
 }
 
