@@ -14,6 +14,7 @@ This site contains design docs, research papers, and project reports for the Age
 ## Epics
 
 - [Interactive Agent Cockpit](epics/interactive_agent_cockpit_epic.md)
+- [Research-Driven System Enhancements](epics/research_driven_system_enhancements_epic.md)
 
 ## Suggested Tasks
 
