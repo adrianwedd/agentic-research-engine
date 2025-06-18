@@ -1,11 +1,7 @@
-import pytest
-
 from services.ltm_service import (
     EpisodicMemoryService,
     InMemoryStorage,
-    InMemoryVectorStore,
     SimpleEmbeddingClient,
-    WeaviateVectorStore,
 )
 
 
@@ -32,11 +28,12 @@ def test_store_and_retrieve():
     assert descriptions == {"Write a blog post", "Write unit tests"}
 
 
-def test_embedding_and_vector_storage():
+def test_embedding_and_vector_storage(weaviate_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
     service = EpisodicMemoryService(
-        storage, embedding_client=SimpleEmbeddingClient(), vector_store=vector_store
+        storage,
+        embedding_client=SimpleEmbeddingClient(),
+        vector_store=weaviate_vector_store,
     )
 
     ctx = {"description": "Vector test", "category": "testing"}
@@ -60,12 +57,11 @@ class FlakyEmbeddingClient(SimpleEmbeddingClient):
         return super().embed(texts)
 
 
-def test_embedding_retry():
+def test_embedding_retry(weaviate_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
     client = FlakyEmbeddingClient()
     service = EpisodicMemoryService(
-        storage, embedding_client=client, vector_store=vector_store
+        storage, embedding_client=client, vector_store=weaviate_vector_store
     )
 
     ctx = {"description": "Retry test"}
@@ -74,21 +70,17 @@ def test_embedding_retry():
     assert client.calls >= 2
 
 
-def test_weaviate_vector_store(tmp_path):
-    try:
-        store = WeaviateVectorStore(persistence_path=str(tmp_path))
-    except Exception:
-        pytest.skip("weaviate not available")
-
+def test_weaviate_vector_store(weaviate_vector_store):
     ctx = {"description": "Weaviate", "category": "db"}
     service = EpisodicMemoryService(
-        InMemoryStorage(), embedding_client=SimpleEmbeddingClient(), vector_store=store
+        InMemoryStorage(),
+        embedding_client=SimpleEmbeddingClient(),
+        vector_store=weaviate_vector_store,
     )
     rec_id = service.store_experience(ctx, {}, {"success": True})
     results = service.retrieve_similar_experiences({"description": "Weaviate"})
     assert results
     assert results[0]["id"] == rec_id
-    store.close()
 
 
 def test_retrieve_boosts_relevance():

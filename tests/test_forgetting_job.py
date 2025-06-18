@@ -41,7 +41,6 @@ from opentelemetry.sdk.trace.export import (
 )
 
 from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
-from services.ltm_service.vector_store import InMemoryVectorStore
 
 
 class InMemorySpanExporter(SpanExporter):
@@ -59,9 +58,9 @@ class InMemorySpanExporter(SpanExporter):
         return True
 
 
-def test_prune_stale_memories():
+def test_prune_stale_memories(weaviate_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
+    vector_store = weaviate_vector_store
     service = EpisodicMemoryService(storage, vector_store=vector_store)
 
     old_ts = time.time() - 31 * 24 * 3600
@@ -98,9 +97,9 @@ def test_prune_stale_memories():
     assert exporter.spans
 
 
-def test_decay_relevance_soft_delete():
+def test_decay_relevance_soft_delete(weaviate_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
+    vector_store = weaviate_vector_store
     service = EpisodicMemoryService(storage, vector_store=vector_store)
 
     rec_id = service.store_experience({}, {}, {})

@@ -8,12 +8,11 @@ sys.modules.setdefault(
 )  # noqa: E402
 
 from services.ltm_service.episodic_memory import EpisodicMemoryService, InMemoryStorage
-from services.ltm_service.vector_store import InMemoryVectorStore
 
 
-def test_outlier_detection_flagged():
+def test_outlier_detection_flagged(weaviate_vector_store):
     storage = InMemoryStorage()
-    vector_store = InMemoryVectorStore()
+    vector_store = weaviate_vector_store
     service = EpisodicMemoryService(storage, vector_store=vector_store)
 
     embeds = [[0.1 * i, 0.1 * i] for i in range(5)] + [[10.0, 10.0]]

@@ -11,14 +11,9 @@ provider "helm" {
 resource "helm_release" "episodic_vector_db" {
   name       = "episodic-vector-db"
   namespace  = var.namespace
-  repository = "https://qdrant.github.io/qdrant-helm"
-  chart      = "qdrant"
-  version    = var.qdrant_version
-
-  set_sensitive {
-    name  = "apiKey"
-    value = var.api_key
-  }
+  repository = "https://weaviate.github.io/weaviate-helm"
+  chart      = "weaviate"
+  version    = var.weaviate_version
 
   values = [
     yamlencode({
@@ -26,10 +21,15 @@ resource "helm_release" "episodic_vector_db" {
         enabled = true
         size    = "20Gi"
       }
+      env = {
+        QUERY_DEFAULTS_LIMIT    = 20
+        DEFAULT_VECTORIZER_MODULE = "none"
+        DISABLE_TELEMETRY      = "true"
+      }
     })
   ]
 }
 
 output "endpoint" {
-  value = "http://episodic-vector-db.${var.namespace}.svc.cluster.local:6333"
+  value = "http://episodic-vector-db.${var.namespace}.svc.cluster.local:8080"
 }

@@ -1,6 +1,6 @@
 # Episodic Vector Database
 
-This directory contains Terraform configuration for deploying a Qdrant vector database to power the Episodic Memory service. The setup relies on the Helm provider so that the database can be installed in any Kubernetes cluster using a single `terraform apply`.
+This directory contains Terraform configuration for deploying a Weaviate vector database to power the Episodic Memory service. The setup relies on the Helm provider so that the database can be installed in any Kubernetes cluster using a single `terraform apply`.
 
 ## Prerequisites
 - A reachable Kubernetes cluster
@@ -14,8 +14,7 @@ Run the following commands, supplying sensitive values via environment variables
 terraform init
 terraform apply \
   -var="kubeconfig=$KUBECONFIG" \
-  -var="namespace=ltm" \
-  -var="api_key=$(SECRET_API_KEY)"
+  -var="namespace=ltm"
 ```
 
-The `api_key` variable is marked as sensitive so it is never written to generated manifests. The service endpoint will be output after apply as `episodic-vector-db.<namespace>.svc.cluster.local:6333`.
+The service endpoint will be output after apply as `episodic-vector-db.<namespace>.svc.cluster.local:8080`.

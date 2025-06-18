@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List
 
 from .embedding_client import EmbeddingClient, SimpleEmbeddingClient
-from .vector_store import InMemoryVectorStore, VectorStore
+from .vector_store import VectorStore, WeaviateVectorStore
 
 
 @dataclass
@@ -25,7 +25,7 @@ class SkillLibrary:
         vector_store: VectorStore | None = None,
     ) -> None:
         self.embedding_client = embedding_client or SimpleEmbeddingClient()
-        self.vector_store = vector_store or InMemoryVectorStore()
+        self.vector_store = vector_store or WeaviateVectorStore()
         self._skills: Dict[str, Dict[str, Any]] = {}
         self._frozen: set[str] = set()
 
