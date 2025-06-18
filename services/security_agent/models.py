@@ -15,6 +15,6 @@ class CredibilityScore(Base):
 
     agent_id = Column(String, ForeignKey("agents.agent_id"), primary_key=True)
     score = Column(Float, default=0.0)
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
 
     agent = relationship(Agent)
