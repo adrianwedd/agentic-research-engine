@@ -1840,3 +1840,41 @@ acceptance_criteria:
   - integration tests verify privacy budget accounting
 ```
 
+```codex-task
+id: FI-01
+title: Add Interactive Graph Monitoring Dashboard
+priority: medium
+steps:
+  - Build a web-based UI to visualize the agent execution graph in real time
+  - Stream tracing events to update node status and metrics
+  - Provide drill-down views for individual node performance
+acceptance_criteria:
+  - Given an active run, when the dashboard loads, then the execution graph is displayed
+  - Metrics update live and clicking a node shows its detailed metrics
+```
+
+```codex-task
+id: FI-02
+title: Implement Plugin Architecture for Tool Registry
+priority: medium
+steps:
+  - Define entry-point interface for external tool plugins
+  - Load plugins dynamically during registry startup
+  - Document plugin creation with an example package
+acceptance_criteria:
+  - Tools installed as plugins are auto-discovered on startup
+  - Example plugin registers successfully without code changes
+```
+
+```codex-task
+id: FI-03
+title: Integrate Message Bus for Inter-Agent Communication
+priority: medium
+steps:
+  - Add NATS or similar message bus for async task events
+  - Update orchestration engine to publish and subscribe to events
+  - Add tests verifying message delivery and retries
+acceptance_criteria:
+  - Agents send and receive events through the message bus
+  - Failed deliveries are retried until acknowledged
+```
