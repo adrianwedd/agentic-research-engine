@@ -573,3 +573,233 @@
   - Mark expensive tests with a custom pytest marker
   - Add a script or docs to run only the core test suite
   title: Trim or Group Optional Tests
+- acceptance_criteria:
+  - Single `State` dataclass shared by agents
+  - All tests pass
+  id: CR-MISC-001
+  priority: medium
+  steps:
+  - Identify duplicate dataclasses used for agent state
+  - Merge fields into `engine.state.State`
+  - Update imports and references across modules
+  title: Unify State Representation
+- acceptance_criteria:
+  - Edges can store metadata labels
+  - Tests cover edge creation with types
+  id: CR-MISC-002
+  priority: low
+  steps:
+  - Extend `add_edge` signature to accept metadata labels
+  - Persist edge type information in the graph store
+  - Add unit tests for labeled edges
+  title: Typed Edge Support
+- acceptance_criteria:
+  - Tools are executed only via the registry
+  - Unauthorized calls are denied with logged errors
+  id: CR-MISC-003
+  priority: high
+  steps:
+  - Audit tool invocations across agents
+  - Route all calls through the Tool Registry client
+  - Add RBAC checks for unauthorized tools
+  title: Enforce Tool Registry Use
+- acceptance_criteria:
+  - CI runs judge contract tests
+  - Pipeline rejects invalid evaluation results
+  id: CR-MISC-004
+  priority: medium
+  steps:
+  - Add contract tests for the judge component
+  - Integrate tests into CI workflows
+  - Fail builds on schema mismatches
+  title: Harden Evaluation Pipeline
+- acceptance_criteria:
+  - Stress test shows no data corruption
+  - Locking behavior documented in test output
+  id: CR-MISC-005
+  priority: medium
+  steps:
+  - Spawn multiple agents writing to the scratchpad
+  - Verify locking prevents race conditions
+  - Report timing and failure statistics
+  title: Implement Concurrency Stress Tests
+- acceptance_criteria:
+  - Embedding lookups use the cache
+  - Eviction occurs when capacity is exceeded
+  id: CR-MISC-006
+  priority: medium
+  steps:
+  - Implement LRU cache inside `EmbeddingClient`
+  - Expose cache size configuration
+  - Add tests for hit and eviction behavior
+  title: Cache Frequently Used Embeddings
+- acceptance_criteria:
+  - Services start using uvicorn
+  - Existing endpoints behave the same asynchronously
+  id: CR-MISC-007
+  priority: high
+  steps:
+  - Replace `HTTPServer` with FastAPI and uvicorn
+  - Migrate existing routes and middleware
+  - Update deployment scripts
+  title: Switch to Async HTTP Framework
+- acceptance_criteria:
+  - Vector store queries run in parallel
+  - Benchmarks show improved latency
+  id: CR-MISC-008
+  priority: medium
+  steps:
+  - Introduce a worker pool for similarity searches
+  - Benchmark performance with concurrent queries
+  - Tune pool size for optimal throughput
+  title: Parallelize Vector Store Operations
+- acceptance_criteria:
+  - /retrieve accepts type and keyword filters
+  - Documentation reflects updated usage
+  id: CR-MISC-009
+  priority: low
+  steps:
+  - Add `memory_type` filter to the API
+  - Support keyword filtering via query params
+  - Document new parameters in the README
+  title: Extend /retrieve Query Flexibility
+- acceptance_criteria:
+  - Routes follow consistent snake_case naming
+  - Old endpoints return 301 redirects
+  id: CR-MISC-010
+  priority: low
+  steps:
+  - Audit HTTP routes using verbs
+  - Rename them to snake_case nouns
+  - Provide redirects for backward compatibility
+  title: Rename Verb-Based Routes
+- acceptance_criteria:
+  - Clients receive standardized error JSON
+  - Tests assert consistent format
+  id: CR-MISC-011
+  priority: medium
+  steps:
+  - Return JSON `{\"error\": msg}` for all failures
+  - Update handlers across services
+  - Add tests for error response format
+  title: Standardize Error Responses
+- acceptance_criteria:
+  - GET requests to `/retrieve` use query params only
+  - Documentation updated accordingly
+  id: CR-MISC-012
+  priority: low
+  steps:
+  - Move search parameters for `/retrieve` into query strings
+  - Reject bodies on GET requests
+  - Update client examples
+  title: Avoid JSON Bodies on GET
+- acceptance_criteria:
+  - Invalid plan submissions are rejected
+  - Schema stored under `schemas/`
+  id: CR-MISC-013
+  priority: medium
+  steps:
+  - Define JSON schema for supervisor plans
+  - Validate incoming plans on ingestion
+  - Fail with clear error messages on schema mismatch
+  title: Validate Supervisor Plan Schema
+- acceptance_criteria:
+  - CI reports dependency vulnerabilities
+  - Documentation covers remediation workflow
+  id: CR-MISC-014
+  priority: medium
+  steps:
+  - Add `pip-audit` step to CI pipeline
+  - Fail builds on high severity findings
+  - Document how to update vulnerable packages
+  title: Integrate Automated Dependency Scanning
+- acceptance_criteria:
+  - Unsafe URLs or paths are rejected
+  - Tests cover validation logic
+  id: CR-MISC-015
+  priority: high
+  steps:
+  - Whitelist allowed URL schemes in tools
+  - Sanitize file paths to prevent traversal
+  - Add tests for invalid inputs
+  title: Validate File and URL Inputs
+- acceptance_criteria:
+  - Docs explain secrets handling best practices
+  - Examples reference secret manager setup
+  id: CR-MISC-016
+  priority: low
+  steps:
+  - Recommend using a secret manager instead of env vars
+  - Provide example configuration for popular managers
+  - Link from CONTRIBUTING and README
+  title: Document Secrets Management
+- acceptance_criteria:
+  - Unauthorized access attempts appear in logs
+  - Dashboard displays RBAC failure counts
+  id: CR-MISC-017
+  priority: medium
+  steps:
+  - Log failed authorization attempts in Tool Registry
+  - Include user identity and requested tool
+  - Provide metrics dashboard examples
+  title: Expand RBAC Logging
+- acceptance_criteria:
+  - Monthly audit job executes
+  - CHANGELOG notes package updates
+  id: CR-MISC-018
+  priority: low
+  steps:
+  - Schedule monthly dependency audit runs
+  - Record update status in CHANGELOG
+  - Notify maintainers of outdated packages
+  title: Monitor Third-Party Updates
+- acceptance_criteria:
+  - CONTRIBUTING lists branch protection requirements
+  - Developers understand merge restrictions
+  id: CR-MISC-019
+  priority: low
+  steps:
+  - Describe required checks and review approvals in CONTRIBUTING
+  - Link to GitHub branch protection settings
+  - Provide guidance for new branches
+  title: Document Branch Protection Rules
+- acceptance_criteria:
+  - CD pipeline reflects Rainbow deployment stages
+  - Docs outline promotion and rollback steps
+  id: CR-MISC-020
+  priority: medium
+  steps:
+  - Update CD scripts to match the Rainbow approach
+  - Document environment promotion strategy
+  - Ensure rollback commands are available
+  title: Align CD Pipeline with Rainbow Deployment
+- acceptance_criteria:
+  - Scraper handles more sites without errors
+  - Benchmarks show improved extraction quality
+  id: CR-MISC-021
+  priority: medium
+  steps:
+  - Evaluate `trafilatura` for extraction
+  - Add fallback to headless browser scraping
+  - Benchmark accuracy on sample pages
+  title: Improve HTML Scraper Reliability
+- acceptance_criteria:
+  - Generated skills meet verification criteria
+  - Logs capture rejected or mutated skills
+  id: CR-MISC-022
+  priority: medium
+  steps:
+  - Verify LLM-generated subgoals via a secondary model
+  - Optionally apply evolutionary search for refinement
+  - Log rejected skills for analysis
+  title: Filter LLM-Generated Skills
+- acceptance_criteria:
+  - Auction mechanism adapts to task parameters
+  - Documentation explains selection process
+  id: CR-MISC-023
+  priority: low
+  steps:
+  - Evaluate task value and budget inputs
+  - Choose auction type accordingly
+  - Document decision logic
+  title: Dynamic Auction Mechanism Selection
