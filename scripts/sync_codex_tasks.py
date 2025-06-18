@@ -1,12 +1,12 @@
-"""Validate that .codex/queue.yml matches open Codex issues on GitHub.
+"""Validate that ``.codex/queue.yml`` matches open Codex issues on GitHub.
 
 Environment Variables
 ---------------------
 GITHUB_REPOSITORY
-    Repository in the form ``owner/repo``. If not set, the script attempts
-    to infer the repository from the current Git remote.
+    Repository in the form ``owner/repo``. If unset, the current Git remote
+    is checked and used if it points to GitHub.
 GITHUB_TOKEN
-    Optional token used for authenticated API requests.
+    Optional token for authenticated API requests.
 """
 
 import os
