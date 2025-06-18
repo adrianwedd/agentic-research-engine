@@ -118,6 +118,9 @@ class ToolRegistry:
         """Invoke a tool via the registry enforcing RBAC."""
 
         timestamp = datetime.datetime.now(datetime.UTC).isoformat()
+        from services.policy_monitor import get_monitor
+
+        monitor = get_monitor()
         try:
             tool = self.get_tool(role, name)
         except AccessDeniedError:
@@ -141,6 +144,9 @@ class ToolRegistry:
                 intent=intent,
             ).record()
             raise
+
+        if monitor is not None:
+            monitor.check_tool(role, name)
 
         result = tool(*args, **kwargs)
         logger.info(
