@@ -65,6 +65,9 @@ class SystemMonitor:
         self._ltm_miss_counter = self._meter.create_counter(
             "ltm.misses", description="LTM retrieval misses"
         )
+        self._ltm_delete_counter = self._meter.create_counter(
+            "ltm.deletions", description="LTM records deleted"
+        )
 
     @classmethod
     def from_otlp(cls, endpoint: str = "http://localhost:4317") -> "SystemMonitor":
@@ -112,3 +115,8 @@ class SystemMonitor:
             self._ltm_hit_counter.add(1, attributes)
         else:
             self._ltm_miss_counter.add(1, attributes)
+
+    def record_ltm_deletions(self, count: int) -> None:
+        """Record how many LTM records were deleted."""
+        if count:
+            self._ltm_delete_counter.add(count)

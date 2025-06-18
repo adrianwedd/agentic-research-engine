@@ -20,7 +20,9 @@ The architecture of the agentic-research-engine is founded on four key pillars t
    * **Episodic Memory**: For learning from past tasks and experiences.
    * **Semantic Memory**: A trusted internal knowledge graph of verified facts.
    * **Procedural Memory**: For acquiring and reusing successful "skills" or action sequences.
-   * A scheduled Kubernetes CronJob prunes stale episodic records nightly to keep retrieval efficient.
+  * A scheduled Kubernetes CronJob calls the LTM `forget` API nightly to remove
+    stale episodic records based on stored timestamps. The job emits a
+    `ltm.deletions` metric for monitoring.
 3. **Institutionalized Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalizes a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.[1]
 4. **Multi-Faceted Evaluation Framework**: System performance is measured through a comprehensive framework that assesses not only task accuracy (via a BrowseComp-style benchmark) but also output quality, source fidelity, and collaboration efficiency. This data feeds a Reinforcement Learning from AI Feedback (RLAIF) loop, enabling the system to continuously improve its own policies.[1]
 

@@ -11,4 +11,11 @@ forgetting:
   ttlDays: "180"
 ```
 
-The CronJob times out after five minutes and retries once if it fails, ensuring transient database issues do not leave stale data behind. Job output is captured in the cluster logs so operations can audit how many records were pruned each run.
+The CronJob calls the LTM service's HTTP API. It fetches episodic memories via
+`/memory` and deletes stale ones with the `/forget` endpoint. The service URL is
+configured via the `LTM_BASE_URL` environment variable and defaults to the
+`agent-services` service. The CronJob times out after five minutes and retries
+once if it fails, ensuring transient database issues do not leave stale data
+behind. Job output is captured in the cluster logs so operations can audit how
+many records were pruned each run. A metric `ltm.deletions` is emitted for
+monitoring.

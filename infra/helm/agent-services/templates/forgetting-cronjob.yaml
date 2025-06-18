@@ -20,4 +20,6 @@ spec:
             env:
             - name: LTM_TTL_DAYS
               value: "{{ .Values.forgetting.ttlDays }}"
+            - name: LTM_BASE_URL
+              value: "http://agent-services"
 {{- end }}
