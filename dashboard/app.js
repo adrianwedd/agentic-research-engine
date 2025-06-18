@@ -74,6 +74,14 @@ function Dashboard() {
       .then(setComparison);
   };
 
+  const logPreference = preferred => {
+    if (!comparison) return;
+    const better = preferred === 'simulation' ? comparison.simulation : comparison.live;
+    const worse = preferred === 'simulation' ? comparison.live : comparison.simulation;
+    fetch('/preferences', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({better, worse})})
+      .then(() => setComparison(null));
+  };
+
   const updateAutonomy = e => {
     const level = e.target.value;
     fetch('/autonomy', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({level})})
@@ -98,7 +106,13 @@ function Dashboard() {
     ),
     React.createElement('div', {id: 'graph', ref: graphRef}),
     React.createElement('div', {id: 'gantt'}, 'Gantt view TBD'),
-    comparison && React.createElement('pre', null, JSON.stringify(comparison, null, 2))
+    comparison && React.createElement(
+      React.Fragment,
+      null,
+      React.createElement('pre', null, JSON.stringify(comparison, null, 2)),
+      React.createElement('button', {onClick: () => logPreference('live')}, 'Prefer Live'),
+      React.createElement('button', {onClick: () => logPreference('simulation')}, 'Prefer Simulation')
+    )
   );
 }
 
