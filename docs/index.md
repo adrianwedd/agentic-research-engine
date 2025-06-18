@@ -14,3 +14,31 @@ This site contains design docs, research papers, and project reports for the Age
 ## Epics
 
 - [Interactive Agent Cockpit](epics/interactive_agent_cockpit_epic.md)
+
+## Suggested Tasks
+
+<ul id="suggested-tasks"></ul>
+
+<script>
+async function loadTasks() {
+  try {
+    const resp = await fetch('/suggested_tasks');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const list = document.getElementById('suggested-tasks');
+    data.forEach(t => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#';
+      a.textContent = `${t.id}: ${t.title}`;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', loadTasks);
+}
+</script>
