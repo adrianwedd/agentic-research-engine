@@ -190,6 +190,14 @@ def create_app(
                 "simulation": sim.get("metrics", {}),
             }
 
+        @app.post("/preferences")
+        def record_preference(payload: Dict[str, Any]) -> Dict[str, str]:
+            """Log operator preference pairs for reward model training."""
+            from services.learning.preferences import log_preference
+
+            log_preference(payload)
+            return {"status": "logged"}
+
         @app.get("/autonomy")
         def get_autonomy() -> Dict[str, str]:
             level = (

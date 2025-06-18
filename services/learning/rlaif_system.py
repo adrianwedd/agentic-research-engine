@@ -7,7 +7,7 @@ from typing import Dict, List
 
 
 class RLAIFSystem:
-    def __init__(self, reward_model, policy_optimizer):
+    def __init__(self, reward_model, policy_optimizer, *, feedback_callback=None, active_query_threshold: float = 0.2):
         """Initialize reinforcement learning framework.
 
         Parameters
@@ -24,6 +24,8 @@ class RLAIFSystem:
         self.policy_optimizer = policy_optimizer
         self.replay_buffer: List[Dict] = []
         self.metrics: Dict[str, float | int] = {"updates": 0}
+        self.feedback_callback = feedback_callback
+        self.active_query_threshold = float(active_query_threshold)
 
     def _compute_reward(self, experience: Dict) -> float:
         """Return reward for a trajectory ``experience``.
@@ -60,6 +62,14 @@ class RLAIFSystem:
         )
         return float(self.reward_model(prompt, output1, output2))
 
+    def _should_query(self, experience: Dict) -> bool:
+        score = self._compute_reward(experience)
+        return abs(score) < self.active_query_threshold
+
+    def load_reward_model(self, reward_model) -> None:
+        """Replace the current reward model with ``reward_model``."""
+        self.reward_model = reward_model
+
     def update_agent_policies(self, experience_batch: List[Dict]) -> Dict[str, float]:
         """Update agent behaviors based on performance feedback.
 
@@ -75,6 +85,11 @@ class RLAIFSystem:
 
         for exp in experience_batch:
             reward = self._compute_reward(exp)
+            if self.feedback_callback and self._should_query(exp):
+                try:
+                    self.feedback_callback(exp)
+                except Exception:
+                    pass
             loss = float(self.policy_optimizer.update(exp, reward))
             self.replay_buffer.append(exp)
             rewards.append(reward)
