@@ -8,7 +8,7 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from services.monitoring.events import event_stream
+from services.monitoring.events import event_stream, message_event_stream
 from services.reputation.models import Base
 
 from .service import SecurityAgentService
@@ -26,20 +26,26 @@ router = APIRouter(prefix="/v1")
 
 @app.on_event("startup")
 async def _start_listener() -> None:
-    async def _run() -> None:
+    async def _run_eval() -> None:
         async for evt in event_stream():
             service.handle_evaluation_event(evt)
 
-    app.state.listener = asyncio.create_task(_run())
+    async def _run_msg() -> None:
+        async for evt in message_event_stream():
+            service.handle_message_event(evt)
+
+    app.state.eval_listener = asyncio.create_task(_run_eval())
+    app.state.msg_listener = asyncio.create_task(_run_msg())
 
 
 @app.on_event("shutdown")
 async def _stop_listener() -> None:
-    task = getattr(app.state, "listener", None)
-    if task:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
+    for name in ("eval_listener", "msg_listener"):
+        task = getattr(app.state, name, None)
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
 
 @router.get("/credibility/{agent_id}")

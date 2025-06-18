@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections import defaultdict
 from threading import Lock
 from typing import Any, Awaitable, Callable, DefaultDict, Dict, List, Optional
+
+from services.monitoring.events import MessageMetadataEvent, publish_message_event
 
 from ..state import State
 from .message_protocol import ChatMessage
@@ -106,6 +109,13 @@ class DynamicGroupChat:
             type=message_type,
             recipient=recipient,
         ).model_dump()
+        publish_message_event(
+            MessageMetadataEvent(
+                sender=sender,
+                size=len(content),
+                timestamp=msg["timestamp"],
+            )
+        )
         if self._lock:
             with self._lock:
                 self.message_history.append(msg)
@@ -194,6 +204,13 @@ class GroupChatManager:
                     content = str(result)
                     msg_type = "message"
                     recipient = None
+                publish_message_event(
+                    MessageMetadataEvent(
+                        sender=agent_id,
+                        size=len(content),
+                        timestamp=time.time(),
+                    )
+                )
                 self.chat.post_message(
                     agent_id, content, message_type=msg_type, recipient=recipient
                 )
