@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict, Optional
+import logging
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from services.monitoring.events import EvaluationCompletedEvent
+from services.monitoring.events import EvaluationCompletedEvent, MessageMetadataEvent
 from services.reputation.service import ReputationService
 
 from .models import CredibilityScore
@@ -17,6 +18,11 @@ class SecurityAgentService:
     ) -> None:
         self._session_factory = session_factory
         self._reputation = reputation_service or ReputationService(session_factory)
+        self._logger = logging.getLogger(__name__)
+        self._msg_history: Dict[str, List[float]] = {}
+        self.max_size = 1000
+        self.window = timedelta(seconds=1)
+        self.max_rate = 5
 
     def _calc_score(self, rep: Dict[str, Any] | None) -> float:
         if not rep:
@@ -41,6 +47,23 @@ class SecurityAgentService:
     def handle_evaluation_event(self, event: EvaluationCompletedEvent) -> None:
         self._reputation.handle_evaluation_event(event)
         self.update_score(event.worker_agent_id)
+
+    def handle_message_event(self, event: MessageMetadataEvent) -> None:
+        """Analyze message metadata for anomalies."""
+        history = self._msg_history.setdefault(event.sender, [])
+        now = datetime.fromtimestamp(event.timestamp)
+        history.append(now.timestamp())
+        # drop messages outside window
+        cutoff = now - self.window
+        self._msg_history[event.sender] = [
+            t for t in history if t >= cutoff.timestamp()
+        ]
+        if len(self._msg_history[event.sender]) > self.max_rate:
+            self._logger.warning("Traffic spike detected from %s", event.sender)
+        if event.size > self.max_size:
+            self._logger.warning(
+                "Oversized message from %s (%d bytes)", event.sender, event.size
+            )
 
     def get_score(self, agent_id: str) -> Optional[float]:
         with self._session_factory() as session:
