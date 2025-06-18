@@ -50,3 +50,27 @@ def test_ltm_hit_and_miss_metrics(monkeypatch):
     }
     assert "ltm.hits" in names
     assert "ltm.misses" in names
+
+
+def test_ltm_deletion_metric(monkeypatch):
+    import importlib
+
+    import opentelemetry.metrics._internal as metrics_internal
+    import opentelemetry.trace as trace
+
+    importlib.reload(trace)
+    importlib.reload(metrics_internal)
+    metric_reader = InMemoryMetricReader()
+    span_exporter = InMemorySpanExporter()
+    monitor = SystemMonitor(metric_reader, span_exporter)
+
+    monitor.record_ltm_deletions(3)
+
+    data = metric_reader.get_metrics_data()
+    names = {
+        m.name
+        for rm in data.resource_metrics
+        for sm in rm.scope_metrics
+        for m in sm.metrics
+    }
+    assert "ltm.deletions" in names
