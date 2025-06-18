@@ -1,18 +1,31 @@
 from __future__ import annotations
 
+import datetime
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+import yaml
 
 from .composite_reward import CompositeRewardFunction, LinearPreferenceModel
 
 
 class RewardModelTrainer:
-    """Train a simple linear reward model on labeled trajectories."""
+    """Train a simple linear reward model with constitution-based labels."""
 
-    def __init__(self, data_path: str | Path, out_dir: str | Path) -> None:
+    def __init__(
+        self,
+        data_path: str | Path,
+        out_dir: str | Path,
+        *,
+        constitution_path: str | Path | None = None,
+        version: str = "",
+    ) -> None:
         self.data_path = Path(data_path)
         self.out_dir = Path(out_dir)
+        self.constitution_path = Path(constitution_path) if constitution_path else None
+        self.version = version
+        self.constitution = self._load_constitution() if self.constitution_path else {}
 
     def load_data(self) -> List[Dict]:
         text = self.data_path.read_text(encoding="utf-8")
@@ -54,11 +67,54 @@ class RewardModelTrainer:
         path.write_text(json.dumps(model, indent=2), encoding="utf-8")
         return path
 
-    def run(self) -> CompositeRewardFunction:
+    def _load_constitution(self) -> Dict:
+        data = yaml.safe_load(self.constitution_path.read_text(encoding="utf-8"))
+        return data or {}
+
+    def _self_critique(self, text: str) -> tuple[float, str]:
+        banned = [
+            t.lower()
+            for t in self.constitution.get("policies", {}).get("banned_terms", [])
+        ]
+        lower = text.lower()
+        bad_terms = [t for t in banned if t in lower]
+        if bad_terms:
+            return 0.0, "contains " + ", ".join(bad_terms)
+        return 1.0, "ok"
+
+    def apply_constitution(self, records: List[Dict]) -> List[Dict]:
+        if not self.constitution:
+            return records
+        labeled = []
+        for rec in records:
+            score, critique = self._self_critique(str(rec.get("trace", "")))
+            labeled.append(
+                {"trace": rec.get("trace", ""), "score": score, "critique": critique}
+            )
+        return labeled
+
+    def save_metadata(self, model_path: Path, mse: float) -> Path:
+        meta = {
+            "version": self.version,
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+            "data_path": str(self.data_path),
+            "constitution": str(self.constitution_path)
+            if self.constitution_path
+            else None,
+            "model_file": model_path.name,
+            "mse": mse,
+        }
+        path = self.out_dir / "metadata.json"
+        path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        return path
+
+    def run(self) -> float:
         records = self.load_data()
+        records = self.apply_constitution(records)
         x, y = self.preprocess(records)
         model = self.train_model(x, y)
-        self.evaluate_model(model, x, y)
-        self.save_model(model)
-        preference_model = LinearPreferenceModel(model)
-        return CompositeRewardFunction(preference_model)
+        mse = self.evaluate_model(model, x, y)
+        model_path = self.save_model(model)
+        self.save_metadata(model_path, mse)
+        self.composite = CompositeRewardFunction(LinearPreferenceModel(model))
+        return mse
