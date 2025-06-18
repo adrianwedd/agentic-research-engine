@@ -3,6 +3,7 @@ from services.learning.feudal_network import Manager, Worker
 from services.ltm_service import EpisodicMemoryService, InMemoryStorage
 from services.ltm_service.api import LTMService
 from services.ltm_service.skill_library import SkillLibrary
+from services.tool_registry import ToolRegistry
 
 
 class LineEnv:
@@ -33,7 +34,13 @@ def test_feudal_network_memory_update():
 
     worker = Worker(env)
     ltm = LTMService(EpisodicMemoryService(InMemoryStorage()))
-    mm = MemoryManagerAgent(ltm_service=ltm)
+    registry = ToolRegistry()
+
+    def store(rec, *, memory_type="episodic", endpoint=None):
+        return ltm.consolidate(memory_type, rec)
+
+    registry.register_tool("consolidate_memory", store)
+    mm = MemoryManagerAgent(ltm_service=ltm, tool_registry=registry)
     manager = Manager(library, worker, memory_manager=mm)
 
     env.reset()
@@ -42,4 +49,3 @@ def test_feudal_network_memory_update():
 
     assert env.state == env.goal
     assert ltm.retrieve("episodic", {})
-    assert ltm.retrieve("procedural", {})

@@ -9,6 +9,7 @@ from .knowledge_graph_search import knowledge_graph_search
 from .ltm_client import (
     add_skill,
     consolidate_memory,
+    propagate_subgraph,
     retrieve_memory,
     semantic_consolidate,
     skill_metadata_query,
@@ -27,6 +28,7 @@ __all__ = [
     "add_skill",
     "skill_vector_query",
     "skill_metadata_query",
+    "propagate_subgraph",
     "web_search",
     "github_search",
     "knowledge_graph_search",
