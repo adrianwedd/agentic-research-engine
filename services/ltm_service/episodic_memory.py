@@ -1,12 +1,17 @@
 """Episodic memory module for storing and retrieving past task experiences."""
 
 import json
+import logging
 import os
+import threading
 import time
 import uuid
 from collections import defaultdict
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List, Tuple
+
+import numpy as np
+from sklearn.cluster import KMeans
 
 try:  # pragma: no cover - optional dependency
     from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -121,6 +126,14 @@ class EpisodicMemoryService:
         )
         self.performance_by_category: defaultdict[str, List[int]] = defaultdict(list)
 
+        self.anomaly_metrics: defaultdict[str, int] = defaultdict(int)
+        self._flagged_records: set[str] = set()
+        self._anomaly_interval = float(os.getenv("LTM_ANOMALY_INTERVAL", "0") or 0)
+        self._stop_event = threading.Event()
+        self._anomaly_thread: threading.Thread | None = None
+        if self._anomaly_interval > 0:
+            self.start_anomaly_monitor(self._anomaly_interval)
+
     def _embed_with_retry(
         self, texts: List[str], *, attempts: int = 3
     ) -> List[List[float]]:
@@ -132,6 +145,89 @@ class EpisodicMemoryService:
                 if i == attempts - 1:
                     raise EmbeddingError(str(exc)) from exc
                 time.sleep(2**i * 0.5)
+
+    # --- Anomaly Detection -------------------------------------------------
+    def start_anomaly_monitor(self, interval: float | None = None) -> None:
+        """Spawn a background thread that periodically scans for outliers."""
+
+        if interval is not None:
+            self._anomaly_interval = interval
+        if self._anomaly_thread and self._anomaly_thread.is_alive():
+            return
+        self._stop_event.clear()
+        self._anomaly_thread = threading.Thread(
+            target=self._run_anomaly_monitor,
+            daemon=True,
+        )
+        self._anomaly_thread.start()
+
+    def stop_anomaly_monitor(self) -> None:
+        if self._anomaly_thread:
+            self._stop_event.set()
+            self._anomaly_thread.join(timeout=0)
+            self._anomaly_thread = None
+
+    def _run_anomaly_monitor(self) -> None:
+        while not self._stop_event.is_set():
+            try:
+                self._cluster_and_detect()
+            except Exception as exc:  # pragma: no cover - best effort
+                logging.getLogger(__name__).exception(
+                    "anomaly monitor failed", exc_info=exc
+                )
+            self._stop_event.wait(self._anomaly_interval)
+
+    def _cluster_and_detect(
+        self, *, n_clusters: int = 3, z_thresh: float = 3.0
+    ) -> None:
+        """Cluster embeddings and flag distant points."""
+
+        vectors: List[List[float]] = []
+        ids: List[str] = []
+        for rec_id, rec in self.storage.all():
+            if rec.get("deleted_at"):
+                continue
+            text = json.dumps(rec, sort_keys=True)[:2000]
+            vector = self._embed_with_retry([text])[0]
+            vectors.append(vector)
+            ids.append(rec_id)
+
+        if len(vectors) < 2:
+            return
+
+        k = min(n_clusters, len(vectors))
+        kmeans = KMeans(n_clusters=k, n_init="auto")
+        labels = kmeans.fit_predict(vectors)
+        dists = np.linalg.norm(
+            np.array(vectors) - kmeans.cluster_centers_[labels], axis=1
+        )
+
+        for lbl in set(labels):
+            cluster_dists = dists[labels == lbl]
+            mean = float(cluster_dists.mean())
+            std = float(cluster_dists.std())
+            thresh = mean + z_thresh * std
+            for idx in np.where((labels == lbl) & (dists > thresh))[0]:
+                rec_id = ids[idx]
+                if rec_id not in self._flagged_records:
+                    logging.getLogger(__name__).warning(
+                        "anomalous memory record detected", extra={"record_id": rec_id}
+                    )
+                    self._flagged_records.add(rec_id)
+                    self.anomaly_metrics["anomalies_detected"] += 1
+
+    def review_anomalies(self, *, purge: bool = False) -> List[str]:
+        """Return or remove flagged records."""
+
+        records = list(self._flagged_records)
+        if purge:
+            for rid in records:
+                self.forget_experience(rid, hard=True)
+            self._flagged_records.clear()
+        return records
+
+    def get_anomaly_metrics(self) -> Dict[str, int]:
+        return {"anomalies_detected": self.anomaly_metrics["anomalies_detected"]}
 
     def store_experience(
         self, task_context: Dict, execution_trace: Dict, outcome: Dict
