@@ -103,6 +103,12 @@ class DynamicGroupChat:
         recipient: Optional[str] = None,
     ) -> None:
         """Send a message to the chat."""
+        from services.policy_monitor import get_monitor
+
+        monitor = get_monitor()
+        if monitor is not None:
+            monitor.check_message(sender, content)
+
         msg = ChatMessage.validate_message(
             {
                 "sender": sender,

@@ -228,6 +228,7 @@ class OrchestrationEngine:
     on_complete: Callable[[State], Awaitable[State] | State] | None = None
     error_logger: Callable[[Exception, str, State], None] | None = None
     last_metrics: Dict[str, float] | None = field(init=False, default=None)
+    policy_monitor: Any | None = None
 
     # runtime tracking for pause/resume and autonomy
     def set_autonomy_level(self, level: State.AutonomyLevel) -> None:
@@ -583,8 +584,16 @@ class OrchestrationEngine:
 
 
 def create_orchestration_engine(
-    *, memory_manager: Callable[[State], Awaitable[State] | State] | None = None
+    *,
+    memory_manager: Callable[[State], Awaitable[State] | State] | None = None,
+    monitor: Any | None = None,
 ) -> OrchestrationEngine:
     """Factory function for the core orchestration engine."""
 
-    return OrchestrationEngine(on_complete=memory_manager)
+    eng = OrchestrationEngine(on_complete=memory_manager)
+    eng.policy_monitor = monitor
+    if monitor is not None:
+        from services.policy_monitor import set_monitor
+
+        set_monitor(monitor)
+    return eng
