@@ -308,8 +308,9 @@
   - Persist provenance metadata alongside memory records
   - Provide API to query provenance for any item
   title: Implement ML-BOM data provenance tracking
-
+- acceptance_criteria:
   - MemoryManager stores skills with policy, embedding and metadata
+  - SkillLibrary exposes vector and metadata query endpoints
   id: CR-001
   priority: medium
   steps:
@@ -362,3 +363,63 @@
   - Compose new skills via Primitive Prompt Learning
   - Continuously evaluate transfer and generalization
   title: Lifelong skill generalization support
+- acceptance_criteria:
+  - Service blocks unsafe prompts and masks sensitive data
+  - Audit logs capture original prompt and moderation result
+  id: CR-EA-01
+  priority: medium
+  steps:
+  - Define HTTP API for input/output validation
+  - Implement prompt injection and PII detection
+  - Record all moderation actions in an audit log
+  title: Implement Guardrail Orchestration Service
+- acceptance_criteria:
+  - Safeguard agent logs blocked actions with reasons
+  - High-risk events generate notifications for human oversight
+  id: CR-EA-02
+  priority: medium
+  steps:
+  - Monitor inter-agent messages and tool usage
+  - Enforce policy manifest to block unsafe actions
+  - Escalate high-risk events for human review
+  title: Develop Parallel Safeguard Agent
+- acceptance_criteria:
+  - Repository contains constitution.yaml with approved principles
+  - Council meeting notes archived for traceability
+  id: CR-EA-03
+  priority: medium
+  steps:
+  - Convene AI Safety Council to draft principles
+  - Convert principles into machine-readable rules
+  - Store constitution in version control
+  title: Formalize System Constitution
+- acceptance_criteria:
+  - Training pipeline uses constitution for feedback generation
+  - Reward model artifacts saved with version and config metadata
+  id: CR-EA-04
+  priority: medium
+  steps:
+  - Integrate constitution-based self-critique in supervised phase
+  - Collect preference data via Safeguard agent scoring
+  - Train preference model as reward function
+  title: Re-architect RLAIF Loop for Constitutional Alignment
+- acceptance_criteria:
+  - Benchmark pipeline runs in CI with summary metrics
+  - Alerts trigger when harmfulness exceeds threshold
+  id: CR-EA-05
+  priority: medium
+  steps:
+  - Generate adversarial prompts automatically
+  - Score outputs with LLM-as-judge for harmfulness and neutrality
+  - Track metrics over time and report regressions
+  title: Establish Continuous Adversarial Benchmarking
+- acceptance_criteria:
+  - Assurance plan stored in docs/governance contains evidence map
+  - Review log shows at least one completed assurance meeting
+  id: CR-EA-06
+  priority: medium
+  steps:
+  - Create AI Assurance Plan linking artifacts from CR-EA tasks
+  - Schedule quarterly reviews and update evidence mapping
+  - Document risk management decisions
+  title: Adopt Formal AI Assurance Lifecycle
