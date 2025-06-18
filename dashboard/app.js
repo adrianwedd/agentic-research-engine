@@ -36,11 +36,31 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const nodesById = Object.fromEntries(graphData.nodes.map(n => [n.id, n]));
     const fg = ForceGraph()(graphRef.current)
       .graphData({nodes: graphData.nodes, links: graphData.edges})
       .nodeId('id')
       .linkSource('from')
-      .linkTarget('to');
+      .linkTarget('to')
+      .nodeColor(n => {
+        if (typeof n.confidence === 'number') {
+          const g = Math.floor(n.confidence * 255);
+          const r = 255 - g;
+          return `rgb(${r},${g},100)`;
+        }
+        return '#1f77b4';
+      })
+      .linkColor(l => nodesById[l.from]?.intent === l.to ? '#2ca02c' : '#999');
+    fg.onNodeClick(node => {
+      fetch(`/belief/${node.id}/confidence`).then(r => r.json()).then(data => {
+        alert(JSON.stringify(data, null, 2));
+      });
+    });
+    fg.onLinkClick(link => {
+      fetch(`/belief/${link.from}/intent`).then(r => r.json()).then(data => {
+        alert(JSON.stringify(data, null, 2));
+      });
+    });
     return () => fg && fg._destructor && fg._destructor();
   }, [graphData]);
 
