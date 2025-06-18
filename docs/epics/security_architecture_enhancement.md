@@ -16,7 +16,16 @@ This epic consolidates change requests aimed at strengthening the system's defen
 
 ### P3-02: Dedicated Security Agent
 - **Dynamic credibility scoring** – compute reputation vectors in real time and weight agent output accordingly【F:docs/research/2025-dynamic-trust-reputation-system.md†L149-L158】.
+- **Credibility-aware aggregation** – final decisions combine agent contributions using a weighted average of their credibility scores.
 - **Anomaly monitoring** – watch inter-agent traffic for suspicious patterns; communication must remain LLM-grounded for auditability【F:docs/architecture/llm_grounded_guided_evolution.md†L1-L11】.
+
+Weighted aggregation uses the formula:
+
+```
+result = sum(contribution_i * credibility_i) / sum(credibility_i)
+```
+
+If all credibility scores are zero, the system falls back to an unweighted mean.
 
 ### P2-01: LTM Hardening
 - **Source credibility verification** – evaluate the trustworthiness of new data before ingestion【F:docs/research/2025-agent-introspection-toolkit.md†L51-L63】.
