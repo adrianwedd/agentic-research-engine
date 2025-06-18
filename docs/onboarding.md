@@ -16,6 +16,15 @@ This guide helps new contributors set up the development environment quickly.
   The setup script installs packages using the pre-generated `constraints.txt` file
   to ensure deterministic versions and avoid pip resolver loops.
 
+## Minimal Setup
+For a lightweight environment, you can run only the minimal bootstrap script:
+```bash
+bash scripts/bootstrap_minimal.sh
+```
+The script installs the core dependencies while respecting environment variables
+like `HTTP_PROXY`, `HTTPS_PROXY`, and `CUDA_VISIBLE_DEVICES` for proxy routing
+and GPU selection. Use this when you don't need the full toolchain.
+
 ## Troubleshooting
 
 ### pip network timeouts
@@ -38,4 +47,5 @@ This guide helps new contributors set up the development environment quickly.
 - Install the latest NVIDIA drivers and confirm with `nvidia-smi`.
 - CUDA 11.8 or newer is recommended for GPU acceleration.
 - Match the CUDA version with any local PyTorch or TensorFlow builds if used.
+- Set `CUDA_VISIBLE_DEVICES` to control which GPU the processes use.
 
