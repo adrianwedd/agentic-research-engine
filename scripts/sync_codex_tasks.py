@@ -1,3 +1,13 @@
+"""Validate that .codex/queue.yml matches open Codex issues on GitHub.
+
+Environment Variables
+---------------------
+GITHUB_REPOSITORY
+    Repository in the form ``owner/repo``. Required.
+GITHUB_TOKEN
+    Optional token used for authenticated API requests.
+"""
+
 import os
 import re
 import sys
@@ -40,7 +50,11 @@ def main() -> int:
     repo = os.environ.get("GITHUB_REPOSITORY")
     token = os.environ.get("GITHUB_TOKEN")
     if not repo:
-        print("GITHUB_REPOSITORY not set", file=sys.stderr)
+        print(
+            "GITHUB_REPOSITORY not set. "
+            "Set this to 'owner/repo' to check open Codex issues.",
+            file=sys.stderr,
+        )
         return 1
 
     queue_ids = load_queue_ids(os.path.join(".codex", "queue.yml"))
