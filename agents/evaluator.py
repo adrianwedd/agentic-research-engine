@@ -69,6 +69,7 @@ class EvaluatorAgent:
             "http://localhost:8000/api/v1/evaluations",
         )
         self.reputation_token = os.getenv("REPUTATION_API_TOKEN", "evaluator-token")
+        self.evaluation_token = os.getenv("EVALUATION_API_TOKEN", "eval-token")
         self.endpoint = endpoint
         self.ltm_service = ltm_service
 
@@ -325,7 +326,7 @@ class EvaluatorAgent:
                 resp = requests.post(
                     f"{self.endpoint}/evaluator_memory",
                     json={"critique": data},
-                    headers={"X-Role": "editor"},
+                    headers={"Authorization": f"Bearer {self.evaluation_token}"},
                     timeout=10,
                 )
                 resp.raise_for_status()
@@ -345,7 +346,7 @@ class EvaluatorAgent:
                     f"{self.endpoint}/evaluator_memory",
                     params={"limit": str(limit)},
                     json={"query": query},
-                    headers={"X-Role": "viewer"},
+                    headers={"Authorization": f"Bearer {self.evaluation_token}"},
                     timeout=10,
                 )
                 resp.raise_for_status()
