@@ -64,20 +64,20 @@ def pdf_extract(
 
     try:
         with pdfplumber.open(file_obj) as pdf:
-            text_parts = [page.extract_text() or "" for page in pdf.pages]
-            text = "\n".join(text_parts)
-            if not text.strip() and use_ocr:
-                try:  # pragma: no cover - optional OCR path
-                    import pytesseract
+            text_parts: list[str] = []
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if not page_text and use_ocr:
+                    try:  # pragma: no cover - optional OCR path
+                        import pytesseract
 
-                    text_parts = []
-                    for page in pdf.pages:
                         img = page.to_image(resolution=300).original
                         page_text = pytesseract.image_to_string(img)
-                        text_parts.append(page_text)
-                    text = "\n".join(text_parts)
-                except Exception:  # pragma: no cover - OCR failures
-                    use_ocr = False
+                    except Exception:  # pragma: no cover - OCR failures
+                        page_text = ""
+                        use_ocr = False
+                text_parts.append(page_text or "")
+            text = "\n".join(text_parts)
     except FileNotFoundError as exc:
         raise FileNotFoundError(validated) from exc
     except PDFSyntaxError as exc:

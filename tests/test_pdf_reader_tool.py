@@ -1,15 +1,28 @@
 import base64
 import functools
+import importlib.util
 import shutil
 import sys
 import threading
+import types
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw, ImageFont
 
-from tools.pdf_reader import pdf_extract
+TOOLS_PATH = Path(__file__).resolve().parents[1] / "tools"
+tools_pkg = types.ModuleType("tools")
+tools_pkg.__path__ = [str(TOOLS_PATH)]
+sys.modules.setdefault("tools", tools_pkg)
+
+spec = importlib.util.spec_from_file_location(
+    "tools.pdf_reader", TOOLS_PATH / "pdf_reader.py"
+)
+pdf_reader = importlib.util.module_from_spec(spec)
+assert spec.loader is not None
+spec.loader.exec_module(pdf_reader)
+pdf_extract = pdf_reader.pdf_extract
 
 pytestmark = pytest.mark.core
 
@@ -56,6 +69,22 @@ def _make_scanned_pdf(path: Path, text: str = "OCR TEST") -> None:
     img.save(path, "PDF")
 
 
+def _make_mixed_pdf(path: Path, text: str = "OCR MIX") -> None:
+    normal_pdf = path.with_name("text.pdf")
+    normal_pdf.write_bytes(base64.b64decode(HELLO_PDF_B64))
+    scan_pdf = path.with_name("scan.pdf")
+    _make_scanned_pdf(scan_pdf, text)
+
+    from PyPDF2 import PdfMerger
+
+    merger = PdfMerger()
+    merger.append(str(normal_pdf))
+    merger.append(str(scan_pdf))
+    with open(path, "wb") as f:
+        merger.write(f)
+    merger.close()
+
+
 def test_pdf_extract_from_url(tmp_path):
     pdf_path = tmp_path / "hello.pdf"
     pdf_path.write_bytes(base64.b64decode(HELLO_PDF_B64))
@@ -99,6 +128,23 @@ def test_pdf_extract_scanned_auto_ocr(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "pytesseract", DummyTess)
     text = pdf_extract(str(scan))
     assert "AUTO OCR" in text
+
+
+def test_pdf_extract_mixed_pages_with_ocr(tmp_path, monkeypatch):
+    pytest.importorskip("PyPDF2")
+
+    mixed = tmp_path / "mixed.pdf"
+    _make_mixed_pdf(mixed, "OCR MIX")
+
+    class DummyTess:
+        @staticmethod
+        def image_to_string(img):
+            return "OCR MIX"
+
+    monkeypatch.setitem(sys.modules, "pytesseract", DummyTess)
+    text = pdf_extract(str(mixed))
+    assert "Hello PDF" in text
+    assert "OCR MIX" in text
 
 
 def test_pdf_extract_bad_path():
