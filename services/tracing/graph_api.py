@@ -190,6 +190,37 @@ def create_app(
                 "simulation": sim.get("metrics", {}),
             }
 
+        @app.get("/autonomy")
+        def get_autonomy() -> Dict[str, str]:
+            level = (
+                engine.current_state.autonomy_level
+                if engine.current_state is not None
+                else engine.default_autonomy_level
+            )
+            return {"level": level}
+
+        @app.post("/autonomy")
+        def set_autonomy(payload: Dict[str, str]) -> Dict[str, str]:
+            level_str = payload.get("level")
+            try:
+                from engine.state import State as RuntimeState
+
+                level = RuntimeState.AutonomyLevel(level_str)
+            except Exception:
+                raise HTTPException(status_code=400, detail="invalid level")
+            engine.set_autonomy_level(level)
+            return {"level": level}
+
+        @app.post("/pause")
+        def pause() -> Dict[str, str]:
+            engine.pause()
+            return {"status": "PAUSED"}
+
+        @app.post("/resume")
+        async def resume() -> Dict[str, Any]:
+            result = await engine.resume_async()
+            return {"state": result.model_dump()}
+
     if dashboard_path:
         app.mount(
             "/dashboard",

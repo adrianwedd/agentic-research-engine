@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any, Dict, List
 
 try:  # optional dependency
@@ -35,11 +36,18 @@ except Exception:  # pragma: no cover - simple fallbacks
 class State(BaseModel):
     """Central state passed between orchestration nodes."""
 
+    class AutonomyLevel(str, Enum):
+        MANUAL = "MANUAL"
+        ASSISTIVE = "ASSISTIVE"
+        SUPERVISORY = "SUPERVISORY"
+        AUTONOMOUS = "AUTONOMOUS"
+
     data: Dict[str, Any] = Field(default_factory=dict)
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     history: List[Dict[str, Any]] = Field(default_factory=list)
     scratchpad: Dict[str, Any] = Field(default_factory=dict)
     status: str | None = None
+    autonomy_level: AutonomyLevel = AutonomyLevel.AUTONOMOUS
     evaluator_feedback: Dict[str, Any] | None = None
     retry_count: int = 0
 

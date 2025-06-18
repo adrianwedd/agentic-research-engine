@@ -208,6 +208,10 @@ class OrchestrationEngine:
         tuple[str, Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(default_factory=list)
 
+    default_autonomy_level: State.AutonomyLevel = State.AutonomyLevel.AUTONOMOUS
+    current_state: State | None = field(init=False, default=None)
+    current_next_node: str | None = field(init=False, default=None)
+
     # Using ``Any`` here avoids importing optional dependencies for the dummy
     # checkpointer implementation used in tests.
     checkpointer: Any = field(default_factory=dict)
@@ -224,6 +228,24 @@ class OrchestrationEngine:
     on_complete: Callable[[State], Awaitable[State] | State] | None = None
     error_logger: Callable[[Exception, str, State], None] | None = None
     last_metrics: Dict[str, float] | None = field(init=False, default=None)
+
+    # runtime tracking for pause/resume and autonomy
+    def set_autonomy_level(self, level: State.AutonomyLevel) -> None:
+        self.default_autonomy_level = level
+        if self.current_state is not None:
+            self.current_state.autonomy_level = level
+
+    def pause(self, run_id: str = "default") -> None:
+        if self.current_state is not None:
+            self.current_state.update({"status": "PAUSED"})
+
+    async def resume_async(self, run_id: str = "default") -> State:
+        if self.current_state is None:
+            raise ValueError("No task to resume")
+        state = self.current_state
+        next_node = self.current_next_node
+        state.update({"status": None})
+        return await self.run_async(state, thread_id=run_id, start_at=next_node)
 
     def add_node(
         self,
@@ -291,6 +313,10 @@ class OrchestrationEngine:
             if self.entry is None:
                 self.build()
             self._last_node = None
+            self.current_state = state
+            state.autonomy_level = getattr(
+                state, "autonomy_level", self.default_autonomy_level
+            )
             if hasattr(self.checkpointer, "start"):
                 try:
                     self.checkpointer.start(thread_id, state)
@@ -298,7 +324,11 @@ class OrchestrationEngine:
                     pass
 
             node_name = start_at or self.entry
+            self.current_next_node = node_name
             while node_name:
+                if state.status == "PAUSED":
+                    self.current_next_node = node_name
+                    return state
                 node = self.nodes[node_name]
                 if self._should_quarantine(node, state):
                     node_name = self.quarantine_node
@@ -317,6 +347,15 @@ class OrchestrationEngine:
                     except Exception:  # pragma: no cover - defensive
                         pass
                 self._on_node_finished(node_name)
+
+                if state.autonomy_level == State.AutonomyLevel.MANUAL:
+                    state.update({"status": "PAUSED"})
+                    self.current_next_node = self.order.get(node_name)
+                    if hasattr(self.review_queue, "enqueue"):
+                        self.review_queue.enqueue(
+                            thread_id, state, self.current_next_node
+                        )
+                    return state
 
             if node_name in self.routers_map:
                 router, path_map = self.routers_map[node_name]
@@ -363,13 +402,18 @@ class OrchestrationEngine:
                     ):
                         pass
 
-            if node.node_type == NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT:
+            if (
+                node.node_type == NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT
+                and state.autonomy_level != State.AutonomyLevel.AUTONOMOUS
+            ):
                 state.update({"status": "PAUSED"})
+                self.current_next_node = next_node
                 if hasattr(self.review_queue, "enqueue"):
                     self.review_queue.enqueue(thread_id, state, next_node)
                 return state
 
             node_name = next_node
+            self.current_next_node = node_name
         if self.on_complete:
             try:
                 if asyncio.iscoroutinefunction(self.on_complete):
@@ -419,6 +463,8 @@ class OrchestrationEngine:
             "self_correction_loops": float(self_corrections),
             "communication_overhead": float(communication_tokens),
         }
+        self.current_state = None
+        self.current_next_node = None
 
         return state
 

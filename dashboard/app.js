@@ -4,12 +4,14 @@ function Dashboard() {
   const graphRef = useRef(null);
   const [graphData, setGraphData] = useState({nodes: [], edges: []});
   const [comparison, setComparison] = useState(null);
+  const [autonomy, setAutonomy] = useState('AUTONOMOUS');
 
   useEffect(() => {
     fetch('/graph').then(r => r.json()).then(data => {
       window.__GRAPH_DATA = data;
       setGraphData(data);
     });
+    fetch('/autonomy').then(r => r.json()).then(d => setAutonomy(d.level));
     const source = new EventSource('/events');
     source.onmessage = ev => {
       const span = JSON.parse(ev.data);
@@ -72,8 +74,28 @@ function Dashboard() {
       .then(setComparison);
   };
 
+  const updateAutonomy = e => {
+    const level = e.target.value;
+    fetch('/autonomy', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({level})})
+      .then(() => setAutonomy(level));
+  };
+
+  const pause = () => fetch('/pause', {method: 'POST'});
+  const resume = () => fetch('/resume', {method: 'POST'});
+
   return React.createElement('div', null,
     React.createElement('button', {onClick: runSimulation}, 'Run Simulation'),
+    React.createElement('div', null,
+      React.createElement('label', null, 'Autonomy:'),
+      React.createElement('select', {value: autonomy, onChange: updateAutonomy},
+        React.createElement('option', {value: 'MANUAL'}, 'Manual'),
+        React.createElement('option', {value: 'ASSISTIVE'}, 'Assistive'),
+        React.createElement('option', {value: 'SUPERVISORY'}, 'Supervisory'),
+        React.createElement('option', {value: 'AUTONOMOUS'}, 'Autonomous')
+      ),
+      React.createElement('button', {onClick: pause}, 'Pause'),
+      React.createElement('button', {onClick: resume}, 'Resume')
+    ),
     React.createElement('div', {id: 'graph', ref: graphRef}),
     React.createElement('div', {id: 'gantt'}, 'Gantt view TBD'),
     comparison && React.createElement('pre', null, JSON.stringify(comparison, null, 2))
