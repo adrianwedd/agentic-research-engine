@@ -34,3 +34,17 @@ engine.add_router("start", router)
 ```
 
 When `state.data['path']` equals `"fail"`, the engine will traverse the edge labelled `fail`.
+
+## Quarantining High-Risk Tasks
+
+Use `NodeType.PRIVILEGED` for nodes that perform sensitive actions. If `state.data['risk_level']` is set to "high", the engine automatically routes execution to the node registered via `set_quarantine_node()` instead of invoking the privileged node.
+
+```mermaid
+graph TD
+    Start -->|risk: high| Quarantine
+    Start -->|risk: low| Privileged
+    Quarantine --> Complete
+    Privileged --> Complete
+```
+
+This ensures untrusted input never reaches privileged code paths, even if the graph edges would normally lead there.

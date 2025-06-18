@@ -248,6 +248,14 @@ class OrchestrationEngine:
         """Designate the node used for quarantined execution."""
         self.quarantine_node = name
 
+    def _should_quarantine(self, node: Node, state: State) -> bool:
+        """Return ``True`` if the node should be redirected to the quarantine path."""
+        return (
+            node.node_type == NodeType.PRIVILEGED
+            and state.data.get("risk_level") == "high"
+            and self.quarantine_node is not None
+        )
+
     def _on_node_finished(self, name: str) -> None:
         if self._last_node is not None and self._last_node != name:
             tracer = trace.get_tracer(__name__)
@@ -294,11 +302,7 @@ class OrchestrationEngine:
             node_name = start_at or self.entry
             while node_name:
                 node = self.nodes[node_name]
-                if (
-                    node.node_type == NodeType.PRIVILEGED
-                    and state.data.get("risk_level") == "high"
-                    and self.quarantine_node
-                ):
+                if self._should_quarantine(node, state):
                     node_name = self.quarantine_node
                     continue
                 prev_state = state
