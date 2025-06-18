@@ -442,20 +442,6 @@ class LTMServiceServer:
     def _handler(self):
         service = self.service
 
-        def _rbac(method: str, path: str):
-            """Decorator enforcing role-based access for Handler methods."""
-
-            def decorator(func):
-                def wrapped(self, *args, **kwargs):
-                    if not self._check_role(method, path):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
-                    return func(self, *args, **kwargs)
-
-                return wrapped
-
-            return decorator
-
         class Handler(BaseHTTPRequestHandler):
             def _json_body(self) -> Dict:
                 length = int(self.headers.get("Content-Length", 0))
@@ -478,12 +464,22 @@ class LTMServiceServer:
                 allowed = ROLE_PERMISSIONS.get((method, path), set())
                 return role in allowed
 
+            @staticmethod
+            def _perm_path(path: str) -> str:
+                if path.startswith("/provenance/"):
+                    return "/provenance"
+                if path.startswith("/forget_evaluator/"):
+                    return "/forget_evaluator"
+                if path.startswith("/forget/"):
+                    return "/forget"
+                return path
+
             def do_POST(self) -> None:
                 parsed = urlparse(self.path)
+                if not self._check_role("POST", self._perm_path(parsed.path)):
+                    self._send_json(403, {"error": "forbidden"})
+                    return
                 if parsed.path == "/propagate_subgraph":
-                    if not self._check_role("POST", "/propagate_subgraph"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     try:
                         ids = service.propagate_subgraph(data)
@@ -493,9 +489,6 @@ class LTMServiceServer:
                     self._send_json(200, {"ids": ids})
                     return
                 if parsed.path == "/semantic_consolidate":
-                    if not self._check_role("POST", "/semantic_consolidate"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     payload = data.get("payload")
                     fmt = data.get("format", "jsonld")
@@ -507,9 +500,6 @@ class LTMServiceServer:
                     self._send_json(201, {"result": result})
                     return
                 if parsed.path == "/temporal_consolidate":
-                    if not self._check_role("POST", "/temporal_consolidate"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     try:
                         req = TemporalConsolidateRequest(**data)
@@ -521,9 +511,6 @@ class LTMServiceServer:
                     self._send_json(201, {"id": fid})
                     return
                 if parsed.path == "/skill":
-                    if not self._check_role("POST", "/skill"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     try:
                         req = SkillRequest(**data)
@@ -538,9 +525,6 @@ class LTMServiceServer:
                     self._send_json(201, {"id": sid})
                     return
                 if parsed.path == "/skill_vector_query":
-                    if not self._check_role("POST", "/skill_vector_query"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     try:
                         req = SkillQuery(**data)
@@ -551,9 +535,6 @@ class LTMServiceServer:
                     self._send_json(200, {"results": results})
                     return
                 if parsed.path == "/skill_metadata_query":
-                    if not self._check_role("POST", "/skill_metadata_query"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     try:
                         req = SkillQuery(**data)
@@ -568,9 +549,6 @@ class LTMServiceServer:
                     self._send_json(200, {"results": results})
                     return
                 if parsed.path == "/evaluator_memory":
-                    if not self._check_role("POST", "/evaluator_memory"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     data = self._json_body()
                     critique = data.get("critique")
                     if critique is None:
@@ -593,14 +571,14 @@ class LTMServiceServer:
                     self.send_response(404)
                     self.end_headers()
                     return
-                if not self._check_role("POST", "/memory"):
-                    self._send_json(403, {"error": "forbidden"})
-                    return
                 data = self._json_body()
                 try:
                     req = ConsolidateRequest(**data)
                 except ValidationError as exc:
                     self._send_json(422, {"error": exc.errors()})
+                    return
+                if req.memory_type not in ALLOWED_MEMORY_TYPES:
+                    self._send_json(400, {"error": "invalid memory type"})
                     return
                 try:
                     rec_id = service.consolidate(req.memory_type, req.record)
@@ -609,13 +587,12 @@ class LTMServiceServer:
                     return
                 self._send_json(201, {"id": rec_id})
 
-            @_rbac("GET", "/memory")
             def do_GET(self) -> None:
                 parsed = urlparse(self.path)
+                if not self._check_role("GET", self._perm_path(parsed.path)):
+                    self._send_json(403, {"error": "forbidden"})
+                    return
                 if parsed.path == "/spatial_query":
-                    if not self._check_role("GET", "/spatial_query"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     params = parse_qs(parsed.query)
                     bbox_str = params.get("bbox", [""])[0]
                     try:
@@ -643,9 +620,6 @@ class LTMServiceServer:
                     self.end_headers()
                     return
                 if parsed.path == "/evaluator_memory":
-                    if not self._check_role("GET", "/evaluator_memory"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     params = parse_qs(parsed.query)
                     limit = int(params.get("limit", ["5"])[0])
                     data = self._json_body()
@@ -658,15 +632,15 @@ class LTMServiceServer:
                     self._send_json(200, {"results": results})
                     return
                 if parsed.path.startswith("/provenance/"):
-                    if not self._check_role("GET", "/provenance"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     parts = parsed.path.split("/")
                     if len(parts) < 4:
                         self._send_json(404, {"error": "not found"})
                         return
                     memory_type = parts[2]
                     identifier = parts[3]
+                    if memory_type not in ALLOWED_MEMORY_TYPES:
+                        self._send_json(400, {"error": "invalid memory type"})
+                        return
                     try:
                         prov = service.get_provenance(memory_type, identifier)
                     except KeyError:
@@ -683,6 +657,9 @@ class LTMServiceServer:
                     return
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]
+                if memory_type not in ALLOWED_MEMORY_TYPES:
+                    self._send_json(400, {"error": "invalid memory type"})
+                    return
                 limit = int(params.get("limit", ["5"])[0])
                 data = self._json_body()
                 try:
@@ -698,13 +675,12 @@ class LTMServiceServer:
                     return
                 self._send_json(200, {"results": results})
 
-            @_rbac("DELETE", "/forget")
             def do_DELETE(self) -> None:
                 parsed = urlparse(self.path)
+                if not self._check_role("DELETE", self._perm_path(parsed.path)):
+                    self._send_json(403, {"error": "forbidden"})
+                    return
                 if parsed.path.startswith("/forget_evaluator/"):
-                    if not self._check_role("DELETE", "/forget_evaluator"):
-                        self._send_json(403, {"error": "forbidden"})
-                        return
                     identifier = parsed.path.split("/", 2)[2]
                     data = self._json_body()
                     hard = bool(data.get("hard"))
@@ -721,6 +697,9 @@ class LTMServiceServer:
                 identifier = parsed.path.split("/", 2)[2]
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]
+                if memory_type not in ALLOWED_MEMORY_TYPES:
+                    self._send_json(400, {"error": "invalid memory type"})
+                    return
                 data = self._json_body()
                 try:
                     req = ForgetRequest(**data)
