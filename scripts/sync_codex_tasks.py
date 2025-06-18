@@ -3,8 +3,8 @@
 Environment Variables
 ---------------------
 GITHUB_REPOSITORY
-    Repository in the form ``owner/repo``. Optional. If unset, the script
-    attempts to infer the repository from the current Git remote.
+    Repository in the form ``owner/repo``. If not set, the script attempts
+    to infer the repository from the current Git remote.
 GITHUB_TOKEN
     Optional token used for authenticated API requests.
 """
@@ -71,7 +71,8 @@ def main() -> int:
     if not repo:
         print(
             "GITHUB_REPOSITORY not set and repository could not be determined. "
-            "Set this to 'owner/repo' to check open Codex issues.",
+            "Set the environment variable with 'export GITHUB_REPOSITORY=owner/repo' "
+            "to check open Codex issues.",
             file=sys.stderr,
         )
         return 1
