@@ -225,3 +225,33 @@ def test_skill_queries_filter_trigger_phrases():
     assert results[0]["id"] == sid
     assert "TRIGGER PHRASE" not in json.dumps(results[0])
     assert service.quarantine_log
+
+
+def test_provenance_metadata_and_endpoint():
+    client, _ = _create_client()
+
+    record = {
+        "task_context": {"description": "prov"},
+        "execution_trace": {},
+        "outcome": {},
+        "source": "tester",
+        "transformations": ["t1"],
+    }
+    resp = client.post("/memory", json={"record": record}, headers={"X-Role": "editor"})
+    assert resp.status_code in (200, 201)
+    rid = resp.json()["id"]
+
+    resp = client.get(
+        "/memory",
+        json={"query": {"description": "prov"}},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    prov = resp.json()["results"][0]["provenance"]
+    assert prov["source"] == "tester"
+    assert prov["transformations"] == ["t1"]
+
+    resp = client.get(f"/provenance/episodic/{rid}", headers={"X-Role": "viewer"})
+    assert resp.status_code == 200
+    data = resp.json()["provenance"]
+    assert data["source"] == "tester"

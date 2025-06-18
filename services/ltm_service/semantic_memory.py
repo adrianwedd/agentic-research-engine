@@ -43,7 +43,9 @@ class SemanticMemoryService:
             records = session.run(query, parameters or {})
             return [rec.data() for rec in records]
 
-    def store_jsonld(self, data: Dict[str, Any]) -> List[str]:
+    def store_jsonld(
+        self, data: Dict[str, Any], *, provenance: Dict | None = None
+    ) -> List[str]:
         """Persist a JSON-LD payload as one or more facts."""
 
         def _iter_triples(item: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -72,6 +74,7 @@ class SemanticMemoryService:
                     triple["predicate"],
                     triple["object"],
                     properties=triple.get("properties"),
+                    provenance=provenance,
                 )
             )
         return ids
@@ -83,6 +86,7 @@ class SemanticMemoryService:
         obj: str,
         *,
         properties: Optional[Dict[str, Any]] = None,
+        provenance: Dict | None = None,
     ) -> str:
         props = properties or {}
         if self._driver:
@@ -191,6 +195,14 @@ class SemanticMemoryService:
             return True
         return False
 
+    def get_provenance(self, fact_id: str) -> Dict:
+        """Return provenance metadata for a stored fact."""
+        if self._facts is not None:
+            for fact in self._facts:
+                if fact["id"] == fact_id and not fact.get("deleted_at"):
+                    return fact.get("provenance", {})
+        raise KeyError("record not found")
+
     def close(self) -> None:
         if self._driver:
             self._driver.close()
@@ -232,6 +244,7 @@ class SpatioTemporalMemoryService(SemanticMemoryService):
         obj: str,
         *,
         properties: Optional[Dict[str, Any]] = None,
+        provenance: Dict | None = None,
     ) -> str:
         """Store a fact with an initial version."""
         version = self._build_version(properties or {})
@@ -250,6 +263,7 @@ class SpatioTemporalMemoryService(SemanticMemoryService):
                     "predicate": predicate,
                     "object": obj,
                     "history": [version],
+                    "provenance": provenance or {},
                 }
             )
         return fact_id

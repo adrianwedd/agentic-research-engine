@@ -151,3 +151,21 @@ def test_propagate_subgraph_endpoint():
     )
     assert stored
     server.httpd.shutdown()
+
+
+def test_provenance_endpoint():
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"description": "prov"},
+        "execution_trace": {},
+        "outcome": {},
+        "source": "tester",
+    }
+    resp = requests.post(f"{endpoint}/memory", json={"record": record})
+    assert resp.status_code == 201
+    rid = resp.json()["id"]
+
+    resp = requests.get(f"{endpoint}/provenance/episodic/{rid}")
+    assert resp.status_code == 200
+    assert resp.json()["provenance"]["source"] == "tester"
+    server.httpd.shutdown()

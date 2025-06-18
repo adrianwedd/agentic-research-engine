@@ -230,7 +230,12 @@ class EpisodicMemoryService:
         return {"anomalies_detected": self.anomaly_metrics["anomalies_detected"]}
 
     def store_experience(
-        self, task_context: Dict, execution_trace: Dict, outcome: Dict
+        self,
+        task_context: Dict,
+        execution_trace: Dict,
+        outcome: Dict,
+        *,
+        provenance: Dict | None = None,
     ) -> str:
         """Store complete task experience for future reference."""
 
@@ -242,6 +247,7 @@ class EpisodicMemoryService:
             "last_accessed": now,
             "last_accessed_timestamp": now,
             "relevance_score": 1.0,
+            "provenance": provenance or {},
         }
         categories = set(task_context.get("tags", []))
         cat = task_context.get("category")
@@ -357,6 +363,13 @@ class EpisodicMemoryService:
                 except Exception:  # pragma: no cover - best effort
                     pass
         return True
+
+    def get_provenance(self, record_id: str) -> Dict:
+        """Return provenance metadata for a memory item."""
+        rec = self.storage._data.get(record_id)
+        if rec is None or rec.get("deleted_at"):
+            raise KeyError("record not found")
+        return rec.get("provenance", {})
 
     def prune_stale_memories(self, ttl_seconds: float) -> int:
         """Delete memories not accessed within the TTL."""

@@ -58,6 +58,7 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/evaluator_memory"): {"editor"},
     ("GET", "/evaluator_memory"): {"viewer", "editor"},
     ("DELETE", "/forget_evaluator"): {"editor"},
+    ("GET", "/provenance"): {"viewer", "editor"},
     # Deprecated paths kept for one release cycle
     ("POST", "/consolidate"): {"editor"},
     ("GET", "/retrieve"): {"viewer", "editor"},
@@ -255,11 +256,17 @@ class LTMService:
         source = record.get("source")
         if isinstance(source, str) and not self._verify_source(source, record):
             raise ValueError("source credibility below threshold")
+        provenance = {
+            "source": source,
+            "ingestion_date": record.get("ingestion_date", time.time()),
+            "transformations": record.get("transformations", []),
+        }
         if memory_type == "episodic":
             return module.store_experience(
                 record.get("task_context", {}),
                 record.get("execution_trace", {}),
                 record.get("outcome", {}),
+                provenance=provenance,
             )
         if memory_type == "semantic":
             return module.store_fact(
@@ -267,12 +274,14 @@ class LTMService:
                 record["predicate"],
                 record["object"],
                 properties=record.get("properties", {}),
+                provenance=provenance,
             )
         if memory_type == "procedural":
             return module.store_procedure(
                 record.get("task_context", {}),
                 record.get("procedure", []),
                 record.get("outcome", {}),
+                provenance=provenance,
             )
         raise ValueError(f"Unsupported memory type: {memory_type}")
 
@@ -394,6 +403,14 @@ class LTMService:
         if self._monitor:
             self._monitor.record_ltm_result(memory_type, bool(sanitized))
         return sanitized
+
+    def get_provenance(self, memory_type: str, identifier: str) -> Dict:
+        if memory_type not in ALLOWED_MEMORY_TYPES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
+        module = self._modules.get(memory_type)
+        if module is None or not hasattr(module, "get_provenance"):
+            raise ValueError(f"Unknown memory type: {memory_type}")
+        return module.get_provenance(identifier)
 
     def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -639,6 +656,26 @@ class LTMServiceServer:
                         self._send_json(400, {"error": str(exc)})
                         return
                     self._send_json(200, {"results": results})
+                    return
+                if parsed.path.startswith("/provenance/"):
+                    if not self._check_role("GET", "/provenance"):
+                        self._send_json(403, {"error": "forbidden"})
+                        return
+                    parts = parsed.path.split("/")
+                    if len(parts) < 4:
+                        self._send_json(404, {"error": "not found"})
+                        return
+                    memory_type = parts[2]
+                    identifier = parts[3]
+                    try:
+                        prov = service.get_provenance(memory_type, identifier)
+                    except KeyError:
+                        self._send_json(404, {"error": "not found"})
+                        return
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"provenance": prov})
                     return
                 if parsed.path != "/memory":
                     self.send_response(404)
