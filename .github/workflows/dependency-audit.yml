@@ -20,10 +20,17 @@ jobs:
           cache-dependency-path: requirements.txt
       - name: Install pip-audit
         run: pip install pip-audit
+      - name: Install safety
+        run: pip install safety
       - name: Run pip-audit
         id: audit
         run: |
           pip-audit -r requirements.txt -f json -o pip_audit_report.json
+        continue-on-error: true
+      - name: Run safety
+        id: safety
+        run: |
+          safety check -r requirements.txt --json > safety_report.json
         continue-on-error: true
       - name: Create issue if vulnerabilities found
         if: steps.audit.outcome == 'failure'
