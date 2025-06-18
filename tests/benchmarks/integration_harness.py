@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import json
 import logging
@@ -9,7 +10,7 @@ import os
 import statistics
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from .browsecomp_evaluator import BrowseCompEvaluator
 
@@ -141,19 +142,51 @@ class IntegrationTestHarness:
         }
 
 
-def main() -> None:  # pragma: no cover - CLI utility
-    dataset = (
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse command-line arguments for harness execution."""
+    parser = argparse.ArgumentParser(description="Run BrowseComp integration tests")
+    parser.add_argument(
+        "--dataset",
+        help="Path to dataset JSON file",
+        default=os.getenv("HARNESS_DATASET"),
+    )
+    parser.add_argument("--timeout", type=float, help="Per-question timeout in seconds")
+    parser.add_argument("--retries", type=int, help="Retry attempts for each question")
+    parser.add_argument(
+        "--retry-delay",
+        type=float,
+        dest="retry_delay",
+        help="Delay in seconds between retries",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover - CLI utility
+    args = parse_args(argv)
+    default_dataset = (
         Path(__file__).resolve().parents[2]
         / "benchmarks"
         / "browsecomp"
         / "dataset_v1.json"
     )
-    harness = IntegrationTestHarness(str(dataset))
+    dataset = Path(args.dataset or default_dataset)
+    harness = IntegrationTestHarness(
+        str(dataset),
+        timeout=args.timeout,
+        retries=args.retries,
+        retry_delay=args.retry_delay,
+    )
 
     def echo_agent(question: str) -> str:
         return question  # placeholder agent
 
-    report = harness.run(echo_agent)
+    try:
+        report = harness.run(echo_agent)
+    except Exception as e:  # pragma: no cover - graceful failure
+        logging.getLogger(__name__).error("harness error: %s", e)
+        print(json.dumps({"error": str(e)}))
+        return
+
     print(json.dumps(report, indent=2))
 
 
