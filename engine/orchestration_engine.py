@@ -267,18 +267,6 @@ class OrchestrationEngine:
         )
 
     def _on_node_finished(self, name: str) -> None:
-        if self._last_node is not None and self._last_node != name:
-            tracer = trace.get_tracer(__name__)
-            edge_type = None
-            for edge in self.edges:
-                if edge.start == self._last_node and edge.end == name:
-                    edge_type = edge.edge_type
-                    break
-            with tracer.start_as_current_span(
-                "edge",
-                attributes={"from": self._last_node, "to": name, "type": edge_type},
-            ):
-                pass
         self._last_node = name
 
     def build(self) -> None:
@@ -338,12 +326,42 @@ class OrchestrationEngine:
                     "route",
                     attributes={"node": node_name, "decision": str(dest)},
                 ):
-                    pass
-                if path_map:
-                    dest = path_map.get(dest, dest)
-                next_node = dest if isinstance(dest, str) else None
+                    if path_map:
+                        dest = path_map.get(dest, dest)
+                    next_node = dest if isinstance(dest, str) else None
+                    if next_node:
+                        edge_type = None
+                        for edge in self.edges:
+                            if edge.start == node_name and edge.end == next_node:
+                                edge_type = edge.edge_type
+                                break
+                        with tracer.start_as_current_span(
+                            "edge",
+                            attributes={
+                                "from": node_name,
+                                "to": next_node,
+                                "type": edge_type,
+                            },
+                        ):
+                            pass
             else:
                 next_node = self.order.get(node_name)
+                if next_node:
+                    tracer = trace.get_tracer(__name__)
+                    edge_type = None
+                    for edge in self.edges:
+                        if edge.start == node_name and edge.end == next_node:
+                            edge_type = edge.edge_type
+                            break
+                    with tracer.start_as_current_span(
+                        "edge",
+                        attributes={
+                            "from": node_name,
+                            "to": next_node,
+                            "type": edge_type,
+                        },
+                    ):
+                        pass
 
             if node.node_type == NodeType.HUMAN_IN_THE_LOOP_BREAKPOINT:
                 state.update({"status": "PAUSED"})
