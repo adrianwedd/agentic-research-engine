@@ -298,19 +298,6 @@
   - Audit inter-agent messaging for adherence to defined schema
   - Block or log any attempt to use emergent private languages
   title: Enforce LLM-grounded communication protocols
-- acceptance_criteria:
-  - Provenance query returns full history for a memory id
-  - CI tests verify metadata recorded on ingestion
-  id: CR-5.3
-  priority: high
-  steps:
-  - Track origin and transformations of data stored in LTM
-  - Persist provenance metadata alongside memory records
-  - Provide API to query provenance for any item
-  title: Implement ML-BOM data provenance tracking
-- acceptance_criteria:
-  - MemoryManager stores skills with policy, embedding and metadata
-  - SkillLibrary exposes vector and metadata query endpoints
   id: CR-001
   priority: medium
   steps:
@@ -319,6 +306,9 @@
   - Implement semantic lookup APIs by embedding or metadata filters
   - Ensure compatibility with episodic and semantic memory modules
   - Add unit tests and update documentation
+  acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  - SkillLibrary exposes vector and metadata query endpoints
   title: SkillLibrary-based MemoryManager overhaul
 - acceptance_criteria:
   - URL discovers disentangled skills for the SkillLibrary
@@ -473,6 +463,15 @@
   - Add tests verifying message delivery and retries
   title: Integrate Message Bus for Inter-Agent Communication
 - acceptance_criteria:
+  - Provenance query returns full history for a memory id
+  - CI tests verify metadata recorded on ingestion
+  id: CR-5.3
+  priority: high
+  steps:
+  - Track origin and transformations of data stored in LTM
+  - Persist provenance metadata alongside memory records
+  - Provide API to query provenance for any item
+  title: Implement ML-BOM data provenance tracking
   - Documentation builds successfully
   - Readers can follow the steps to create a new agent folder with working config
   id: FI-04
