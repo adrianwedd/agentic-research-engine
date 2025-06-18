@@ -90,14 +90,17 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```bash
    pip install langsmith trl
    ```
-   For a lean environment run `bash scripts/bootstrap_minimal.sh`. See
-   [docs/onboarding.md](docs/onboarding.md) for troubleshooting tips.
+   For a lean environment run `bash scripts/bootstrap_minimal.sh`. See the
+   [Minimal Setup section](docs/onboarding.md#minimal-setup) for troubleshooting
+   tips.
 
 3. **Configure environment variables:** Copy the example environment file and populate it with the necessary API keys and configuration values.
    ```bash
    cp .env.example .env
    # Now, edit .env with your credentials
    ```
+   If you're behind a proxy set `HTTP_PROXY` and `HTTPS_PROXY`. To target a
+   specific GPU use `CUDA_VISIBLE_DEVICES`.
 
 4. **Launch core services:** The repository provides a `docker-compose.yml` that
    starts an OpenTelemetry collector, a Weaviate vector database, and a Jaeger backend.
