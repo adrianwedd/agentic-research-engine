@@ -30,7 +30,7 @@ async function loadTasks() {
     data.forEach(t => {
       const li = document.createElement('li');
       const a = document.createElement('a');
-      a.href = '#';
+      a.href = 'https://chatgpt.com/codex/tasks/' + t.id;
       a.textContent = `${t.id}: ${t.title}`;
       li.appendChild(a);
       list.appendChild(li);
