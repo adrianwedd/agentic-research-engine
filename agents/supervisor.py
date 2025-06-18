@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 import yaml
+from jsonschema import ValidationError as JSONValidationError
+from jsonschema import validate as json_validate
 from pykwalify.core import Core
 
 from engine.state import State
@@ -24,6 +26,11 @@ from services.tool_registry import (
 class SupervisorAgent:
     SCHEMA_PATH = (
         Path(__file__).resolve().parent.parent / "schemas" / "supervisor_plan.yaml"
+    )
+    JSON_SCHEMA_PATH = (
+        Path(__file__).resolve().parent.parent
+        / "schemas"
+        / "supervisor_plan_schema.json"
     )
 
     def __init__(
@@ -63,6 +70,11 @@ class SupervisorAgent:
                 self.plan_schema = yaml.safe_load(f) or {}
         except FileNotFoundError:  # pragma: no cover - doc missing only in dev
             self.plan_schema = {}
+        try:
+            with open(self.JSON_SCHEMA_PATH, "r", encoding="utf-8") as f:
+                self.plan_json_schema = json.load(f)
+        except FileNotFoundError:  # pragma: no cover - optional in dev
+            self.plan_json_schema = {}
 
         self.logger = logging.getLogger(__name__)
 
@@ -228,14 +240,19 @@ class SupervisorAgent:
     # Validation helpers
     # ------------------------------------------------------------------
     def validate_plan(self, plan: Dict[str, Any]) -> None:
-        """Validate a plan dictionary against the YAML schema."""
+        """Validate a plan dictionary against available schemas."""
 
-        if not self.plan_schema:
-            return
-        try:
-            Core(source_data=plan, schema_data=self.plan_schema).validate()
-        except Exception as exc:
-            raise ValueError(f"plan validation error: {exc}") from exc
+        if self.plan_schema:
+            try:
+                Core(source_data=plan, schema_data=self.plan_schema).validate()
+            except Exception as exc:
+                raise ValueError(f"plan validation error: {exc}") from exc
+
+        if self.plan_json_schema:
+            try:
+                json_validate(instance=plan, schema=self.plan_json_schema)
+            except JSONValidationError as exc:
+                raise ValueError(f"plan validation error: {exc.message}") from exc
 
     # ------------------------------------------------------------------
     # YAML helpers

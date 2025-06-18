@@ -184,6 +184,19 @@ def test_invalid_plan_fixture_fails_schema():
         agent.parse_plan(yaml_text)
 
 
+def test_json_schema_validation_rejects_bad_plan():
+    agent = SupervisorAgent()
+    agent.plan_schema = {}
+    bad = {
+        "query": "q",
+        "context": [],
+        "graph": {"nodes": [{"id": "n1"}], "edges": []},
+        "evaluation": {},
+    }
+    with pytest.raises(ValueError):
+        agent.validate_plan(bad)
+
+
 def test_memories_scored_by_relevance():
     server, endpoint = _start_server()
     record_a = {
