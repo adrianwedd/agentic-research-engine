@@ -6,13 +6,32 @@ from services.ltm_service.openapi_app import create_app
 from services.ltm_service.semantic_memory import SpatioTemporalMemoryService
 
 
+class DummyProcedural:
+    def __init__(self) -> None:
+        self.storage = InMemoryStorage()
+
+
 def _create_client():
     service = LTMService(
         EpisodicMemoryService(InMemoryStorage()),
         semantic_memory=SpatioTemporalMemoryService(),
+        procedural_memory=DummyProcedural(),
     )
     app = create_app(service)
-    client = TestClient(app)
+    client = TestClient(app, raise_server_exceptions=False)
+    return client, service
+
+
+def _create_client_with_cred(fetcher, threshold=0.5):
+    service = LTMService(
+        EpisodicMemoryService(InMemoryStorage()),
+        semantic_memory=SpatioTemporalMemoryService(),
+        procedural_memory=DummyProcedural(),
+        credibility_func=fetcher,
+        credibility_threshold=threshold,
+    )
+    app = create_app(service)
+    client = TestClient(app, raise_server_exceptions=False)
     return client, service
 
 
@@ -128,3 +147,43 @@ def test_skill_endpoints():
     )
     assert resp.status_code == 200
     assert resp.json()["results"][0]["id"] == sid
+
+
+def test_memory_rejects_low_credibility_source():
+    def fetcher(_src: str) -> float:
+        return 0.2
+
+    client, service = _create_client_with_cred(fetcher, threshold=0.5)
+    record = {
+        "task_context": {"description": "demo"},
+        "execution_trace": {},
+        "outcome": {},
+        "source": "untrusted",
+    }
+    resp = client.post(
+        "/memory",
+        json={"record": record, "memory_type": "episodic"},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code >= 400
+    assert service.verification_log and not service.verification_log[0]["passed"]
+
+
+def test_memory_accepts_high_credibility_source():
+    def fetcher(_src: str) -> float:
+        return 0.9
+
+    client, service = _create_client_with_cred(fetcher, threshold=0.5)
+    record = {
+        "task_context": {"description": "demo"},
+        "execution_trace": {},
+        "outcome": {},
+        "source": "trusted",
+    }
+    resp = client.post(
+        "/memory",
+        json={"record": record, "memory_type": "episodic"},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code == 200 or resp.status_code == 201
+    assert service.verification_log and service.verification_log[0]["passed"]

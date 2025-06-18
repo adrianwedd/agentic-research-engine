@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
+import time
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 try:
@@ -154,6 +156,9 @@ class LTMService:
         procedural_memory: ProceduralMemoryService | None = None,
         evaluator_memory: EpisodicMemoryService | None = None,
         monitor: SystemMonitor | None = None,
+        *,
+        credibility_func: Callable[[str], float] | None = None,
+        credibility_threshold: float | None = None,
     ) -> None:
         self._modules: Dict[str, object] = {"episodic": episodic_memory}
         self._modules["semantic"] = semantic_memory or SemanticMemoryService()
@@ -165,6 +170,26 @@ class LTMService:
         )
         self.skill_library = SkillLibrary()
         self._monitor = monitor
+        self._credibility_func = credibility_func or (lambda src: 1.0)
+        self._cred_threshold = (
+            credibility_threshold
+            if credibility_threshold is not None
+            else float(os.getenv("LTM_CREDIBILITY_THRESHOLD", "0.5"))
+        )
+        self.verification_log: List[Dict[str, Any]] = []
+
+    def _verify_source(self, source: str) -> bool:
+        score = float(self._credibility_func(source))
+        passed = score >= self._cred_threshold
+        self.verification_log.append(
+            {
+                "source": source,
+                "score": score,
+                "passed": passed,
+                "timestamp": time.time(),
+            }
+        )
+        return passed
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -172,6 +197,9 @@ class LTMService:
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
+        source = record.get("source")
+        if isinstance(source, str) and not self._verify_source(source):
+            raise ValueError("source credibility below threshold")
         if memory_type == "episodic":
             return module.store_experience(
                 record.get("task_context", {}),
