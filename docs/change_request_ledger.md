@@ -30,7 +30,7 @@ This ledger tracks open change requests across the project. Each entry lists the
 | CR-EA-03 | Machine-readable ethical constitution | Open |
 | CR-EA-04 | Constitutionally aligned RL loop | Open |
 | CR-EA-05 | Continuous adversarial benchmarking pipeline | Open |
-| CR-EA-06 | AI assurance lifecycle framework | Open |
+| CR-EA-06 | AI assurance lifecycle framework | Implemented |
 | CR-2.1 | AgentAuditor experiential memory | Open |
 | CR-2.2 | RAG-based recall in Evaluator | Open |
 | CR-2.3 | Secure Evaluator API authentication | Open |
