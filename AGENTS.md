@@ -43,7 +43,11 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 ## Codex Queue Synchronization
 - The file `.codex/queue.yml` must reflect the latest open change requests.
 - Run `python scripts/sync_codex_tasks.py` to compare open issues with queued tasks.
-- The environment variable `GITHUB_REPOSITORY` must be set to `owner/repo` when running this script. Optionally set `GITHUB_TOKEN` for authenticated API access.
+- Set `GITHUB_REPOSITORY` to `owner/repo` when running this script if it cannot
+  be inferred from the current Git remote. The script will attempt to use the
+  repository from `git remote` when available. Optionally set `GITHUB_TOKEN`
+  for authenticated API access.
+
 - Address any reported discrepancies before committing.
 
 ## Codex Issue Workflows
