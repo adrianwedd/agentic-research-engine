@@ -1815,3 +1815,28 @@ acceptance_criteria:
   - Assurance plan stored in docs/governance contains evidence map
   - Review log shows at least one completed assurance meeting
 ```
+```codex-task
+id: RE-06
+title: Enable Cross-Lingual Knowledge-Graph Support
+priority: medium
+steps:
+  - implement translation layer in KG ingestion
+  - align entities across languages
+acceptance_criteria:
+  - given multilingual data
+  - when ingested
+  - then equivalent entities are linked via owl:sameAs
+```
+
+```codex-task
+id: RE-07
+title: Deploy Differential-Privacy LTM Architecture
+priority: medium
+steps:
+  - add DP mechanisms to LTM writes
+  - expose configuration for epsilon values
+acceptance_criteria:
+  - memory writes add calibrated noise
+  - integration tests verify privacy budget accounting
+```
+
