@@ -103,11 +103,13 @@ class DynamicGroupChat:
         recipient: Optional[str] = None,
     ) -> None:
         """Send a message to the chat."""
-        msg = ChatMessage(
-            sender=sender,
-            content=content,
-            type=message_type,
-            recipient=recipient,
+        msg = ChatMessage.validate_message(
+            {
+                "sender": sender,
+                "content": content,
+                "message_type": message_type,
+                "recipient": recipient,
+            }
         ).model_dump()
         publish_message_event(
             MessageMetadataEvent(
@@ -141,7 +143,7 @@ class DynamicGroupChat:
                 msgs = self.inboxes.pop(agent_id, [])
         else:
             msgs = self.inboxes.pop(agent_id, [])
-        return [ChatMessage.model_validate(m).model_dump() for m in msgs]
+        return [ChatMessage.validate_message(m).model_dump() for m in msgs]
 
     def update_workspace(self, agent_id: str, key: str, value: Any) -> None:
         """Update the shared workspace if permitted."""
