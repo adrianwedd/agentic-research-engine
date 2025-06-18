@@ -1,5 +1,17 @@
+"""Validate that .codex/queue.yml matches open Codex issues on GitHub.
+
+Environment Variables
+---------------------
+GITHUB_REPOSITORY
+    Repository in the form ``owner/repo``. Optional. If unset, the script
+    attempts to infer the repository from the current Git remote.
+GITHUB_TOKEN
+    Optional token used for authenticated API requests.
+"""
+
 import os
 import re
+import subprocess
 import sys
 from typing import List
 
@@ -7,6 +19,23 @@ import requests
 import yaml
 
 GITHUB_API = "https://api.github.com"
+
+
+def guess_repo_from_git() -> str | None:
+    """Return the "owner/repo" string from the current Git remote."""
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", "remote.origin.url"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=True,
+        )
+    except Exception:
+        return None
+    url = result.stdout.strip()
+    m = re.search(r"github\.com[/:]([\w.-]+/[\w.-]+)(?:\.git)?$", url)
+    return m.group(1) if m else None
 
 
 def load_queue_ids(path: str) -> List[str]:
@@ -37,10 +66,14 @@ def fetch_issue_ids(repo: str, token: str | None = None) -> List[str]:
 
 
 def main() -> int:
-    repo = os.environ.get("GITHUB_REPOSITORY")
+    repo = os.environ.get("GITHUB_REPOSITORY") or guess_repo_from_git()
     token = os.environ.get("GITHUB_TOKEN")
     if not repo:
-        print("GITHUB_REPOSITORY not set", file=sys.stderr)
+        print(
+            "GITHUB_REPOSITORY not set and repository could not be determined. "
+            "Set this to 'owner/repo' to check open Codex issues.",
+            file=sys.stderr,
+        )
         return 1
 
     queue_ids = load_queue_ids(os.path.join(".codex", "queue.yml"))
