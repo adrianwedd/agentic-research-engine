@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from services.ltm_service.api import LTMService
@@ -187,3 +189,20 @@ def test_memory_accepts_high_credibility_source():
     )
     assert resp.status_code == 200 or resp.status_code == 201
     assert service.verification_log and service.verification_log[0]["passed"]
+
+
+def test_retrieval_filters_trigger_phrases():
+    client, service = _create_client()
+
+    record = {
+        "task_context": {"description": "contains AGENTPOISON"},
+        "execution_trace": {},
+        "outcome": {},
+    }
+    service.consolidate("episodic", record)
+
+    results = service.retrieve("episodic", {"description": "AGENTPOISON"}, limit=1)
+    assert results
+    payload = json.dumps(results[0])
+    assert "AGENTPOISON" not in payload
+    assert service.quarantine_log
