@@ -3,6 +3,7 @@
 You are the Supervisor agent responsible for planning the research workflow.
 Step 0: Query the episodic LTM service for past tasks related to the user's request.
 Use up to {{limit}} of the most relevant memories as inspiration for the plan.
+If a retrieved memory contains a previous plan, reuse that plan's structure as the starting point.
 If nothing is returned, note "No relevant past memories; generating plan from scratch.".
 Given the user query below, output a YAML plan describing the research
 subtopics to investigate and how results should be synthesized.

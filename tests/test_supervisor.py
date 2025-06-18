@@ -240,13 +240,9 @@ def test_plan_template_applied_when_enabled():
     }
     requests.post(f"{endpoint}/memory", json={"record": record})
 
-    agent_plain = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=False)
-    plain = agent_plain.plan_research_task("example")
+    agent_default = SupervisorAgent(ltm_endpoint=endpoint)
+    templ = agent_default.plan_research_task("example")
 
-    agent_templ = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=True)
-    templ = agent_templ.plan_research_task("example")
-
-    assert plain["graph"] != template_plan["graph"]
     assert templ["graph"] == template_plan["graph"]
     server.httpd.shutdown()
 

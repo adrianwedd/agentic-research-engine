@@ -25,7 +25,7 @@ def test_learn_and_recall_cycle():
     server, endpoint = _start_server()
     mm = MemoryManagerAgent(endpoint=endpoint)
 
-    sup_first = SupervisorAgent(ltm_endpoint=endpoint, use_plan_templates=False)
+    sup_first = SupervisorAgent(ltm_endpoint=endpoint)
     state = sup_first.analyze_query("Transformer vs LSTM")
     mm(state)
     stored = server.service.retrieve("episodic", {"query": "Transformer vs LSTM"})
@@ -36,9 +36,7 @@ def test_learn_and_recall_cycle():
     baseline = sup_default.plan_research_task("Transformer vs LSTM vs CNN")
     baseline_nodes = len(baseline["graph"]["nodes"])
 
-    sup_recall = SupervisorAgent(
-        ltm_endpoint=endpoint, use_plan_templates=True, retrieval_limit=1
-    )
+    sup_recall = SupervisorAgent(ltm_endpoint=endpoint, retrieval_limit=1)
     recalled = sup_recall.plan_research_task("Transformer vs LSTM vs CNN")
     recalled_nodes = len(recalled["graph"]["nodes"])
 

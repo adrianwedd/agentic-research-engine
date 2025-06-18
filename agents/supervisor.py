@@ -63,7 +63,8 @@ class SupervisorAgent:
         except Exception:
             self.knowledge_graph_search = None
         if use_plan_templates is None:
-            use_plan_templates = bool(os.getenv("USE_PLAN_TEMPLATES"))
+            env_val = os.getenv("USE_PLAN_TEMPLATES")
+            use_plan_templates = True if env_val is None else bool(env_val)
         self.use_plan_templates = use_plan_templates
         try:
             with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
