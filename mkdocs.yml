@@ -13,6 +13,13 @@ nav:
       - Decision Records: docs/architecture/decision_records.md
       - Communication Guidelines: docs/architecture/llm_grounded_guided_evolution.md
 
+  - Epics:
+      - Interactive Agent Cockpit: docs/epics/interactive_agent_cockpit_epic.md
+      - P4-12R – Address Outstanding Phase 3 Gaps: docs/epics/p4_12r_phase3_gap_closure_epic.md
+      - Phase 4 - Production Hardening and Specialization: docs/epics/phase4_production_hardening_epic.md
+      - Research Driven System Enhancements: docs/epics/research_driven_system_enhancements_epic.md
+      - Security Architecture Enhancement: docs/epics/security_architecture_enhancement.md
+
   - Reports:
       - Phase 2 DevEx Review: docs/reports/phase2-devex-review-report.md
       - Phase 2 LTM API Gap: docs/reports/phase2-ltm-api-gap-report.md
