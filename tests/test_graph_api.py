@@ -80,3 +80,9 @@ def test_graph_encodes_confidence_and_belief_provenance():
     belief = resp.json()
     assert belief["value"] == 0.75
     assert belief["history"]
+
+    resp = client.get("/belief/A/intent")
+    assert resp.status_code == 200
+    belief = resp.json()
+    assert belief["value"] == "B"
+    assert belief["history"]
