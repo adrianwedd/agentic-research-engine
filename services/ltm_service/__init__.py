@@ -7,7 +7,7 @@ from .openapi_app import create_app
 from .procedural_memory import ProceduralMemoryService
 from .semantic_memory import SemanticMemoryService, SpatioTemporalMemoryService
 from .skill_library import SkillLibrary
-from .vector_store import InMemoryVectorStore, VectorStore, WeaviateVectorStore
+from .vector_store import VectorStore, WeaviateVectorStore
 
 __all__ = [
     "LTMService",
@@ -23,7 +23,6 @@ __all__ = [
     "EmbeddingClient",
     "SimpleEmbeddingClient",
     "VectorStore",
-    "InMemoryVectorStore",
     "WeaviateVectorStore",
     "SkillLibrary",
 ]

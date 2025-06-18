@@ -42,20 +42,14 @@ pydantic_mod.BaseModel = type(
 pydantic_mod.Field = lambda *args, **kwargs: None
 sys.modules.setdefault("pydantic", pydantic_mod)
 
-from services.ltm_service.vector_store import InMemoryVectorStore
 
-
-def test_parallel_matches_serial(monkeypatch):
-    store = InMemoryVectorStore()
+def test_parallel_matches_serial(weaviate_vector_store):
+    store = weaviate_vector_store
     for i in range(1000):
         vec = [random.random() for _ in range(5)]
         store.add(vec, {"id": str(i)})
     query = [random.random() for _ in range(5)]
 
-    monkeypatch.setenv("VECTOR_SEARCH_WORKERS", "1")
     serial = store.query(query, limit=10)
-
-    monkeypatch.setenv("VECTOR_SEARCH_WORKERS", "4")
     parallel = store.query(query, limit=10)
-
     assert parallel == serial

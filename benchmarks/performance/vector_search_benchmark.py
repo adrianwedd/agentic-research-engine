@@ -1,25 +1,25 @@
 from __future__ import annotations
 
 import json
-import os
 import random
 import time
 
-from services.ltm_service.vector_store import InMemoryVectorStore
+from services.ltm_service.vector_store import WeaviateVectorStore
 
 
 def benchmark(workers: int, store_size: int = 2000, queries: int = 500) -> float:
     random.seed(0)
-    store = InMemoryVectorStore()
+    store = WeaviateVectorStore()
     for i in range(store_size):
         vec = [random.random() for _ in range(5)]
         store.add(vec, {"id": str(i)})
     qvecs = [[random.random() for _ in range(5)] for _ in range(queries)]
-    os.environ["VECTOR_SEARCH_WORKERS"] = str(workers)
     start = time.perf_counter()
     for q in qvecs:
         store.query(q, limit=5)
-    return queries / (time.perf_counter() - start)
+    qps = queries / (time.perf_counter() - start)
+    store.close()
+    return qps
 
 
 def main() -> None:

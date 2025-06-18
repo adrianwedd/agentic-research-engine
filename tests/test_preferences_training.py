@@ -1,7 +1,7 @@
 import json
-from pathlib import Path
+from pathlib import Path  # noqa: F401
 
-from pipelines.reward_model import train_from_preferences, LinearPreferenceModel
+from pipelines.reward_model import LinearPreferenceModel, train_from_preferences
 from services.learning.rlaif_system import RLAIFSystem
 
 
@@ -44,6 +44,8 @@ def test_active_querying_triggers_callback():
     def cb(exp):
         called.append(exp)
 
-    rlaif = RLAIFSystem(ZeroReward(), DummyOpt(), feedback_callback=cb, active_query_threshold=0.5)
+    rlaif = RLAIFSystem(
+        ZeroReward(), DummyOpt(), feedback_callback=cb, active_query_threshold=0.5
+    )
     rlaif.update_agent_policies([{"prompt": "p", "response": "r"}])
     assert called

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-"""In-memory vector store for episodic memory tests."""
+"""Persistent vector store implementations for episodic memory."""
 
-import math
-import os
 import uuid
-from concurrent.futures import ProcessPoolExecutor
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List
 
 try:  # pragma: no cover - optional dependency
     import weaviate
@@ -30,60 +27,6 @@ class VectorStore:
 
     def delete(self, vec_id: str) -> None:  # pragma: no cover - interface
         raise NotImplementedError
-
-
-class InMemoryVectorStore(VectorStore):
-    """Simple in-memory vector storage with cosine similarity search."""
-
-    def __init__(self) -> None:
-        self._data: Dict[str, Tuple[List[float], Dict]] = {}
-
-    def add(self, vector: List[float], metadata: Dict) -> str:
-        vec_id = metadata.get("id", str(uuid.uuid4()))
-        self._data[vec_id] = (vector, metadata)
-        return vec_id
-
-    @staticmethod
-    def _cosine(a: List[float], b: List[float]) -> float:
-        dot = sum(x * y for x, y in zip(a, b))
-        norm_a = math.sqrt(sum(x * x for x in a))
-        norm_b = math.sqrt(sum(x * x for x in b))
-        return dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
-
-    @staticmethod
-    def _score_item(args: Tuple[List[float], Tuple[str, Tuple[List[float], Dict]]]):
-        vector, item = args
-        vec_id, (vec, meta) = item
-        score = InMemoryVectorStore._cosine(vector, vec)
-        rec = dict(meta)
-        rec.setdefault("id", vec_id)
-        rec["similarity"] = score
-        return score, rec
-
-    def query(self, vector: List[float], limit: int = 5) -> List[Dict]:
-        scored = []
-        items = list(self._data.items())
-        workers = int(os.getenv("VECTOR_SEARCH_WORKERS", "1") or 1)
-        if workers > 1 and items:
-            with ProcessPoolExecutor(max_workers=workers) as ex:
-                scored = list(
-                    ex.map(self._score_item, [(vector, item) for item in items])
-                )
-        else:
-            for item in items:
-                scored.append(self._score_item((vector, item)))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [rec for _, rec in scored[:limit]]
-
-    def all(self) -> Iterable[Tuple[str, Dict]]:
-        for vec_id, (vec, meta) in self._data.items():
-            rec = dict(meta)
-            rec.setdefault("id", vec_id)
-            yield vec_id, {"vector": vec, **rec}
-
-    def delete(self, vec_id: str) -> None:
-        self._data.pop(vec_id, None)
 
 
 class WeaviateVectorStore(VectorStore):

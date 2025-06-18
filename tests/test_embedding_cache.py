@@ -22,17 +22,16 @@ def test_cached_embedding_client_hits():
     assert base.calls == 1
 
 
-def test_service_cache_integration(monkeypatch):
+def test_service_cache_integration(monkeypatch, weaviate_vector_store):
     from services.ltm_service.episodic_memory import (
         EpisodicMemoryService,
         InMemoryStorage,
-        InMemoryVectorStore,
     )
 
     monkeypatch.setenv("EMBED_CACHE_SIZE", "4")
     base = CountingEmbeddingClient()
     service = EpisodicMemoryService(
-        InMemoryStorage(), embedding_client=base, vector_store=InMemoryVectorStore()
+        InMemoryStorage(), embedding_client=base, vector_store=weaviate_vector_store
     )
     ctx = {"description": "cached"}
     service.store_experience(ctx, {}, {"success": True})
