@@ -26,6 +26,6 @@ class Dummy:
 
 
 app = module.create_app(Dummy())
-path = pathlib.Path(__file__).resolve().parents[2] / "docs" / "openapi.yaml"
+path = pathlib.Path(__file__).resolve().parents[2] / "docs" / "api" / "openapi.yaml"
 path.write_text(yaml.dump(app.openapi()))
 print(f"Wrote {path}")

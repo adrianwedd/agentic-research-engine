@@ -8,10 +8,10 @@ Run the FastAPI app and navigate to `http://localhost:8081/docs` to access the i
 
 ## Regenerating the spec
 
-After modifying the API, run the following command from the repository root to regenerate `docs/openapi.yaml`:
+After modifying the API, run the following command from the repository root to regenerate `docs/api/openapi.yaml`:
 
 ```bash
 python -m services.ltm_service.generate_spec
 ```
 
-This will output the current OpenAPI schema to `docs/openapi.yaml` so it can be committed to version control.
+This will output the current OpenAPI schema to `docs/api/openapi.yaml` so it can be committed to version control.
