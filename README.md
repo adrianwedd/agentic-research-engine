@@ -2,7 +2,7 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/actions)
 [![Coverage](https://img.shields.io/badge/coverage-20%25-red)](https://codecov.io)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## **1. Vision & Mission**
 
@@ -217,4 +217,4 @@ For instructions on running the pipeline locally and the required 80% coverage t
 
 ## **12. License**
 
-This project is licensed under the MIT License. See the [LICENSE](https://opensource.org/licenses/MIT) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
