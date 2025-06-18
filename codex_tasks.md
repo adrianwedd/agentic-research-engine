@@ -1735,3 +1735,83 @@ acceptance_criteria:
   - Provenance query returns full history for a memory id
   - CI tests verify metadata recorded on ingestion
 ```
+
+## Ethical AI & Alignment Framework
+
+```codex-task
+id: CR-EA-01
+title: Implement Guardrail Orchestration Service
+priority: medium
+steps:
+  - Define HTTP API for input/output validation
+  - Implement prompt injection and PII detection
+  - Record all moderation actions in an audit log
+acceptance_criteria:
+  - Service blocks unsafe prompts and masks sensitive data
+  - Audit logs capture original prompt and moderation result
+```
+
+```codex-task
+id: CR-EA-02
+title: Develop Parallel Safeguard Agent
+priority: medium
+steps:
+  - Monitor inter-agent messages and tool usage
+  - Enforce policy manifest to block unsafe actions
+  - Escalate high-risk events for human review
+acceptance_criteria:
+  - Safeguard agent logs blocked actions with reasons
+  - High-risk events generate notifications for human oversight
+```
+
+```codex-task
+id: CR-EA-03
+title: Formalize System Constitution
+priority: medium
+steps:
+  - Convene AI Safety Council to draft principles
+  - Convert principles into machine-readable rules
+  - Store constitution in version control
+acceptance_criteria:
+  - Repository contains constitution.yaml with approved principles
+  - Council meeting notes archived for traceability
+```
+
+```codex-task
+id: CR-EA-04
+title: Re-architect RLAIF Loop for Constitutional Alignment
+priority: medium
+steps:
+  - Integrate constitution-based self-critique in supervised phase
+  - Collect preference data via Safeguard agent scoring
+  - Train preference model as reward function
+acceptance_criteria:
+  - Training pipeline uses constitution for feedback generation
+  - Reward model artifacts saved with version and config metadata
+```
+
+```codex-task
+id: CR-EA-05
+title: Establish Continuous Adversarial Benchmarking
+priority: medium
+steps:
+  - Generate adversarial prompts automatically
+  - Score outputs with LLM-as-judge for harmfulness and neutrality
+  - Track metrics over time and report regressions
+acceptance_criteria:
+  - Benchmark pipeline runs in CI with summary metrics
+  - Alerts trigger when harmfulness exceeds threshold
+```
+
+```codex-task
+id: CR-EA-06
+title: Adopt Formal AI Assurance Lifecycle
+priority: medium
+steps:
+  - Create AI Assurance Plan linking artifacts from CR-EA tasks
+  - Schedule quarterly reviews and update evidence mapping
+  - Document risk management decisions
+acceptance_criteria:
+  - Assurance plan stored in docs/governance contains evidence map
+  - Review log shows at least one completed assurance meeting
+```
