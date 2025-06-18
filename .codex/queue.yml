@@ -472,3 +472,32 @@
   - Persist provenance metadata alongside memory records
   - Provide API to query provenance for any item
   title: Implement ML-BOM data provenance tracking
+  - Documentation builds successfully
+  - Readers can follow the steps to create a new agent folder with working config
+  id: FI-04
+  priority: medium
+  steps:
+  - Create a "Contributing Agents" section in docs
+  - Document the folder structure, config.yml, and prompt.tpl.md
+  - Provide a minimal example of creating a custom agent
+  title: Add Documentation on Extending Agents
+- acceptance_criteria:
+  - All new tests pass under `pytest -q`
+  - Edge routing and recovery scenarios are validated
+  id: FI-05
+  priority: medium
+  steps:
+  - Review current integration test coverage
+  - Add test cases for edge routing and failure recovery
+  - Use `pytest -q` to run and verify new tests
+  title: Enhance Integration Tests for Orchestration Engine
+- acceptance_criteria:
+  - Middleware logs errors with useful context
+  - README shows how to enable/disable the middleware
+  id: FI-06
+  priority: low
+  steps:
+  - Implement middleware to capture unhandled exceptions in agent flows
+  - Format logs with structured data for better tracing
+  - Update the README with configuration instructions
+  title: Introduce Error Logging Middleware

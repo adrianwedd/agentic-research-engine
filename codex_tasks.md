@@ -1878,3 +1878,42 @@ acceptance_criteria:
   - Agents send and receive events through the message bus
   - Failed deliveries are retried until acknowledged
 ```
+
+```codex-task
+id: FI-04
+title: Add Documentation on Extending Agents
+priority: medium
+steps:
+  - Create a "Contributing Agents" section in docs
+  - Document the folder structure, config.yml, and prompt.tpl.md
+  - Provide a minimal example of creating a custom agent
+acceptance_criteria:
+  - Documentation builds successfully
+  - Readers can follow the steps to create a new agent folder with working config
+```
+
+```codex-task
+id: FI-05
+title: Enhance Integration Tests for Orchestration Engine
+priority: medium
+steps:
+  - Review current integration test coverage
+  - Add test cases for edge routing and failure recovery
+  - Use `pytest -q` to run and verify new tests
+acceptance_criteria:
+  - All new tests pass under `pytest -q`
+  - Edge routing and recovery scenarios are validated
+```
+
+```codex-task
+id: FI-06
+title: Introduce Error Logging Middleware
+priority: low
+steps:
+  - Implement middleware to capture unhandled exceptions in agent flows
+  - Format logs with structured data for better tracing
+  - Update the README with configuration instructions
+acceptance_criteria:
+  - Middleware logs errors with useful context
+  - README shows how to enable/disable the middleware
+```
