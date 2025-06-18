@@ -7,7 +7,9 @@ from typing import Dict, Iterable
 from .feudal_network import Manager
 
 
-def evaluate_transfer(tasks: Iterable[Dict[str, any]], manager: Manager) -> Dict[str, float]:
+def evaluate_transfer(
+    tasks: Iterable[Dict[str, any]], manager: Manager
+) -> Dict[str, float]:
     """Return success rate across tasks using the given manager."""
 
     total = 0
