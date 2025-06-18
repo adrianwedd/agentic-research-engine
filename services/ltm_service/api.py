@@ -42,6 +42,8 @@ from .skill_library import SkillLibrary
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural", "evaluator"}
 
+SUSPICIOUS_PATTERNS: List[str] = ["AGENTPOISON", "TRIGGER PHRASE"]
+
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/memory"): {"editor"},
     ("POST", "/semantic_consolidate"): {"editor"},
@@ -177,6 +179,7 @@ class LTMService:
             else float(os.getenv("LTM_CREDIBILITY_THRESHOLD", "0.5"))
         )
         self.verification_log: List[Dict[str, Any]] = []
+        self.quarantine_log: List[Dict[str, Any]] = []
 
     def _verify_source(self, source: str) -> bool:
         score = float(self._credibility_func(source))
@@ -190,6 +193,29 @@ class LTMService:
             }
         )
         return passed
+
+    def _has_suspicious(self, value: Any) -> bool:
+        if isinstance(value, str):
+            lower = value.lower()
+            return any(p.lower() in lower for p in SUSPICIOUS_PATTERNS)
+        if isinstance(value, dict):
+            return any(self._has_suspicious(v) for v in value.values())
+        if isinstance(value, list):
+            return any(self._has_suspicious(v) for v in value)
+        return False
+
+    def _strip_suspicious(self, value: Any) -> Any:
+        if isinstance(value, str):
+            cleaned = value
+            for p in SUSPICIOUS_PATTERNS:
+                cleaned = cleaned.replace(p, "[REDACTED]")
+                cleaned = cleaned.replace(p.lower(), "[REDACTED]")
+            return cleaned
+        if isinstance(value, dict):
+            return {k: self._strip_suspicious(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [self._strip_suspicious(v) for v in value]
+        return value
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
@@ -322,9 +348,23 @@ class LTMService:
         else:
             raise ValueError(f"Unsupported memory type: {memory_type}")
 
+        sanitized: List[Dict] = []
+        for item in results:
+            if self._has_suspicious(item):
+                self.quarantine_log.append(
+                    {
+                        "memory_type": memory_type,
+                        "query": query,
+                        "item": item,
+                        "timestamp": time.time(),
+                    }
+                )
+                item = self._strip_suspicious(item)
+            sanitized.append(item)
+
         if self._monitor:
-            self._monitor.record_ltm_result(memory_type, bool(results))
-        return results
+            self._monitor.record_ltm_result(memory_type, bool(sanitized))
+        return sanitized
 
     def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
         if memory_type not in ALLOWED_MEMORY_TYPES:
