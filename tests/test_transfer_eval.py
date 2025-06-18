@@ -1,5 +1,5 @@
-from services.learning import Manager, Worker, MultiContextEnv, evaluate_transfer
-from services.ltm_service.skill_library import SkillLibrary
+from services.learning import Manager, MultiContextEnv, Worker, evaluate_transfer
+from services.ltm_service.skill_library import SkillLibrary  # noqa: F401
 
 
 class TinyEnv:
@@ -27,7 +27,7 @@ def test_evaluate_transfer():
     mc = MultiContextEnv(envs)
     worker = Worker(mc)
     lib = SkillLibrary()
-    sid = lib.add_skill({"actions": [1]}, "inc")
+    sid = lib.add_skill({"actions": [1]}, "inc")  # noqa: F841
     mgr = Manager(lib, worker)
     tasks = [
         {"goal": 1, "description": "inc"},

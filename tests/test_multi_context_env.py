@@ -1,6 +1,6 @@
 from services.learning import MultiContextEnv
-from services.learning.skill_discovery import SkillDiscoveryModule
-from services.ltm_service.skill_library import SkillLibrary
+from services.learning.skill_discovery import SkillDiscoveryModule  # noqa: F401
+from services.ltm_service.skill_library import SkillLibrary  # noqa: F401
 
 
 class DummyEnv:
