@@ -19,7 +19,7 @@ def test_credibility_updates_on_events():
     service = setup_service()
     agent_id = service._reputation.add_agent("worker")
     task_id = service._reputation.add_task("research")
-    assign_id = service._reputation.assign(task_id, agent_id)
+    service._reputation.assign(task_id, agent_id)
 
     vec1 = {"accuracy_score": 0.9}
     event1 = EvaluationCompletedEvent(

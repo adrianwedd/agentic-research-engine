@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List
 
 from services.llm_client import LLMClient
@@ -59,3 +60,26 @@ def store_skill_specs(specs: List[SkillSpec], library: SkillLibrary) -> List[str
         )
         ids.append(sid)
     return ids
+
+
+def load_default_template() -> str:
+    """Return the built-in SkillSpecAgent prompt template."""
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "agents"
+        / "SkillSpecAgent"
+        / "prompt.tpl.md"
+    )
+    return path.read_text()
+
+
+def generate_skill_specs_from_agent(
+    task: str, *, llm: LLMClient, template_path: str | None = None
+) -> List[SkillSpec]:
+    """Convenience wrapper that loads the default template and parses specs."""
+
+    if template_path:
+        template = Path(template_path).read_text()
+    else:
+        template = load_default_template()
+    return generate_skill_specs(task, llm=llm, template=template)
