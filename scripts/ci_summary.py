@@ -23,7 +23,9 @@ def tail_lines(log_path: str, num: int = 20) -> str:
 
 
 def main(
-    log_path: str = "tests.log", cov_path: str = "coverage.xml", output_path: str | None = None
+    log_path: str = "tests.log",
+    cov_path: str = "coverage.xml",
+    output_path: str | None = None,
 ) -> int:
     summary_file = Path(os.environ.get("GITHUB_STEP_SUMMARY", ""))
     cov = coverage_percent(cov_path)

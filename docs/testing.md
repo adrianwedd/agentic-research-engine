@@ -16,6 +16,16 @@ Run linters with `pre-commit`:
 pre-commit run --all-files
 ```
 
+## Running Core Tests Only
+
+To quickly verify essential functionality, run only the tests marked `core`:
+
+```bash
+pytest -m "core"
+```
+
+This skips any tests labeled `optional` and the heavier integration suite.
+
 ## Contract Tests
 
 Contract tests live in `tests/test_ltm_contract.py` and load scenarios from JSON fixtures in `tests/fixtures/ltm_contract/`. Each fixture defines the request headers, body and the expected response. The helper `_assert_contract` checks that status codes and response fields match the fixture.

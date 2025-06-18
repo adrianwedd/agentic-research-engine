@@ -114,6 +114,13 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
 
 A comprehensive test suite is crucial for maintaining system quality.
 
+For a quick subset run only the core tests:
+
+```bash
+pytest -m "core"
+```
+See [docs/testing.md#running-core-tests-only](docs/testing.md#running-core-tests-only) for more details.
+
 ### **Unit Tests**
 
 Unit tests verify individual components in isolation. They are located in `tests/unit/`.

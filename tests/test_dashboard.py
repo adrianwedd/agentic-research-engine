@@ -40,11 +40,13 @@ def dashboard_server(tmp_path_factory):
 
     dashboard_path = str(tmp_path_factory.mktemp("dash"))
     from shutil import copytree
+
     copytree("dashboard", dashboard_path, dirs_exist_ok=True)
 
     app = create_app(exporter, dashboard_path=dashboard_path)
 
     import uvicorn
+
     config = uvicorn.Config(app, host="127.0.0.1", port=8787, log_level="error")
     server = uvicorn.Server(config)
 
@@ -57,7 +59,6 @@ def dashboard_server(tmp_path_factory):
 
 
 def test_dashboard_loads_nodes_and_edges(dashboard_server):
-    exporter = dashboard_server
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
