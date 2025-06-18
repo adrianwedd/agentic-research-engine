@@ -50,8 +50,16 @@ def build_trainer(
         inputs["labels"] = labels["input_ids"]
         return inputs
 
-    tokenized_train = train_ds.map(preprocess, batched=True)
-    tokenized_eval = eval_ds.map(preprocess, batched=True)
+    tokenized_train = train_ds.map(
+        preprocess,
+        batched=True,
+        remove_columns=train_ds.column_names,
+    )
+    tokenized_eval = eval_ds.map(
+        preprocess,
+        batched=True,
+        remove_columns=eval_ds.column_names,
+    )
     collator = DataCollatorForSeq2Seq(tokenizer, model=model)
     args = Seq2SeqTrainingArguments(
         output_dir=str(out_dir),
@@ -89,8 +97,10 @@ def train_model(
     return trainer
 
 
-def evaluate_model(trainer: Seq2SeqTrainer, eval_ds: Dataset) -> float:
-    """Return exact-match accuracy on ``eval_ds``."""
+def evaluate_model(trainer: Seq2SeqTrainer, eval_ds: Dataset | None = None) -> float:
+    """Return exact-match accuracy on ``eval_ds`` or the trainer's eval dataset."""
+    if eval_ds is None:
+        eval_ds = trainer.eval_dataset
     tokenizer = trainer.tokenizer
     preds = trainer.predict(eval_ds).predictions
     decoded = tokenizer.batch_decode(preds, skip_special_tokens=True)
