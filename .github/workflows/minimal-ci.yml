@@ -59,4 +59,14 @@ jobs:
         run: pre-commit run --all-files
 
       - name: Run tests
-        run: pytest -q
+        run: pytest --cov=./ --cov-report=xml --cov-report=html --cov-fail-under=80 -v
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+      - name: Upload coverage html
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
