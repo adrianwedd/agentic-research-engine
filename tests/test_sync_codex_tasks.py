@@ -58,7 +58,6 @@ def test_sync_requires_repo_when_unknown(capsys):
     with mock.patch.object(
         sync_codex_tasks, "guess_repo_from_git", return_value=None
     ), mock.patch.dict(os.environ, {}, clear=True):
-
         exitcode = sync_codex_tasks.main()
     captured = capsys.readouterr()
     assert exitcode == 1
