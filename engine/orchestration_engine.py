@@ -55,6 +55,8 @@ class NodeType(str, Enum):
     HUMAN_IN_THE_LOOP_BREAKPOINT = "human_in_the_loop_breakpoint"
     GROUP_CHAT_MANAGER = "group_chat_manager"
     SUBGRAPH = "subgraph"
+    PRIVILEGED = "privileged"
+    QUARANTINED = "quarantined"
 
 
 class InMemorySaver:
@@ -99,6 +101,11 @@ class Node:
     node_type: NodeType = NodeType.DEFAULT
 
     async def run(self, state: State) -> State:
+        if (
+            self.node_type == NodeType.PRIVILEGED
+            and state.data.get("risk_level") == "high"
+        ):
+            raise PermissionError("privileged agent cannot process high-risk input")
         for attempt in range(self.retries + 1):
             try:
                 tracer = trace.get_tracer(__name__)
@@ -199,6 +206,7 @@ class OrchestrationEngine:
     # checkpointer implementation used in tests.
     checkpointer: Any = field(default_factory=dict)
     review_queue: Any | None = None
+    quarantine_node: str | None = None
     _graph: Optional[Any] = field(init=False, default=None)
     _last_node: Optional[str] = field(init=False, default=None)
     entry: Optional[str] = field(init=False, default=None)
@@ -235,6 +243,10 @@ class OrchestrationEngine:
         path_map: Dict[str, str] | None = None,
     ) -> None:
         self.routers.append((start, router, path_map))
+
+    def set_quarantine_node(self, name: str) -> None:
+        """Designate the node used for quarantined execution."""
+        self.quarantine_node = name
 
     def _on_node_finished(self, name: str) -> None:
         if self._last_node is not None and self._last_node != name:
@@ -282,6 +294,13 @@ class OrchestrationEngine:
             node_name = start_at or self.entry
             while node_name:
                 node = self.nodes[node_name]
+                if (
+                    node.node_type == NodeType.PRIVILEGED
+                    and state.data.get("risk_level") == "high"
+                    and self.quarantine_node
+                ):
+                    node_name = self.quarantine_node
+                    continue
                 prev_state = state
                 next_state = await node.run(state)
                 if node.node_type == NodeType.SUBGRAPH and isinstance(
