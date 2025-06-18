@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -19,7 +19,7 @@ def setup_service():
 def test_anomaly_detection_triggers_alert(caplog):
     service = setup_service()
     caplog.set_level(logging.WARNING)
-    ts = datetime.utcnow().timestamp()
+    ts = datetime.now(UTC).timestamp()
 
     # Oversized message
     service.handle_message_event(

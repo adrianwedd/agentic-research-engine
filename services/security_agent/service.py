@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from services.monitoring.events import EvaluationCompletedEvent, MessageMetadataEvent
@@ -40,7 +40,7 @@ class SecurityAgentService:
                 session.add(record)
             else:
                 record.score = score
-                record.last_updated = datetime.now(datetime.UTC)
+                record.last_updated = datetime.now(UTC)
             session.commit()
         return score
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     JSON,
@@ -29,7 +29,7 @@ class Agent(Base):
     agent_id = Column(String, primary_key=True, default=_uuid)
     agent_type = Column(String, nullable=False)
     model_base = Column(String, nullable=True)
-    creation_timestamp = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
+    creation_timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     status = Column(String, nullable=False, default="active")
 
     assignments = relationship("Assignment", back_populates="agent")
@@ -42,7 +42,7 @@ class Task(Base):
     parent_task_id = Column(String, ForeignKey("tasks.task_id"), nullable=True)
     task_type = Column(String, nullable=False)
     query_text = Column(Text, nullable=True)
-    creation_timestamp = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
+    creation_timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
 
     assignments = relationship("Assignment", back_populates="task")
 
@@ -53,7 +53,7 @@ class Assignment(Base):
     assignment_id = Column(String, primary_key=True, default=_uuid)
     task_id = Column(String, ForeignKey("tasks.task_id"), nullable=False)
     agent_id = Column(String, ForeignKey("agents.agent_id"), nullable=False)
-    assignment_timestamp = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
+    assignment_timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
 
     agent = relationship("Agent", back_populates="assignments")
     task = relationship("Task", back_populates="assignments")
@@ -68,7 +68,7 @@ class Evaluation(Base):
         String, ForeignKey("assignments.assignment_id"), nullable=False
     )
     evaluator_id = Column(String, nullable=False)
-    evaluation_timestamp = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
+    evaluation_timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     performance_vector = Column(JSON, nullable=False)
     is_final = Column(Boolean, default=False)
 
@@ -84,8 +84,6 @@ class ReputationScore(Base):
     context = Column(String, nullable=True)
     reputation_vector = Column(JSON, nullable=False)
     confidence_score = Column(Float, default=0.0)
-    last_updated_timestamp = Column(
-        DateTime, default=lambda: datetime.now(datetime.UTC)
-    )
+    last_updated_timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
 
     agent = relationship("Agent")
