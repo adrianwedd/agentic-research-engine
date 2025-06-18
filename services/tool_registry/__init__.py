@@ -69,14 +69,20 @@ class ToolRegistry:
                 "tool.name": name,
                 "init.timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
                 "parent.span_id": hex(parent_id),
+                "allowed_roles": ",".join(allowed_roles) if allowed_roles else "",
             },
         ) as span:
-            self._init_contexts[name] = span.get_span_context()
-        self._tools[name] = tool
-        if allowed_roles is not None:
-            self._permissions[name] = set(allowed_roles)
-        else:
-            self._permissions[name] = set()
+            try:
+                self._init_contexts[name] = span.get_span_context()
+                self._tools[name] = tool
+                if allowed_roles is not None:
+                    self._permissions[name] = set(allowed_roles)
+                else:
+                    self._permissions[name] = set()
+            except Exception as exc:  # pragma: no cover - defensive
+                span.record_exception(exc)
+                span.set_attribute("init.failed", True)
+                raise
 
     def get_tool(self, role: str, name: str) -> Callable[..., object]:
         """Retrieve a tool for a role if permitted."""
