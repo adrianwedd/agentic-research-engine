@@ -47,6 +47,7 @@ Each agent resides in a folder under `agents/`. Every folder contains:
   be inferred from the current Git remote. The script will attempt to use the
   repository from `git remote` when available. Optionally set `GITHUB_TOKEN`
   for authenticated API access.
+
 - Address any reported discrepancies before committing.
 
 ## Codex Issue Workflows

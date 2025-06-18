@@ -181,17 +181,26 @@ class LTMService:
         self.verification_log: List[Dict[str, Any]] = []
         self.quarantine_log: List[Dict[str, Any]] = []
 
-    def _verify_source(self, source: str) -> bool:
+    def _verify_source(self, source: str, record: Dict | None = None) -> bool:
         score = float(self._credibility_func(source))
         passed = score >= self._cred_threshold
-        self.verification_log.append(
-            {
-                "source": source,
-                "score": score,
-                "passed": passed,
-                "timestamp": time.time(),
-            }
-        )
+        ts = time.time()
+        entry = {
+            "source": source,
+            "score": score,
+            "passed": passed,
+            "timestamp": ts,
+        }
+        self.verification_log.append(entry)
+        if not passed:
+            self.quarantine_log.append(
+                {
+                    "source": source,
+                    "score": score,
+                    "record": record,
+                    "timestamp": ts,
+                }
+            )
         return passed
 
     def _has_suspicious(self, value: Any) -> bool:
@@ -224,7 +233,7 @@ class LTMService:
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
         source = record.get("source")
-        if isinstance(source, str) and not self._verify_source(source):
+        if isinstance(source, str) and not self._verify_source(source, record):
             raise ValueError("source credibility below threshold")
         if memory_type == "episodic":
             return module.store_experience(

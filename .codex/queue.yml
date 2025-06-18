@@ -423,3 +423,22 @@
   - Schedule quarterly reviews and update evidence mapping
   - Document risk management decisions
   title: Adopt Formal AI Assurance Lifecycle
+- acceptance_criteria:
+  - given multilingual data
+  - when ingested
+  - then equivalent entities are linked via owl:sameAs
+  id: RE-06
+  priority: medium
+  steps:
+  - implement translation layer in KG ingestion
+  - align entities across languages
+  title: Enable Cross-Lingual Knowledge-Graph Support
+- acceptance_criteria:
+  - memory writes add calibrated noise
+  - integration tests verify privacy budget accounting
+  id: RE-07
+  priority: medium
+  steps:
+  - add DP mechanisms to LTM writes
+  - expose configuration for epsilon values
+  title: Deploy Differential-Privacy LTM Architecture

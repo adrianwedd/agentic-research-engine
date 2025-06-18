@@ -14,6 +14,7 @@ This site contains design docs, research papers, and project reports for the Age
 ## Epics
 
 - [Interactive Agent Cockpit](epics/interactive_agent_cockpit_epic.md)
+- [Research-Driven System Enhancements](epics/research_driven_system_enhancements_epic.md)
 
 ## Suggested Tasks
 
@@ -29,7 +30,7 @@ async function loadTasks() {
     data.forEach(t => {
       const li = document.createElement('li');
       const a = document.createElement('a');
-      a.href = '#';
+      a.href = 'https://chatgpt.com/codex/tasks/' + t.id;
       a.textContent = `${t.id}: ${t.title}`;
       li.appendChild(a);
       list.appendChild(li);

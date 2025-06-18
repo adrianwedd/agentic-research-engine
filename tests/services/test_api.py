@@ -169,6 +169,8 @@ def test_memory_rejects_low_credibility_source():
     )
     assert resp.status_code >= 400
     assert service.verification_log and not service.verification_log[0]["passed"]
+    assert "timestamp" in service.verification_log[0]
+    assert service.quarantine_log
 
 
 def test_memory_accepts_high_credibility_source():
@@ -189,6 +191,7 @@ def test_memory_accepts_high_credibility_source():
     )
     assert resp.status_code == 200 or resp.status_code == 201
     assert service.verification_log and service.verification_log[0]["passed"]
+    assert "timestamp" in service.verification_log[0]
 
 
 def test_retrieval_filters_trigger_phrases():

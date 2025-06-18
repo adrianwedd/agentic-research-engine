@@ -7,6 +7,7 @@ GITHUB_REPOSITORY
     is checked and used if it points to GitHub.
 GITHUB_TOKEN
     Optional token for authenticated API requests.
+
 """
 
 import os
@@ -73,6 +74,7 @@ def main() -> int:
             "GITHUB_REPOSITORY not set and repository could not be determined. "
             "Set the environment variable with 'export GITHUB_REPOSITORY=owner/repo' "
             "to check open Codex issues.",
+
             file=sys.stderr,
         )
         return 1
