@@ -192,3 +192,111 @@ def test_rbac_and_memory_type_validation_on_forget_and_provenance():
     assert resp.status_code == 400
 
     server.httpd.shutdown()
+
+
+def test_skill_endpoint_validation_and_rbac():
+    server, endpoint = _start_server()
+
+    resp = requests.post(f"{endpoint}/skill", headers={"X-Role": "viewer"}, json={})
+    assert resp.status_code == 403
+
+    resp = requests.post(
+        f"{endpoint}/skill",
+        headers={"X-Role": "editor"},
+        json={"skill_policy": {"steps": []}},
+    )
+    assert resp.status_code == 400
+
+    server.httpd.shutdown()
+
+
+def test_skill_query_validation_and_rbac():
+    server, endpoint = _start_server()
+
+    resp = requests.post(
+        f"{endpoint}/skill_vector_query",
+        headers={"X-Role": "guest"},
+        json={"query": "demo"},
+    )
+    assert resp.status_code == 403
+
+    resp = requests.post(
+        f"{endpoint}/skill_metadata_query",
+        headers={"X-Role": "viewer"},
+        json={"query": "demo"},
+    )
+    assert resp.status_code == 400
+
+    server.httpd.shutdown()
+
+
+def test_evaluator_memory_rbac_and_validation():
+    server, endpoint = _start_server()
+
+    resp = requests.post(
+        f"{endpoint}/evaluator_memory", headers={"X-Role": "editor"}, json={}
+    )
+    assert resp.status_code == 422
+
+    resp = requests.post(
+        f"{endpoint}/evaluator_memory",
+        headers={"X-Role": "viewer"},
+        json={"critique": {}},
+    )
+    assert resp.status_code == 403
+
+    resp = requests.get(f"{endpoint}/evaluator_memory", headers={"X-Role": "guest"})
+    assert resp.status_code == 403
+
+    server.httpd.shutdown()
+
+
+def test_temporal_and_spatial_validation_and_rbac():
+    server, endpoint = _start_server()
+
+    resp = requests.post(
+        f"{endpoint}/temporal_consolidate",
+        headers={"X-Role": "viewer"},
+        json={},
+    )
+    assert resp.status_code == 403
+
+    resp = requests.post(
+        f"{endpoint}/temporal_consolidate",
+        headers={"X-Role": "editor"},
+        json={"subject": "S"},
+    )
+    assert resp.status_code == 400
+
+    resp = requests.get(
+        f"{endpoint}/spatial_query",
+        headers={"X-Role": "guest"},
+    )
+    assert resp.status_code == 403
+
+    resp = requests.get(
+        f"{endpoint}/spatial_query",
+        params={"bbox": "1,2,3", "valid_from": "0", "valid_to": "1"},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 400
+
+    server.httpd.shutdown()
+
+
+def test_forget_evaluator_errors():
+    server, endpoint = _start_server()
+
+    resp = requests.delete(
+        f"{endpoint}/forget_evaluator/abc", headers={"X-Role": "viewer"}
+    )
+    assert resp.status_code == 403
+
+    resp = requests.delete(
+        f"{endpoint}/forget_evaluator/abc",
+        headers={"X-Role": "editor"},
+        json={"hard": False},
+    )
+    assert resp.status_code == 404
+
+    server.httpd.shutdown()
