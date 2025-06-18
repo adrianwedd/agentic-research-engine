@@ -99,6 +99,7 @@ class Node:
 
     retries: int = 0
     node_type: NodeType = NodeType.DEFAULT
+    on_error: Callable[[Exception, str, State], None] | None = None
 
     async def run(self, state: State) -> State:
         if (
@@ -142,6 +143,11 @@ class Node:
                     return out_state
             except Exception as exc:  # pragma: no cover - logging path
                 logger.exception("Node %s failed on attempt %s", self.name, attempt + 1)
+                if self.on_error is not None:
+                    try:
+                        self.on_error(exc, self.name, state)
+                    except Exception:  # pragma: no cover - defensive
+                        logger.exception("error middleware failed")
                 if attempt >= self.retries:
                     raise exc
                 await asyncio.sleep(2**attempt)
@@ -216,6 +222,7 @@ class OrchestrationEngine:
         str, tuple[Callable[[State], str | Iterable[str]], Dict[str, str] | None]
     ] = field(init=False, default_factory=dict)
     on_complete: Callable[[State], Awaitable[State] | State] | None = None
+    error_logger: Callable[[Exception, str, State], None] | None = None
 
     def add_node(
         self,
@@ -225,13 +232,15 @@ class OrchestrationEngine:
         retries: int = 0,
         node_type: NodeType = NodeType.DEFAULT,
     ) -> None:
-        self.nodes[name] = Node(name, func, retries, node_type)
+        self.nodes[name] = Node(name, func, retries, node_type, self.error_logger)
 
     def add_subgraph(
         self, name: str, subgraph: "OrchestrationEngine", *, retries: int = 0
     ) -> None:
         """Add a subgraph node that runs another :class:`OrchestrationEngine`."""
-        self.nodes[name] = Node(name, subgraph, retries, NodeType.SUBGRAPH)
+        self.nodes[name] = Node(
+            name, subgraph, retries, NodeType.SUBGRAPH, self.error_logger
+        )
 
     def add_edge(self, start: str, end: str, *, edge_type: str | None = None) -> None:
         self.edges.append(Edge(start=start, end=end, edge_type=edge_type))

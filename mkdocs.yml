@@ -1,6 +1,7 @@
 site_name: Agentic Research Engine Docs
 nav:
   - Home: docs/index.md
+  - Contributing Agents: docs/contributing_agents.md
   - Research:
       - Reward Shaping Proposal: docs/research/2025-score-reward-shaping.md
       - Emergent Communication: docs/research/2025-emergent-communication-report.md
