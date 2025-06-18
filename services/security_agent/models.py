@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import relationship
@@ -15,6 +15,6 @@ class CredibilityScore(Base):
 
     agent_id = Column(String, ForeignKey("agents.agent_id"), primary_key=True)
     score = Column(Float, default=0.0)
-    last_updated = Column(DateTime, default=lambda: datetime.now(datetime.UTC))
+    last_updated = Column(DateTime, default=lambda: datetime.now(UTC))
 
     agent = relationship(Agent)

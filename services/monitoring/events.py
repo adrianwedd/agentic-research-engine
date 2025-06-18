@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, AsyncIterator, Dict, Optional
 
 
@@ -14,7 +14,7 @@ class EvaluationCompletedEvent:
     performance_vector: Dict[str, Any]
     task_type: Optional[str] = None
     is_final: bool = False
-    timestamp: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
