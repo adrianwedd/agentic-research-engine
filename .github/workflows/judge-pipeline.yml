@@ -47,7 +47,13 @@ jobs:
           path: judge.log
       - name: Summarize failures
         if: always()
-        run: python scripts/ci_summary.py judge.log coverage.xml
+        run: python scripts/ci_summary.py judge.log coverage.xml ci_summary.md
+      - name: Upload CI summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary
+          path: ci_summary.md
       - name: Fail if tests failed
         if: steps.run-judge.outputs.exitcode != '0'
         run: exit 1

@@ -39,3 +39,13 @@ Example:
 Download the `coverage-html` artifact from the run and open `index.html` locally
 to view detailed coverage results.
 
+## CI Summary Artifact
+
+Every workflow run also saves the generated failure summary as an artifact named
+"CI Summary". It contains the `ci_summary.md` file with links to failing steps,
+coverage reports and the full log. To retrieve it:
+
+1. Open the GitHub Actions run for your commit.
+2. Expand the **Artifacts** section and download **CI Summary**.
+3. View `ci_summary.md` locally for quick links to the coverage HTML and log.
+

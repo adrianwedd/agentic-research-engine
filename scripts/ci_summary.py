@@ -22,7 +22,9 @@ def tail_lines(log_path: str, num: int = 20) -> str:
     return "\n".join(path.read_text().splitlines()[-num:])
 
 
-def main(log_path: str = "tests.log", cov_path: str = "coverage.xml") -> int:
+def main(
+    log_path: str = "tests.log", cov_path: str = "coverage.xml", output_path: str | None = None
+) -> int:
     summary_file = Path(os.environ.get("GITHUB_STEP_SUMMARY", ""))
     cov = coverage_percent(cov_path)
     tail = tail_lines(log_path)
@@ -44,12 +46,17 @@ def main(log_path: str = "tests.log", cov_path: str = "coverage.xml") -> int:
             f"actions/runs/{os.environ.get('GITHUB_RUN_ID')})"
         ),
     ]
+    summary = "\n".join(text)
+
     if summary_file:
-        summary_file.write_text("\n".join(text))
+        summary_file.write_text(summary)
     else:
-        print("\n".join(text))
+        print(summary)
+
+    if output_path:
+        Path(output_path).write_text(summary)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main(*(sys.argv[1:3])))
+    sys.exit(main(*(sys.argv[1:4])))
