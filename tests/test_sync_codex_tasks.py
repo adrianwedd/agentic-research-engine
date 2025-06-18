@@ -28,3 +28,11 @@ def test_sync_detects_mismatch(tmp_path):
         with mock.patch("builtins.open", mock.mock_open(read_data=queue.read_text())):
             exitcode = sync_codex_tasks.main()
     assert exitcode == 1
+
+
+def test_sync_requires_repo(capsys):
+    with mock.patch.dict(os.environ, {}, clear=True):
+        exitcode = sync_codex_tasks.main()
+    captured = capsys.readouterr()
+    assert exitcode == 1
+    assert "GITHUB_REPOSITORY" in captured.err
