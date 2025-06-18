@@ -74,7 +74,6 @@ def main() -> int:
             "GITHUB_REPOSITORY not set and repository could not be determined. "
             "Set the environment variable with 'export GITHUB_REPOSITORY=owner/repo' "
             "to check open Codex issues.",
-
             file=sys.stderr,
         )
         return 1
