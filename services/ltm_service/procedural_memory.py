@@ -37,13 +37,19 @@ class ProceduralMemoryService(EpisodicMemoryService):
         self.logger = logging.getLogger(__name__)
 
     def store_procedure(
-        self, task_context: Dict, procedure: Iterable[Dict], outcome: Dict
+        self,
+        task_context: Dict,
+        procedure: Iterable[Dict],
+        outcome: Dict,
+        *,
+        provenance: Dict | None = None,
     ) -> str:
         """Persist a procedure for later reuse."""
         return super().store_experience(
             task_context,
             {"procedure": list(procedure)},
             outcome,
+            provenance=provenance,
         )
 
     # --------------------------------------------------------------

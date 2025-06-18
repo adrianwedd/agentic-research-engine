@@ -64,6 +64,13 @@ class RetrieveResponse(BaseModel):
 RetrieveResponse.model_rebuild()
 
 
+class ProvenanceResponse(BaseModel):
+    provenance: Dict = Field(..., description="Provenance metadata")
+
+
+ProvenanceResponse.model_rebuild()
+
+
 class SemanticConsolidateRequest(BaseModel):
     payload: Dict | str = Field(..., description="JSON-LD object or Cypher string")
     format: str = Field("jsonld", description="Payload format")
@@ -257,6 +264,22 @@ def create_app(service: LTMService) -> FastAPI:
     ) -> RedirectResponse:
         query = f"memory_type={memory_type}&limit={limit}"
         return RedirectResponse(url=f"/memory?{query}", status_code=308)
+
+    @app.get("/provenance/{memory_type}/{record_id}", summary="Get provenance")
+    async def get_provenance(
+        memory_type: str,
+        record_id: str,
+        x_role: str | None = Header(None),
+    ) -> ProvenanceResponse:
+        role = x_role or ""
+        if not _check_role("GET", "/provenance", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        prov = await asyncio.to_thread(
+            service.get_provenance,
+            memory_type,
+            record_id,
+        )
+        return ProvenanceResponse(provenance=prov)
 
     @app.post("/skill", summary="Store a skill")
     async def store_skill(
