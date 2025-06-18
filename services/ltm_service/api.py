@@ -226,6 +226,26 @@ class LTMService:
             return [self._strip_suspicious(v) for v in value]
         return value
 
+    def _sanitize_records(
+        self, items: List[Dict[str, Any]], memory_type: str, query: Dict | None = None
+    ) -> List[Dict[str, Any]]:
+        """Remove suspicious patterns from ``items`` and log quarantined entries."""
+
+        sanitized: List[Dict[str, Any]] = []
+        for item in items:
+            if self._has_suspicious(item):
+                self.quarantine_log.append(
+                    {
+                        "memory_type": memory_type,
+                        "query": query,
+                        "item": item,
+                        "timestamp": time.time(),
+                    }
+                )
+                item = self._strip_suspicious(item)
+            sanitized.append(item)
+        return sanitized
+
     def consolidate(self, memory_type: str, record: Dict) -> str:
         if memory_type not in ALLOWED_MEMORY_TYPES:
             raise ValueError(f"Unsupported memory type: {memory_type}")
@@ -308,7 +328,16 @@ class LTMService:
         module = self._modules.get("semantic")
         if not isinstance(module, SpatioTemporalMemoryService):
             raise ValueError("Spatio-temporal memory module not available")
-        return module.query_spatial_range(bbox, valid_from, valid_to)
+        results = module.query_spatial_range(bbox, valid_from, valid_to)
+        return self._sanitize_records(
+            results,
+            "spatio-temporal",
+            {
+                "bbox": bbox,
+                "valid_from": valid_from,
+                "valid_to": valid_to,
+            },
+        )
 
     def add_skill(
         self,
@@ -321,12 +350,14 @@ class LTMService:
     def skill_vector_query(
         self, query: str | List[float], *, limit: int = 5
     ) -> List[Dict[str, Any]]:
-        return self.skill_library.query_by_vector(query, limit=limit)
+        results = self.skill_library.query_by_vector(query, limit=limit)
+        return self._sanitize_records(results, "skill", {"query": query})
 
     def skill_metadata_query(
         self, metadata: Dict[str, Any], *, limit: int = 5
     ) -> List[Dict[str, Any]]:
-        return self.skill_library.query_by_metadata(metadata, limit=limit)
+        results = self.skill_library.query_by_metadata(metadata, limit=limit)
+        return self._sanitize_records(results, "skill", metadata)
 
     def store_evaluator_memory(self, critique: Dict[str, Any]) -> str:
         module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
@@ -336,7 +367,8 @@ class LTMService:
         self, query: Dict[str, Any], *, limit: int = 5
     ) -> List[Dict]:
         module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
-        return module.retrieve_similar_experiences(query, limit=limit)
+        results = module.retrieve_similar_experiences(query, limit=limit)
+        return self._sanitize_records(results, "evaluator", query)
 
     def forget_evaluator_memory(self, identifier: str, *, hard: bool = False) -> bool:
         module: EpisodicMemoryService = self._modules["evaluator"]  # type: ignore[assignment]
@@ -357,19 +389,7 @@ class LTMService:
         else:
             raise ValueError(f"Unsupported memory type: {memory_type}")
 
-        sanitized: List[Dict] = []
-        for item in results:
-            if self._has_suspicious(item):
-                self.quarantine_log.append(
-                    {
-                        "memory_type": memory_type,
-                        "query": query,
-                        "item": item,
-                        "timestamp": time.time(),
-                    }
-                )
-                item = self._strip_suspicious(item)
-            sanitized.append(item)
+        sanitized = self._sanitize_records(results, memory_type, query)
 
         if self._monitor:
             self._monitor.record_ltm_result(memory_type, bool(sanitized))

@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from services.ltm_service.api import LTMService
@@ -55,3 +57,33 @@ def test_store_and_retrieve_critique():
     direct = service.retrieve_evaluator_memory({"prompt": "Q?"}, limit=1)
     assert direct
     assert cid == direct[0].get("id")
+
+
+def test_evaluator_memory_filters_trigger_phrases():
+    client, service = _create_client()
+
+    critique = {
+        "prompt": "bad TRIGGER PHRASE",  # suspicious content
+        "outcome": "fail",
+    }
+    resp = client.post(
+        "/evaluator_memory",
+        json={"critique": critique},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code == 200 or resp.status_code == 201
+
+    results = service.retrieve_evaluator_memory({"prompt": "bad"}, limit=1)
+    assert results
+    assert "TRIGGER PHRASE" not in json.dumps(results[0])
+    assert service.quarantine_log
+
+    resp = client.request(
+        "GET",
+        "/evaluator_memory",
+        json={"query": {"prompt": "bad"}},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    payload = json.dumps(resp.json()["results"][0])
+    assert "TRIGGER PHRASE" not in payload
