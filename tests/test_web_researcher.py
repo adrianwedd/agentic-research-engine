@@ -2,6 +2,7 @@ import pytest
 
 from agents.web_researcher import WebResearcherAgent
 from engine.orchestration_engine import GraphState
+from services.tool_registry import ToolRegistry
 
 pytestmark = pytest.mark.core
 
@@ -31,13 +32,18 @@ def test_research_topic_uses_tools():
         assert url.endswith("page")
         return "html text"
 
-    registry = {
-        "web_search": web_search,
-        "pdf_extract": pdf_extract,
-        "html_scraper": html_scraper,
-        "summarize": track("summarize"),
-        "assess_source": lambda url: 0.9,
-    }
+    registry = ToolRegistry()
+    registry.register_tool("web_search", web_search, allowed_roles=["WebResearcher"])
+    registry.register_tool("pdf_extract", pdf_extract, allowed_roles=["WebResearcher"])
+    registry.register_tool(
+        "html_scraper", html_scraper, allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "summarize", track("summarize"), allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "assess_source", lambda url: 0.9, allowed_roles=["WebResearcher"]
+    )
 
     agent = WebResearcherAgent(registry)
     result = agent.research_topic("test topic", {})
@@ -52,7 +58,9 @@ def test_summarize_to_state_adds_message():
     def summarize(text):
         return "summary"
 
-    registry = {"web_search": lambda q: [], "summarize": summarize}
+    registry = ToolRegistry()
+    registry.register_tool("web_search", lambda q: [], allowed_roles=["WebResearcher"])
+    registry.register_tool("summarize", summarize, allowed_roles=["WebResearcher"])
     agent = WebResearcherAgent(registry)
 
     from engine.state import State
@@ -70,13 +78,14 @@ def test_webresearcher_node_executes_query():
         queries.append(q)
         return []
 
-    registry = {
-        "web_search": web_search,
-        "summarize": lambda text: "",
-        "pdf_extract": None,
-        "html_scraper": None,
-        "assess_source": lambda url: 1.0,
-    }
+    registry = ToolRegistry()
+    registry.register_tool("web_search", web_search, allowed_roles=["WebResearcher"])
+    registry.register_tool(
+        "summarize", lambda text: "", allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "assess_source", lambda url: 1.0, allowed_roles=["WebResearcher"]
+    )
 
     agent = WebResearcherAgent(registry)
     state = GraphState(
@@ -101,13 +110,15 @@ def test_research_topic_retries_and_errors():
         calls.append(1)
         raise ValueError("boom")
 
-    registry = {
-        "web_search": web_search,
-        "pdf_extract": failing_pdf,
-        "html_scraper": None,
-        "summarize": lambda text: "summary",
-        "assess_source": lambda url: 1.0,
-    }
+    registry = ToolRegistry()
+    registry.register_tool("web_search", web_search, allowed_roles=["WebResearcher"])
+    registry.register_tool("pdf_extract", failing_pdf, allowed_roles=["WebResearcher"])
+    registry.register_tool(
+        "summarize", lambda text: "summary", allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "assess_source", lambda url: 1.0, allowed_roles=["WebResearcher"]
+    )
 
     agent = WebResearcherAgent(registry, max_retries=2)
     with pytest.raises(RuntimeError):
@@ -127,14 +138,17 @@ def test_webresearcher_prefers_knowledge_graph():
         calls.append("web")
         return []
 
-    registry = {
-        "web_search": web_search,
-        "knowledge_graph_search": kg_search,
-        "pdf_extract": None,
-        "html_scraper": None,
-        "summarize": lambda text: "",
-        "assess_source": lambda url: 1.0,
-    }
+    registry = ToolRegistry()
+    registry.register_tool("web_search", web_search, allowed_roles=["WebResearcher"])
+    registry.register_tool(
+        "knowledge_graph_search", kg_search, allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "summarize", lambda text: "", allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "assess_source", lambda url: 1.0, allowed_roles=["WebResearcher"]
+    )
 
     agent = WebResearcherAgent(registry)
     result = agent.research_topic("capital of France", {})

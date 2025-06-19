@@ -29,13 +29,9 @@ class WebResearcherAgent(BaseAgent):
         self.max_retries = max_retries
         self.call_times: List[float] = []
 
-        # Required tools
-        self.web_search = self._require_tool("web_search")
-        self.knowledge_graph_search = self.tool_registry.get("knowledge_graph_search")
-        self.pdf_extract = self.tool_registry.get("pdf_extract")
-        self.html_scraper = self.tool_registry.get("html_scraper")
-        self.summarize = self._require_tool("summarize")
-        self.assess_source = self.tool_registry.get("assess_source", lambda url: 1.0)
+        # ensure required tools exist
+        self._require_tool("web_search")
+        self._require_tool("summarize")
 
     def _summarize_for_task(self, text: str | None, task: str) -> str:
         """Summarize ``text`` with focus on the current sub-task."""
@@ -47,7 +43,8 @@ class WebResearcherAgent(BaseAgent):
             f"relevant to '{task}'. Limit the summary to 200 words or fewer:\n{text}"
         )
         summary = self._call_with_retry(
-            self.summarize,
+            self._invoke_tool,
+            "summarize",
             prompt,
             tool_name="summarize",
             trace_kwargs={"agent_id": "", "tool_input": prompt},
@@ -68,11 +65,29 @@ class WebResearcherAgent(BaseAgent):
         state.add_message({"role": "WebResearcher", "content": summary})
         return state
 
-    def _require_tool(self, name: str) -> Callable[..., Any]:
-        tool = self.tool_registry.get(name)
-        if not callable(tool):
-            raise ValueError(f"Required tool '{name}' not available")
-        return tool
+    def _require_tool(self, name: str) -> str:
+        if self.registry is not None:
+            self.registry.get_tool(self.role, name)
+        else:
+            tool = self.tool_registry.get(name)
+            if not callable(tool):
+                raise ValueError(f"Required tool '{name}' not available")
+        return name
+
+    def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> Any:
+        if self.registry is not None:
+            return self.registry.invoke(self.role, name, *args, **kwargs)
+        tool = self.tool_registry[name]
+        return tool(*args, **kwargs)
+
+    def _has_tool(self, name: str) -> bool:
+        if self.registry is not None:
+            try:
+                self.registry.get_tool(self.role, name)
+                return True
+            except Exception:
+                return False
+        return callable(self.tool_registry.get(name))
 
     def _check_rate_limit(self) -> None:
         if os.getenv("PYTEST_DISABLE_RATE_LIMIT"):
@@ -112,10 +127,11 @@ class WebResearcherAgent(BaseAgent):
     def research_topic(self, topic: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """Conduct comprehensive web research on specified topic."""
         self._check_rate_limit()
-        if self.knowledge_graph_search:
+        if self._has_tool("knowledge_graph_search"):
             try:
                 facts = self._call_with_retry(
-                    self.knowledge_graph_search,
+                    self._invoke_tool,
+                    "knowledge_graph_search",
                     {"text": topic},
                     tool_name="knowledge_graph_search",
                     trace_kwargs={
@@ -134,7 +150,12 @@ class WebResearcherAgent(BaseAgent):
                 }
 
         start = time.perf_counter()
-        search_results = self._call_with_retry(self.web_search, topic)
+        search_results = self._call_with_retry(
+            self._invoke_tool,
+            "web_search",
+            topic,
+            tool_name="web_search",
+        )
         latency_ms = (time.perf_counter() - start) * 1000
         self._log_tool(
             "web_search",
@@ -151,14 +172,18 @@ class WebResearcherAgent(BaseAgent):
             url = r.get("url")
             if not url:
                 continue
-            credibility = float(self.assess_source(url))
+            if self._has_tool("assess_source"):
+                credibility = float(self._invoke_tool("assess_source", url))
+            else:
+                credibility = 1.0
             if credibility < 0.5:
                 continue
 
             content: Optional[str] = None
-            if url.lower().endswith(".pdf") and self.pdf_extract:
+            if url.lower().endswith(".pdf") and self._has_tool("pdf_extract"):
                 content = self._call_with_retry(
-                    self.pdf_extract,
+                    self._invoke_tool,
+                    "pdf_extract",
                     url,
                     tool_name="pdf_extract",
                     trace_kwargs={
@@ -166,9 +191,10 @@ class WebResearcherAgent(BaseAgent):
                         "tool_input": url,
                     },
                 )
-            elif self.html_scraper:
+            elif self._has_tool("html_scraper"):
                 content = self._call_with_retry(
-                    self.html_scraper,
+                    self._invoke_tool,
+                    "html_scraper",
                     url,
                     tool_name="html_scraper",
                     trace_kwargs={
