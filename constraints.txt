@@ -37,4 +37,5 @@ SQLAlchemy==2.0.29
 asyncpg==0.29.0
 neo4j==5.19.0
 scikit-learn==1.7.0
+nats-py==2.6.0
 
