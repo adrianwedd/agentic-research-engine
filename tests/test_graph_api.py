@@ -86,3 +86,27 @@ def test_graph_encodes_confidence_and_belief_provenance():
     belief = resp.json()
     assert belief["value"] == "B"
     assert belief["history"]
+
+
+def test_node_metrics_endpoint():
+    importlib.reload(trace)
+    exporter = GraphTraceExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    trace.set_tracer_provider(provider)
+
+    engine = create_orchestration_engine()
+
+    def node_a(state: GraphState, scratchpad: dict) -> GraphState:
+        state.update({"a": 1})
+        return state
+
+    engine.add_node("A", node_a)
+    engine.run(GraphState())
+
+    app = create_app(exporter)
+    client = TestClient(app)
+    resp = client.get("/node/A/metrics")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["duration"] > 0
