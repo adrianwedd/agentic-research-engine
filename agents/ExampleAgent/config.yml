@@ -1,0 +1,4 @@
+agent_name: "ExampleAgent"
+role: "Minimal demonstration agent"
+max_retries: 1
+rbac: []
