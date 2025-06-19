@@ -5,6 +5,7 @@ import asyncpg
 import pandas as pd
 import pytest
 
+from services.tool_registry import create_default_registry
 from tools.postgres_query import PostgresQueryTool
 from tools.sqlite_query import SqliteQueryTool
 
@@ -30,6 +31,42 @@ async def test_postgres_query():
 
     with pgtest.PGTest(pg_ctl=pg_ctl) as pg:
         tool = PostgresQueryTool(pg.url)
+        conn = await asyncpg.connect(pg.url)
+        await conn.execute("CREATE TABLE orders(id INT, status TEXT)")
+        await conn.executemany(
+            "INSERT INTO orders VALUES($1, $2)",
+            [(1, "open"), (2, "closed"), (3, "open")],
+        )
+        await conn.close()
+        df = await tool.run_query(
+            "SELECT count(*) FROM orders WHERE status=$1", ["open"]
+        )
+        assert df.iloc[0, 0] == 2
+
+
+def test_sqlite_query_via_registry(tmp_path):
+    db_file = tmp_path / "reg.db"
+    conn = sqlite3.connect(db_file)
+    conn.execute("CREATE TABLE users(id INTEGER, name TEXT)")
+    conn.executemany("INSERT INTO users VALUES (?, ?)", [(1, "Alice"), (2, "Bob")])
+    conn.commit()
+
+    registry = create_default_registry()
+    tool = registry.invoke("CodeResearcher", "sqlite_query", str(db_file))
+    df = tool.run_query("SELECT name FROM users ORDER BY id")
+    assert df["name"].tolist() == ["Alice", "Bob"]
+
+
+@pytest.mark.asyncio
+async def test_postgres_query_via_registry():
+    pg_ctl = shutil.which("pg_ctl")
+    if not pg_ctl:
+        pytest.skip("pg_ctl not available")
+    import pgtest
+
+    with pgtest.PGTest(pg_ctl=pg_ctl) as pg:
+        registry = create_default_registry()
+        tool = registry.invoke("CodeResearcher", "postgres_query", pg.url)
         conn = await asyncpg.connect(pg.url)
         await conn.execute("CREATE TABLE orders(id INT, status TEXT)")
         await conn.executemany(
