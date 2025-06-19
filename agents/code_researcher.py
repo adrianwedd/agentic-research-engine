@@ -28,13 +28,22 @@ class CodeResearcherAgent(BaseAgent):
         self.max_retries = max_retries
         self.call_times: List[float] = []
 
-        self.code_interpreter = self._require_tool("code_interpreter")
+        self._require_tool("code_interpreter")
 
-    def _require_tool(self, name: str) -> Callable[..., Any]:
-        tool = self.tool_registry.get(name)
-        if not callable(tool):
-            raise ValueError(f"Required tool '{name}' not available")
-        return tool
+    def _require_tool(self, name: str) -> str:
+        if self.registry is not None:
+            self.registry.get_tool(self.role, name)
+        else:
+            tool = self.tool_registry.get(name)
+            if not callable(tool):
+                raise ValueError(f"Required tool '{name}' not available")
+        return name
+
+    def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> Any:
+        if self.registry is not None:
+            return self.registry.invoke(self.role, name, *args, **kwargs)
+        tool = self.tool_registry[name]
+        return tool(*args, **kwargs)
 
     def _check_rate_limit(self) -> None:
         now = time.time()
@@ -76,7 +85,8 @@ class CodeResearcherAgent(BaseAgent):
         start = time.perf_counter()
         try:
             result = self._call_with_retry(
-                self.code_interpreter,
+                self._invoke_tool,
+                "code_interpreter",
                 code,
                 args=args or [],
             )

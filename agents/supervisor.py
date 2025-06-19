@@ -57,11 +57,10 @@ class SupervisorAgent:
         self.tool_registry = tool_registry or create_default_registry()
         self.procedural_memory = procedural_memory
         try:
-            self.knowledge_graph_search = self.tool_registry.get_tool(
-                "Supervisor", "knowledge_graph_search"
-            )
+            self.tool_registry.get_tool("Supervisor", "knowledge_graph_search")
+            self.has_knowledge_graph_search = True
         except Exception:
-            self.knowledge_graph_search = None
+            self.has_knowledge_graph_search = False
         if use_plan_templates is None:
             env_val = os.getenv("USE_PLAN_TEMPLATES")
             use_plan_templates = True if env_val is None else bool(env_val)
@@ -283,9 +282,11 @@ class SupervisorAgent:
 
         cleaned = query.strip()
         facts: List[Dict[str, Any]] = []
-        if self.knowledge_graph_search:
+        if self.has_knowledge_graph_search:
             try:
-                facts = self.knowledge_graph_search({"text": cleaned})
+                facts = self.tool_registry.invoke(
+                    "Supervisor", "knowledge_graph_search", {"text": cleaned}
+                )
             except Exception:
                 facts = []
         plan = self.plan_research_task(cleaned)
