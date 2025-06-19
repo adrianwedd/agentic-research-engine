@@ -2316,3 +2316,152 @@ acceptance_criteria:
   - Auction mechanism adapts to task parameters
   - Documentation explains selection process
 ```
+```codex-task
+id: ARCH-01
+title: Scaffold Executive Orchestrator
+priority: P1
+phase: Framework_Setup
+owner: Core
+estimate: 5 pts
+steps:
+  - Create project skeleton with `orchestrator.py` exposing CLI + REST.
+  - Implement state machine (IDLE→PLAN→EXECUTE→REFLECT→COMPLETE).
+  - Add OpenTelemetry span wrapper.
+acceptance_criteria:
+  - Unit tests simulate task lifecycle and assert state transitions.
+```
+
+```codex-task
+id: ARCH-02
+title: Implement Planner ∧ Reflector Module
+priority: P1
+phase: Reasoning_Engine
+owner: Core
+estimate: 8 pts
+steps:
+  - Design prompt templates for planning & reflexion loops.
+  - Support verbal feedback parsing and plan revision.
+  - Provide YAML plan output with DAG metadata.
+acceptance_criteria:
+  - Integration test: given a sample research prompt, module outputs a multi-node plan with dependencies.
+```
+
+```codex-task
+id: ARCH-03
+title: Build Tool Adapter Interface
+priority: P1
+phase: Tooling
+owner: Platform
+estimate: 5 pts
+steps:
+  - Define `ToolCall` dataclass and `execute()` dispatcher.
+  - Implement concrete adapters: web.search, pdf.reader, python.exec.
+  - Register adapters via plugin entry-points.
+acceptance_criteria:
+  - Mock tests confirm adapters invoked and results normalised.
+```
+
+```codex-task
+id: ARCH-04
+title: Provision Knowledge Base & Memory Layer
+priority: P2
+phase: Persistence
+owner: Platform
+estimate: 8 pts
+steps:
+  - Deploy vector store service (pgvector baseline).
+  - Implement CRUD API for embeddings & metadata.
+  - Add provenance tracking (source URL, timestamp).
+acceptance_criteria:
+  - Load test sustains ≥500 embeddings/s with <200 ms p95 latency.
+```
+
+```codex-task
+id: ARCH-05
+title: Sub-Agent Process Manager
+priority: P2
+phase: Concurrency
+owner: Core
+estimate: 6 pts
+steps:
+  - Abstract Spawn API supporting threads, processes, containers.
+  - Capability token generation & revocation.
+  - Graceful shutdown hooks persisting scratchpad.
+acceptance_criteria:
+  - Stress test proves 100 concurrent sub-agents without orphan processes.
+```
+
+```codex-task
+id: ARCH-06
+title: Governance & Security Middleware
+priority: P1
+phase: Security
+owner: Security
+estimate: 5 pts
+steps:
+  - Implement CBAC policy engine.
+  - Integrate toxic prompt filter and PII redaction.
+  - Append-only audit log with SHA-256 integrity seals.
+acceptance_criteria:
+  - Security audit shows 100% policy enforcement and zero PII leaks in test suite.
+```
+
+```codex-task
+id: ARCH-07
+title: Observability Stack Integration
+priority: P3
+phase: Ops
+owner: DevOps
+estimate: 3 pts
+steps:
+  - Emit structured JSON logs to stdout.
+  - Export Prometheus metrics via `/metrics` endpoint.
+  - Provide Jaeger tracing demo docker-compose.
+acceptance_criteria:
+  - Dashboard displays task throughput, error rate, average latency.
+```
+
+```codex-task
+id: ARCH-08
+title: Implement Researcher & Critic Agent Templates
+priority: P2
+phase: Agents
+owner: Core
+estimate: 5 pts
+steps:
+  - Define role prompts and default tool policies.
+  - Add retry & timeout logic.
+  - Store outputs and critiques in Knowledge Base.
+acceptance_criteria:
+  - End-to-end test: Researcher finds paper, Critic flags unsupported claim.
+```
+
+```codex-task
+id: ARCH-09
+title: Synthesiser & Reporting Module
+priority: P2
+phase: Output
+owner: Core
+estimate: 4 pts
+steps:
+  - Merge validated findings into Markdown artefact.
+  - Support diagram generation via Mermaid.
+  - Push artefact to object store / Git repo.
+acceptance_criteria:
+  - Report contains embedded citations and diagrams.
+```
+
+```codex-task
+id: ARCH-10
+title: CI/CD Pipeline for Agent Framework
+priority: P3
+phase: DevOps
+owner: DevOps
+estimate: 4 pts
+steps:
+  - GitHub Actions: lint, unit, integration, security scan.
+  - Docker build & publish on tag.
+  - Optional Helm chart for K8s deploy.
+acceptance_criteria:
+  - All pipelines pass; image available in registry with SBOM.
+```

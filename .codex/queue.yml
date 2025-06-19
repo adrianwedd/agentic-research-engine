@@ -803,3 +803,124 @@
   - Choose auction type accordingly
   - Document decision logic
   title: Dynamic Auction Mechanism Selection
+- acceptance_criteria:
+  - Unit tests simulate task lifecycle and assert state transitions.
+  estimate: 5 pts
+  id: ARCH-01
+  owner: Core
+  phase: Framework_Setup
+  priority: P1
+  steps:
+  - Create project skeleton with `orchestrator.py` exposing CLI + REST.
+  - "Implement state machine (IDLE\u2192PLAN\u2192EXECUTE\u2192REFLECT\u2192COMPLETE)."
+  - Add OpenTelemetry span wrapper.
+  title: Scaffold Executive Orchestrator
+- acceptance_criteria:
+  - Integration test: given a sample research prompt, module outputs a multi-node
+      plan with dependencies.
+  estimate: 8 pts
+  id: ARCH-02
+  owner: Core
+  phase: Reasoning_Engine
+  priority: P1
+  steps:
+  - Design prompt templates for planning & reflexion loops.
+  - Support verbal feedback parsing and plan revision.
+  - Provide YAML plan output with DAG metadata.
+  title: "Implement Planner \u2227 Reflector Module"
+- acceptance_criteria:
+  - "Load test sustains \u2265500 embeddings/s with <200 ms p95 latency."
+  estimate: 8 pts
+  id: ARCH-04
+  owner: Platform
+  phase: Persistence
+  priority: P2
+  steps:
+  - Deploy vector store service (pgvector baseline).
+  - Implement CRUD API for embeddings & metadata.
+  - Add provenance tracking (source URL, timestamp).
+  title: Provision Knowledge Base & Memory Layer
+- acceptance_criteria:
+  - Stress test proves 100 concurrent sub-agents without orphan processes.
+  estimate: 6 pts
+  id: ARCH-05
+  owner: Core
+  phase: Concurrency
+  priority: P2
+  steps:
+  - Abstract Spawn API supporting threads, processes, containers.
+  - Capability token generation & revocation.
+  - Graceful shutdown hooks persisting scratchpad.
+  title: Sub-Agent Process Manager
+- acceptance_criteria:
+  - Security audit shows 100% policy enforcement and zero PII leaks in test suite.
+  estimate: 5 pts
+  id: ARCH-06
+  owner: Security
+  phase: Security
+  priority: P1
+  steps:
+  - Implement CBAC policy engine.
+  - Integrate toxic prompt filter and PII redaction.
+  - Append-only audit log with SHA-256 integrity seals.
+  title: Governance & Security Middleware
+- acceptance_criteria:
+  - Dashboard displays task throughput, error rate, average latency.
+  estimate: 3 pts
+  id: ARCH-07
+  owner: DevOps
+  phase: Ops
+  priority: P3
+  steps:
+  - Emit structured JSON logs to stdout.
+  - Export Prometheus metrics via `/metrics` endpoint.
+  - Provide Jaeger tracing demo docker-compose.
+  title: Observability Stack Integration
+- acceptance_criteria:
+  - End-to-end test: Researcher finds paper, Critic flags unsupported claim.
+  estimate: 5 pts
+  id: ARCH-08
+  owner: Core
+  phase: Agents
+  priority: P2
+  steps:
+  - Define role prompts and default tool policies.
+  - Add retry & timeout logic.
+  - Store outputs and critiques in Knowledge Base.
+  title: Implement Researcher & Critic Agent Templates
+- acceptance_criteria:
+  - Report contains embedded citations and diagrams.
+  estimate: 4 pts
+  id: ARCH-09
+  owner: Core
+  phase: Output
+  priority: P2
+  steps:
+  - Merge validated findings into Markdown artefact.
+  - Support diagram generation via Mermaid.
+  - Push artefact to object store / Git repo.
+  title: Synthesiser & Reporting Module
+- acceptance_criteria:
+  - All pipelines pass; image available in registry with SBOM.
+  estimate: 4 pts
+  id: ARCH-10
+  owner: DevOps
+  phase: DevOps
+  priority: P3
+  steps:
+  - GitHub Actions: lint, unit, integration, security scan.
+  - Docker build & publish on tag.
+  - Optional Helm chart for K8s deploy.
+  title: CI/CD Pipeline for Agent Framework
+- acceptance_criteria:
+  - Mock tests confirm adapters invoked and results normalised.
+  estimate: 5 pts
+  id: ARCH-03
+  owner: Platform
+  phase: Tooling
+  priority: P1
+  steps:
+  - Define `ToolCall` dataclass and `execute()` dispatcher.
+  - Implement concrete adapters: web.search, pdf.reader, python.exec.
+  - Register adapters via plugin entry-points.
+  title: Build Tool Adapter Interface
