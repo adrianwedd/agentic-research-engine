@@ -72,8 +72,8 @@ The following remediation tasks address the partial items above and strengthen P
 ```codex-task
 id: P1-01
 title: Set up mono-repo for agentic system
-status: in_progress
-notes: Branch protection not verifiable from repo; pre-commit configured
+status: done
+notes: Branch protection and pre-commit hooks configured
 steps: []
 acceptance_criteria: []
 ```
@@ -438,8 +438,8 @@ acceptance_criteria: []
 ```codex-task
 id: P1-19
 title: Create basic unit test framework and coverage goals
-status: in_progress
-notes: Tests exist but coverage threshold not enforced in CI
+status: open
+notes: CI lacks coverage threshold enforcement
 steps: []
 acceptance_criteria: []
 ```
@@ -500,8 +500,8 @@ The table below summarizes repository coverage of the Phase 2 change requests f
 ```codex-task
 id: P2-01
 title: Implement LTM Service API for memory operations
-status: in_progress
-notes: Endpoint works but `memory_type` validation and RBAC checks are missing
+status: open
+notes: Endpoint missing `memory_type` validation and RBAC
 steps: []
 acceptance_criteria: []
 ```
@@ -1251,7 +1251,7 @@ acceptance_criteria: []
 ```codex-task
 id: P2-04B
 title: Supervisor plan recall does not shorten workflow
-status: todo
+status: open
 notes: Plan templates must be enabled to benefit from episodic recall.
 steps:
   - Investigate Supervisor merging logic
@@ -1263,7 +1263,7 @@ acceptance_criteria:
 
 id: P3-TEST-01
 title: Replace deprecated utcnow usage
-status: open
+status: done
 priority: medium
 notes: |
   `services/tool_registry/__init__.py` uses `datetime.utcnow()` which is deprecated in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware timestamps.
@@ -1362,7 +1362,7 @@ acceptance_criteria:
 id: CODEX-CR-PROPAGATE-04
 issue: TBD
 title: Retrospectively propagate Codex tasks via branch and PR inspection
-status: in_progress
+status: open
 steps:
   - enumerate repo PR history
   - cross-reference with codex_tasks.md
