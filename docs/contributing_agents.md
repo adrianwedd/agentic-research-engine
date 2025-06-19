@@ -42,5 +42,32 @@ You are MyAgent. Answer the question: {{ query }}
 Build the documentation with:
 
 ```bash
-mkdocs build --strict
+mkdocs build
 ```
+
+### ExampleAgent
+
+This repository includes a minimal example agent in `agents/ExampleAgent/`:
+
+```text
+agents/
+└── ExampleAgent/
+    ├── config.yml
+    └── prompt.tpl.md
+```
+
+`config.yml`:
+
+```yaml
+agent_name: "ExampleAgent"
+role: "Minimal demonstration agent"
+max_retries: 1
+rbac: []
+```
+
+`prompt.tpl.md`:
+
+```
+You are ExampleAgent. Respond to the user query: {{ query }}
+```
+
