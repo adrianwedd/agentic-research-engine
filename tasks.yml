@@ -7,11 +7,13 @@
   description: Update starlette to 0.40.0 in requirements and constraints
   component: deps
   dependencies: []
+  status: open
   priority: 4
 - id: 3
   description: Upgrade langchain to 0.2.5
   component: deps
   dependencies: []
+  status: open
   priority: 4
 - id: CR-MISC-003
   description: Enforce Tool Registry Use
