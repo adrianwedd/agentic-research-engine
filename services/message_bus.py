@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List
 
 
 class MessageBus:
@@ -54,7 +53,7 @@ class NATSMessageBus(MessageBus):
 
     def __init__(self, servers: str = "nats://127.0.0.1:4222") -> None:
         self.servers = servers
-        self.nc: "NATS" | None = None
+        self.nc: Any = None
 
     async def connect(self) -> None:
         from nats.aio.client import Client as NATS
