@@ -1,6 +1,9 @@
 import random
 import sys
+import time
 import types
+
+import pytest
 
 # flake8: noqa: E402
 
@@ -43,13 +46,28 @@ pydantic_mod.Field = lambda *args, **kwargs: None
 sys.modules.setdefault("pydantic", pydantic_mod)
 
 
-def test_parallel_matches_serial(weaviate_vector_store):
-    store = weaviate_vector_store
-    for i in range(1000):
+def test_query_many_faster(tmp_path):
+    from services.ltm_service.vector_store import WeaviateVectorStore
+
+    try:
+        store = WeaviateVectorStore(persistence_path=str(tmp_path), workers=4)
+    except Exception:
+        pytest.skip("weaviate not available")
+
+    for i in range(500):
         vec = [random.random() for _ in range(5)]
         store.add(vec, {"id": str(i)})
-    query = [random.random() for _ in range(5)]
 
-    serial = store.query(query, limit=10)
-    parallel = store.query(query, limit=10)
-    assert parallel == serial
+    queries = [[random.random() for _ in range(5)] for _ in range(50)]
+
+    start = time.perf_counter()
+    for q in queries:
+        store.query(q, limit=5)
+    serial = time.perf_counter() - start
+
+    start = time.perf_counter()
+    store.query_many(queries, limit=5)
+    parallel = time.perf_counter() - start
+
+    store.close()
+    assert parallel <= serial

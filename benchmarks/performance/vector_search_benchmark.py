@@ -9,14 +9,13 @@ from services.ltm_service.vector_store import WeaviateVectorStore
 
 def benchmark(workers: int, store_size: int = 2000, queries: int = 500) -> float:
     random.seed(0)
-    store = WeaviateVectorStore()
+    store = WeaviateVectorStore(workers=workers)
     for i in range(store_size):
         vec = [random.random() for _ in range(5)]
         store.add(vec, {"id": str(i)})
     qvecs = [[random.random() for _ in range(5)] for _ in range(queries)]
     start = time.perf_counter()
-    for q in qvecs:
-        store.query(q, limit=5)
+    store.query_many(qvecs, limit=5)
     qps = queries / (time.perf_counter() - start)
     store.close()
     return qps
