@@ -161,6 +161,7 @@ class Edge:
     start: str
     end: str
     edge_type: str | None = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 async def parallel_subgraphs(
@@ -266,8 +267,22 @@ class OrchestrationEngine:
             name, subgraph, retries, NodeType.SUBGRAPH, self.error_logger
         )
 
-    def add_edge(self, start: str, end: str, *, edge_type: str | None = None) -> None:
-        self.edges.append(Edge(start=start, end=end, edge_type=edge_type))
+    def add_edge(
+        self,
+        start: str,
+        end: str,
+        *,
+        edge_type: str | None = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Create a connection between two nodes with optional metadata."""
+
+        data = metadata.copy() if metadata else {}
+        if edge_type is not None:
+            data.setdefault("edge_type", edge_type)
+        self.edges.append(
+            Edge(start=start, end=end, edge_type=edge_type, metadata=data)
+        )
 
     def add_router(
         self,
