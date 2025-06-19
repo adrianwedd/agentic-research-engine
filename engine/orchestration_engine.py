@@ -34,6 +34,9 @@ except Exception:  # pragma: no cover - fallback tracer
 
     trace = _Trace()
 
+from tenacity import AsyncRetrying, stop_after_attempt, wait_exponential
+
+from services import MessageBus
 from services.tracing import get_metrics, reset_metrics
 
 from .state import State
@@ -230,6 +233,8 @@ class OrchestrationEngine:
     error_logger: Callable[[Exception, str, State], None] | None = None
     last_metrics: Dict[str, float] | None = field(init=False, default=None)
     policy_monitor: Any | None = None
+    message_bus: MessageBus | None = None
+    _pause_flag: bool = field(init=False, default=False)
 
     # runtime tracking for pause/resume and autonomy
     def set_autonomy_level(self, level: State.AutonomyLevel) -> None:
@@ -307,6 +312,19 @@ class OrchestrationEngine:
     def _on_node_finished(self, name: str) -> None:
         self._last_node = name
 
+    async def _handle_control(self, data: bytes) -> None:
+        if data.decode() == "pause":
+            self._pause_flag = True
+
+    async def _publish_with_retry(self, subject: str, data: bytes) -> None:
+        if not self.message_bus:
+            return
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.1)
+        ):
+            with attempt:
+                await self.message_bus.publish(subject, data)
+
     def build(self) -> None:
         self.entry = next(iter(self.nodes)) if self.nodes else None
         self.order = _build_order(self.edges)
@@ -329,6 +347,7 @@ class OrchestrationEngine:
             if self.entry is None:
                 self.build()
             self._last_node = None
+            self._pause_flag = False
             self.current_state = state
             state.autonomy_level = getattr(
                 state, "autonomy_level", self.default_autonomy_level
@@ -340,9 +359,13 @@ class OrchestrationEngine:
                     pass
 
             node_name = start_at or self.entry
+            if self.message_bus:
+                await self.message_bus.subscribe(
+                    f"{thread_id}.control", self._handle_control
+                )
             self.current_next_node = node_name
             while node_name:
-                if state.status == "PAUSED":
+                if state.status == "PAUSED" or self._pause_flag:
                     self.current_next_node = node_name
                     return state
                 node = self.nodes[node_name]
@@ -350,6 +373,9 @@ class OrchestrationEngine:
                     node_name = self.quarantine_node
                     continue
                 prev_state = state
+                await self._publish_with_retry(
+                    f"{thread_id}.events", f"start:{node_name}".encode()
+                )
                 next_state = await node.run(state)
                 if node.node_type == NodeType.SUBGRAPH and isinstance(
                     next_state, GraphState
@@ -363,6 +389,9 @@ class OrchestrationEngine:
                     except Exception:  # pragma: no cover - defensive
                         pass
                 self._on_node_finished(node_name)
+                await self._publish_with_retry(
+                    f"{thread_id}.events", f"end:{node_name}".encode()
+                )
 
                 if state.autonomy_level == State.AutonomyLevel.MANUAL:
                     state.update({"status": "PAUSED"})
@@ -481,6 +510,8 @@ class OrchestrationEngine:
         }
         self.current_state = None
         self.current_next_node = None
+
+        await self._publish_with_retry(f"{thread_id}.events", b"complete")
 
         return state
 
@@ -602,10 +633,12 @@ def create_orchestration_engine(
     *,
     memory_manager: Callable[[State], Awaitable[State] | State] | None = None,
     monitor: Any | None = None,
+    message_bus: MessageBus | None = None,
 ) -> OrchestrationEngine:
     """Factory function for the core orchestration engine."""
 
     eng = OrchestrationEngine(on_complete=memory_manager)
+    eng.message_bus = message_bus
     eng.policy_monitor = monitor
     if monitor is not None:
         from services.policy_monitor import set_monitor

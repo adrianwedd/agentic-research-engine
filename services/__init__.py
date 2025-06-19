@@ -11,6 +11,10 @@ def __getattr__(name: str):
         from . import llm_client as _lc
 
         return getattr(_lc, name)
+    if name in {"MessageBus", "InMemoryMessageBus", "NATSMessageBus"}:
+        from . import message_bus as _mb
+
+        return getattr(_mb, name)
     raise AttributeError(name)
 
 
@@ -19,4 +23,7 @@ __all__ = [
     "OllamaClient",
     "OpenAICompatibleClient",
     "load_llm_client",
+    "MessageBus",
+    "InMemoryMessageBus",
+    "NATSMessageBus",
 ]
