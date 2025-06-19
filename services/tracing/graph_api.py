@@ -141,6 +141,30 @@ def create_app(
     def get_graph() -> Dict[str, List[Dict[str, Any]]]:
         return spans_to_graph(exporter.spans)
 
+    @app.get("/node/{node}/metrics")
+    def get_node_metrics(node: str) -> Dict[str, Any]:
+        """Return basic performance metrics for the given node."""
+        for span in reversed(exporter.spans):
+            if span.name == f"node:{node}":
+                start = span.start_time / 1e9
+                end = span.end_time / 1e9
+                metrics = {
+                    "start": start,
+                    "end": end,
+                    "duration": end - start,
+                }
+                state_json = span.attributes.get("state_out")
+                if state_json:
+                    try:
+                        state = json.loads(state_json)
+                        scratch = state.get("scratchpad", {})
+                        metrics["confidence"] = scratch.get("confidence")
+                        metrics["intent"] = scratch.get("intent")
+                    except Exception:
+                        pass
+                return metrics
+        raise HTTPException(status_code=404, detail="node not found")
+
     @app.get("/events")
     async def stream_events() -> StreamingResponse:
         async def generator() -> AsyncGenerator[str, None]:

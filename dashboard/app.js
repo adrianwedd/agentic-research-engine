@@ -5,6 +5,7 @@ function Dashboard() {
   const [graphData, setGraphData] = useState({nodes: [], edges: []});
   const [comparison, setComparison] = useState(null);
   const [autonomy, setAutonomy] = useState('AUTONOMOUS');
+  const [nodeMetrics, setNodeMetrics] = useState(null);
 
   useEffect(() => {
     fetch('/graph').then(r => r.json()).then(data => {
@@ -17,14 +18,31 @@ function Dashboard() {
       const span = JSON.parse(ev.data);
       if (span.name.startsWith('node:')) {
         const id = span.name.split(':')[1];
+        const metrics = {};
+        if (span.attributes && span.attributes.state_out) {
+          try {
+            const state = JSON.parse(span.attributes.state_out);
+            metrics.confidence = state.scratchpad?.confidence;
+            metrics.intent = state.scratchpad?.intent;
+          } catch {}
+        }
         setGraphData(g => {
-          if (!g.nodes.find(n => n.id === id)) {
-            const node = {id, start: span.start, end: span.end};
-            const nodes = g.nodes.concat(node);
-            window.__GRAPH_DATA = {...g, nodes};
-            return {...g, nodes};
+          const existing = g.nodes.find(n => n.id === id);
+          const node = {
+            id,
+            start: span.start,
+            end: span.end,
+            duration: span.end - span.start,
+            ...metrics
+          };
+          let nodes;
+          if (existing) {
+            nodes = g.nodes.map(n => (n.id === id ? {...n, ...node} : n));
+          } else {
+            nodes = g.nodes.concat(node);
           }
-          return g;
+          window.__GRAPH_DATA = {...g, nodes};
+          return {...g, nodes};
         });
       } else if (span.name === 'edge') {
         setGraphData(g => {
@@ -55,9 +73,7 @@ function Dashboard() {
       })
       .linkColor(l => nodesById[l.from]?.intent === l.to ? '#2ca02c' : '#999');
     fg.onNodeClick(node => {
-      fetch(`/belief/${node.id}/confidence`).then(r => r.json()).then(data => {
-        alert(JSON.stringify(data, null, 2));
-      });
+      fetch(`/node/${node.id}/metrics`).then(r => r.json()).then(setNodeMetrics);
     });
     fg.onLinkClick(link => {
       fetch(`/belief/${link.from}/intent`).then(r => r.json()).then(data => {
@@ -112,6 +128,11 @@ function Dashboard() {
       React.createElement('pre', null, JSON.stringify(comparison, null, 2)),
       React.createElement('button', {onClick: () => logPreference('live')}, 'Prefer Live'),
       React.createElement('button', {onClick: () => logPreference('simulation')}, 'Prefer Simulation')
+    ),
+    nodeMetrics && React.createElement(
+      'pre',
+      {id: 'metrics'},
+      JSON.stringify(nodeMetrics, null, 2)
     )
   );
 }
