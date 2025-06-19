@@ -7,9 +7,141 @@
   description: Update starlette to 0.40.0 in requirements and constraints
   component: deps
   dependencies: []
+  status: open
   priority: 4
 - id: 3
   description: Upgrade langchain to 0.2.5
   component: deps
   dependencies: []
+  status: open
   priority: 4
+- id: CR-MISC-003
+  description: Enforce Tool Registry Use
+  component: services
+  status: done
+  priority: high
+- id: CR-MISC-015
+  description: Validate File and URL Inputs
+  component: tools
+  status: done
+  priority: high
+- id: CR-MISC-007
+  description: Switch to Async HTTP Framework
+  component: services
+  status: done
+  priority: high
+- id: CR-MISC-004
+  description: Harden Evaluation Pipeline
+  component: tests
+  status: done
+  priority: medium
+- id: CR-MISC-005
+  description: Implement Concurrency Stress Tests
+  component: tests
+  status: done
+  priority: medium
+- id: CR-MISC-006
+  description: Cache Frequently Used Embeddings
+  component: services
+  status: done
+  priority: medium
+- id: CR-MISC-008
+  description: Parallelize Vector Store Operations
+  component: services
+  status: open
+  priority: medium
+- id: CR-MISC-011
+  description: Standardize Error Responses
+  component: services
+  status: done
+  priority: medium
+- id: CR-MISC-013
+  description: Validate Supervisor Plan Schema
+  component: agents
+  status: done
+  priority: medium
+- id: CR-MISC-014
+  description: Integrate Automated Dependency Scanning
+  component: deps
+  status: done
+  priority: medium
+- id: CR-MISC-017
+  description: Expand RBAC Logging
+  component: services
+  status: done
+  priority: medium
+- id: CR-MISC-020
+  description: Align CD Pipeline with Rainbow Deployment
+  component: infra
+  status: done
+  priority: medium
+- id: CR-MISC-021
+  description: Improve HTML Scraper Reliability
+  component: tools
+  status: done
+  priority: medium
+- id: CR-MISC-022
+  description: Filter LLM-Generated Skills
+  component: agents
+  status: done
+  priority: medium
+- id: CR-MISC-001
+  description: Unify State Representation
+  component: engine
+  status: done
+  priority: medium
+- id: CR-MISC-002
+  description: Support metadata labels on graph edges
+  component: engine
+  status: done
+  priority: medium
+- id: CR-MISC-009
+  description: Extend /retrieve Query Flexibility
+  component: services
+  status: done
+  priority: low
+- id: CR-MISC-010
+  description: Rename Verb-Based Routes
+  component: services
+  status: done
+  priority: low
+- id: CR-MISC-012
+  description: Avoid JSON Bodies on GET
+  component: services
+  status: done
+  priority: low
+- id: CR-MISC-016
+  description: Document Secrets Management
+  component: docs
+  status: done
+  priority: low
+- id: CR-MISC-018
+  description: Monitor Third-Party Updates
+  component: deps
+  status: done
+  priority: low
+- id: CR-MISC-019
+  description: Document Branch Protection Rules
+  component: docs
+  status: done
+  priority: low
+- id: CR-MISC-023
+  description: Dynamic Auction Mechanism Selection
+  component: research
+  status: done
+  priority: low
+- id: FI-01
+  description: Build real-time graph dashboard
+  component: dashboard
+  status: done
+  priority: medium
+- id: FI-03
+  description: Add async message bus
+  component: services
+  status: open
+  priority: medium
+- id: FI-04
+  description: Document custom agent creation
+  component: docs
+  status: done
+  priority: medium
