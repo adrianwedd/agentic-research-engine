@@ -1,147 +1,377 @@
-- id: 1
+- task_id: 1
+  title: Add unit test for src.example.hello
   description: Add unit test for src.example.hello
-  component: tests
+  area: tests
+  actionable_steps:
+  - Write tests for src.example.hello
+  - Run pytest
   dependencies: []
-  priority: 3
-- id: 2
+  acceptance_criteria:
+  - New tests cover expected behavior
+  status: To Do
+  assigned_to: ''
+  epic: ''
+- task_id: 2
+  title: Update starlette to 0.40.0 in requirements and constraints
   description: Update starlette to 0.40.0 in requirements and constraints
-  component: deps
+  area: deps
+  actionable_steps:
+  - Update starlette to 0.40.0 in requirements and constraints
+  - Run dependency tests
   dependencies: []
+  acceptance_criteria:
+  - Application works with updated version
   status: open
-  priority: 4
-- id: 3
+  assigned_to: ''
+  epic: ''
+- task_id: 3
+  title: Upgrade langchain to 0.2.5
   description: Upgrade langchain to 0.2.5
-  component: deps
+  area: deps
+  actionable_steps:
+  - Upgrade langchain to 0.2.5
+  - Run dependency tests
   dependencies: []
+  acceptance_criteria:
+  - Application works with updated version
   status: open
-  priority: 4
-- id: CR-MISC-003
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-003
+  title: Enforce Tool Registry Use
   description: Enforce Tool Registry Use
-  component: services
+  area: services
+  actionable_steps:
+  - Enforce Tool Registry Use
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: high
-- id: CR-MISC-015
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-015
+  title: Validate File and URL Inputs
   description: Validate File and URL Inputs
-  component: tools
+  area: tools
+  actionable_steps:
+  - Implement task
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - All tests pass
   status: done
-  priority: high
-- id: CR-MISC-007
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-007
+  title: Switch to Async HTTP Framework
   description: Switch to Async HTTP Framework
-  component: services
+  area: services
+  actionable_steps:
+  - Switch to Async HTTP Framework
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: high
-- id: CR-MISC-004
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-004
+  title: Harden Evaluation Pipeline
   description: Harden Evaluation Pipeline
-  component: tests
+  area: tests
+  actionable_steps:
+  - Harden Evaluation Pipeline
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-005
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-005
+  title: Implement Concurrency Stress Tests
   description: Implement Concurrency Stress Tests
-  component: tests
+  area: tests
+  actionable_steps:
+  - Write tests for Implement Concurrency Stress Tests
+  - Run pytest
+  dependencies: []
+  acceptance_criteria:
+  - New tests cover expected behavior
   status: done
-  priority: medium
-- id: CR-MISC-006
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-006
+  title: Cache Frequently Used Embeddings
   description: Cache Frequently Used Embeddings
-  component: services
+  area: services
+  actionable_steps:
+  - Cache Frequently Used Embeddings
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-008
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-008
+  title: Parallelize Vector Store Operations
   description: Parallelize Vector Store Operations
-  component: services
+  area: services
+  actionable_steps:
+  - Parallelize Vector Store Operations
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: open
-  priority: medium
-- id: CR-MISC-011
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-011
+  title: Standardize Error Responses
   description: Standardize Error Responses
-  component: services
+  area: services
+  actionable_steps:
+  - Implement task
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - All tests pass
   status: done
-  priority: medium
-- id: CR-MISC-013
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-013
+  title: Validate Supervisor Plan Schema
   description: Validate Supervisor Plan Schema
-  component: agents
+  area: agents
+  actionable_steps:
+  - Implement task
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - All tests pass
   status: done
-  priority: medium
-- id: CR-MISC-014
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-014
+  title: Integrate Automated Dependency Scanning
   description: Integrate Automated Dependency Scanning
-  component: deps
+  area: deps
+  actionable_steps:
+  - Integrate Automated Dependency Scanning
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-017
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-017
+  title: Expand RBAC Logging
   description: Expand RBAC Logging
-  component: services
+  area: services
+  actionable_steps:
+  - Expand RBAC Logging
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-020
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-020
+  title: Align CD Pipeline with Rainbow Deployment
   description: Align CD Pipeline with Rainbow Deployment
-  component: infra
+  area: infra
+  actionable_steps:
+  - Align CD Pipeline with Rainbow Deployment
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-021
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-021
+  title: Improve HTML Scraper Reliability
   description: Improve HTML Scraper Reliability
-  component: tools
+  area: tools
+  actionable_steps:
+  - Improve HTML Scraper Reliability
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-022
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-022
+  title: Filter LLM-Generated Skills
   description: Filter LLM-Generated Skills
-  component: agents
+  area: agents
+  actionable_steps:
+  - Filter LLM-Generated Skills
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-001
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-001
+  title: Unify State Representation
   description: Unify State Representation
-  component: engine
+  area: engine
+  actionable_steps:
+  - Unify State Representation
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-002
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-002
+  title: Support metadata labels on graph edges
   description: Support metadata labels on graph edges
-  component: engine
+  area: engine
+  actionable_steps:
+  - Support metadata labels on graph edges
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: CR-MISC-009
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-009
+  title: Extend /retrieve Query Flexibility
   description: Extend /retrieve Query Flexibility
-  component: services
+  area: services
+  actionable_steps:
+  - Extend /retrieve Query Flexibility
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: low
-- id: CR-MISC-010
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-010
+  title: Rename Verb-Based Routes
   description: Rename Verb-Based Routes
-  component: services
+  area: services
+  actionable_steps:
+  - Rename Verb-Based Routes
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: low
-- id: CR-MISC-012
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-012
+  title: Avoid JSON Bodies on GET
   description: Avoid JSON Bodies on GET
-  component: services
+  area: services
+  actionable_steps:
+  - Avoid JSON Bodies on GET
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: low
-- id: CR-MISC-016
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-016
+  title: Document Secrets Management
   description: Document Secrets Management
-  component: docs
+  area: docs
+  actionable_steps:
+  - Document Secrets Management
+  - Verify docs build
+  dependencies: []
+  acceptance_criteria:
+  - Docs include the information
   status: done
-  priority: low
-- id: CR-MISC-018
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-018
+  title: Monitor Third-Party Updates
   description: Monitor Third-Party Updates
-  component: deps
+  area: deps
+  actionable_steps:
+  - Monitor Third-Party Updates
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: low
-- id: CR-MISC-019
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-019
+  title: Document Branch Protection Rules
   description: Document Branch Protection Rules
-  component: docs
+  area: docs
+  actionable_steps:
+  - Document Branch Protection Rules
+  - Verify docs build
+  dependencies: []
+  acceptance_criteria:
+  - Docs include the information
   status: done
-  priority: low
-- id: CR-MISC-023
+  assigned_to: ''
+  epic: ''
+- task_id: CR-MISC-023
+  title: Dynamic Auction Mechanism Selection
   description: Dynamic Auction Mechanism Selection
-  component: research
+  area: research
+  actionable_steps:
+  - Dynamic Auction Mechanism Selection
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: low
-- id: FI-01
+  assigned_to: ''
+  epic: ''
+- task_id: FI-01
+  title: Build real-time graph dashboard
   description: Build real-time graph dashboard
-  component: dashboard
+  area: dashboard
+  actionable_steps:
+  - Build real-time graph dashboard
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: done
-  priority: medium
-- id: FI-03
+  assigned_to: ''
+  epic: ''
+- task_id: FI-03
+  title: Add async message bus
   description: Add async message bus
-  component: services
+  area: services
+  actionable_steps:
+  - Add async message bus
+  - Run tests
+  dependencies: []
+  acceptance_criteria:
+  - Feature behaves as expected
   status: open
-  priority: medium
-- id: FI-04
+  assigned_to: ''
+  epic: ''
+- task_id: FI-04
+  title: Document custom agent creation
   description: Document custom agent creation
-  component: docs
+  area: docs
+  actionable_steps:
+  - Document custom agent creation
+  - Verify docs build
+  dependencies: []
+  acceptance_criteria:
+  - Docs include the information
   status: done
-  priority: medium
+  assigned_to: ''
+  epic: ''
