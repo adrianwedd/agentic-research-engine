@@ -87,4 +87,5 @@ class State(BaseModel):
         return cls.model_validate_json(payload)
 
     def __getitem__(self, item: str):
+        """Enable dict-style access to model attributes."""
         return getattr(self, item)

@@ -1,3 +1,5 @@
+"""OpenAPI FastAPI application exposing the LTM service."""
+
 from __future__ import annotations
 
 import asyncio
@@ -27,6 +29,7 @@ except Exception:  # pragma: no cover - fallback for spec generation
 
 
 def _check_role(method: str, path: str, role: str) -> bool:
+    """Return ``True`` if the role is permitted for the operation."""
     allowed = ROLE_PERMISSIONS.get((method, path), set())
     return role in allowed
 
@@ -145,6 +148,8 @@ SkillQuery.model_rebuild()
 
 
 def create_app(service: LTMService) -> FastAPI:
+    """Construct the FastAPI application exposing the LTM endpoints."""
+
     app = FastAPI(
         title="LTM Service API",
         version="1.0.0",

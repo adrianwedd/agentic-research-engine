@@ -9,6 +9,13 @@ class CredibilityAwareAggregator:
     """Combine numeric contributions weighted by agent credibility."""
 
     def __init__(self, score_provider: Callable[[str], float]) -> None:
+        """Create a new aggregator.
+
+        Args:
+            score_provider (Callable[[str], float]): Function returning the
+                credibility score for a given agent id.
+        """
+
         self._score_provider = score_provider
 
     def aggregate(self, contributions: Mapping[str, float]) -> float:

@@ -71,9 +71,11 @@ class InMemorySaver:
     def save(
         self, run_id: str, node: str, state: State
     ) -> None:  # pragma: no cover - util
+        """Persist the node and state for ``run_id`` in memory."""
         self._data[run_id] = (node, state)
 
     def load(self, run_id: str) -> tuple[str, State] | None:  # pragma: no cover - util
+        """Return the checkpointed ``(node, state)`` pair if present."""
         return self._data.get(run_id)
 
 
@@ -105,6 +107,7 @@ class Node:
     on_error: Callable[[Exception, str, State], None] | None = None
 
     async def run(self, state: State) -> State:
+        """Execute the node function with retry and tracing support."""
         if (
             self.node_type == NodeType.PRIVILEGED
             and state.data.get("risk_level") == "high"
@@ -238,15 +241,18 @@ class OrchestrationEngine:
 
     # runtime tracking for pause/resume and autonomy
     def set_autonomy_level(self, level: State.AutonomyLevel) -> None:
+        """Set the default autonomy level for the engine and current state."""
         self.default_autonomy_level = level
         if self.current_state is not None:
             self.current_state.autonomy_level = level
 
     def pause(self, run_id: str = "default") -> None:
+        """Pause the running task by setting its status to ``PAUSED``."""
         if self.current_state is not None:
             self.current_state.update({"status": "PAUSED"})
 
     async def resume_async(self, run_id: str = "default") -> State:
+        """Resume execution from the previously paused node."""
         if self.current_state is None:
             raise ValueError("No task to resume")
         state = self.current_state
@@ -563,6 +569,7 @@ class OrchestrationEngine:
         return result, metrics
 
     async def resume_from_queue_async(self, run_id: str) -> State:
+        """Resume a paused task stored in the review queue."""
         if not self.review_queue:
             raise ValueError("No review queue configured")
         state, next_node = self.review_queue.pop(run_id)
@@ -570,6 +577,7 @@ class OrchestrationEngine:
         return await self.run_async(state, thread_id=run_id, start_at=next_node)
 
     def resume_from_queue(self, run_id: str) -> State:
+        """Synchronous wrapper around :meth:`resume_from_queue_async`."""
         return asyncio.run(self.resume_from_queue_async(run_id))
 
     # ------------------------------------------------------------------
