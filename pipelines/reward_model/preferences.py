@@ -26,7 +26,9 @@ def preferences_to_records(path: str | Path) -> List[Dict[str, Any]]:
     return records
 
 
-def train_from_preferences(pref_path: str | Path, out_dir: str | Path) -> RewardModelTrainer:
+def train_from_preferences(
+    pref_path: str | Path, out_dir: str | Path
+) -> RewardModelTrainer:
     """Train a reward model using logged preference pairs."""
     records = preferences_to_records(pref_path)
     temp = Path(out_dir) / "_prefs.jsonl"

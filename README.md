@@ -83,8 +83,9 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```bash
    bash scripts/agent-setup.sh
    ```
-   The setup script installs from `requirements.txt` using a
-   pinned `constraints.txt` file to avoid dependency resolution loops.
+  The setup script installs from `requirements.txt` using a
+  pinned `constraints.txt` file to avoid dependency resolution loops.
+  A compiled `requirements.lock` is provided for fully reproducible installs.
    It pulls the CPU-only PyTorch wheels so you don't need CUDA
    drivers for local testing.
    Optional features like LangSmith integration and TRL-based policy

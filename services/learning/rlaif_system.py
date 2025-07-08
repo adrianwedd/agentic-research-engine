@@ -7,7 +7,14 @@ from typing import Dict, List
 
 
 class RLAIFSystem:
-    def __init__(self, reward_model, policy_optimizer, *, feedback_callback=None, active_query_threshold: float = 0.2):
+    def __init__(
+        self,
+        reward_model,
+        policy_optimizer,
+        *,
+        feedback_callback=None,
+        active_query_threshold: float = 0.2,
+    ):
         """Initialize reinforcement learning framework.
 
         Parameters
