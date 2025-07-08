@@ -1,9 +1,10 @@
 import logging
+
 import pytest
 
 from engine.collaboration.group_chat import DynamicGroupChat
+from services.policy_monitor import PolicyMonitor, PolicyViolation, set_monitor
 from services.tool_registry import ToolRegistry
-from services.policy_monitor import PolicyMonitor, set_monitor, PolicyViolation
 
 
 def dummy_tool():

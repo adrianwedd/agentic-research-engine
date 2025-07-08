@@ -35,7 +35,9 @@ class GuardrailService:
         self._log(text, direction, allowed, reasons)
         return allowed, reasons
 
-    def _log(self, text: str, direction: str, allowed: bool, reasons: List[str]) -> None:
+    def _log(
+        self, text: str, direction: str, allowed: bool, reasons: List[str]
+    ) -> None:
         with self._session_factory() as session:
             rec = AuditLog(
                 text=text,

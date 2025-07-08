@@ -56,4 +56,3 @@ async def test_message_bus_retry():
 
     assert "complete" in received
     assert bus.attempts >= 2
-

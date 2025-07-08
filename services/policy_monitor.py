@@ -5,8 +5,10 @@ from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
+
 class PolicyViolation(Exception):
     """Raised when an action violates the policy."""
+
 
 class PolicyMonitor:
     def __init__(self, policy: Dict[str, List[str]] | None = None) -> None:
@@ -38,6 +40,7 @@ class PolicyMonitor:
         if blocked:
             logger.warning("Policy blocked message from %s", sender)
             raise PolicyViolation(f"message contains banned term '{reason}'")
+
 
 _MONITOR: PolicyMonitor | None = None
 
