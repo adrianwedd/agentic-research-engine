@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import Dict, List, Optional
 
+"""Minimal FastAPI service exposing episodic memory operations."""
+
 from fastapi import Body, FastAPI
 from pydantic import BaseModel, Field
 
@@ -36,6 +38,7 @@ app = FastAPI(title="Episodic Memory Service")
 
 @app.post("/consolidate", response_model=ConsolidateResponse)
 async def consolidate(req: ConsolidateRequest) -> ConsolidateResponse:
+    """Store a completed experience in episodic memory."""
     rec_id = await asyncio.to_thread(
         service.store_experience,
         req.task_context,
@@ -50,6 +53,7 @@ async def retrieve(
     limit: int = 5,
     body: RetrieveBody = Body(default_factory=RetrieveBody),
 ) -> RetrieveResponse:
+    """Retrieve experiences similar to the provided query."""
     query = body.query or body.task_context or {}
     results = await asyncio.to_thread(
         service.retrieve_similar_experiences,

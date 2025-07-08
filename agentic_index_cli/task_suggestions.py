@@ -1,3 +1,5 @@
+"""CLI for listing open Codex tasks from the queue."""
+
 from __future__ import annotations
 
 import argparse
@@ -35,6 +37,7 @@ def load_suggested_tasks(path: str | Path = DEFAULT_QUEUE) -> List[Dict[str, str
 
 
 def main(argv: List[str] | None = None) -> None:
+    """Print suggested tasks to stdout in JSON format."""
     parser = argparse.ArgumentParser(description="Print suggested Codex tasks")
     parser.add_argument("--queue", default=str(DEFAULT_QUEUE))
     args = parser.parse_args(argv)
