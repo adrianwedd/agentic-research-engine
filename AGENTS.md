@@ -33,8 +33,8 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 - Execute `pre-commit run --all-files` to run linters and formatters.
 
 ## Setup
-- Run `bash scripts/agent-setup.sh` to install Python dependencies and pre-commit hooks.
-- Ensure the `tenacity` package is installed (via the setup script) before running tests.
+- Run `bash scripts/setup_dev_env.sh` to install Python dependencies and pre-commit hooks.
+- Ensure the `tenacity` package is installed (the setup script handles this) before running tests.
 
 ## PR Guidelines
 - Summarize changes in the PR description.
