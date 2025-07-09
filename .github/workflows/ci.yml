@@ -193,6 +193,8 @@ jobs:
   verify-tasks:
     needs: changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
