@@ -14,6 +14,7 @@ nav:
   - Architecture:
       - Decision Records: docs/architecture/decision_records.md
       - Communication Guidelines: docs/architecture/llm_grounded_guided_evolution.md
+      - Auction Mechanisms: docs/usage/auction_mechanisms.md
 
   - Epics:
       - Interactive Agent Cockpit: docs/epics/interactive_agent_cockpit_epic.md

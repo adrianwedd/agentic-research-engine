@@ -15,6 +15,15 @@ def __getattr__(name: str):
         from . import message_bus as _mb
 
         return getattr(_mb, name)
+    if name in {
+        "AuctionMechanism",
+        "AuctionConfig",
+        "Workload",
+        "select_auction_mechanism",
+    }:
+        from . import auction as _auc
+
+        return getattr(_auc, name)
     raise AttributeError(name)
 
 
@@ -26,4 +35,8 @@ __all__ = [
     "MessageBus",
     "InMemoryMessageBus",
     "NATSMessageBus",
+    "AuctionMechanism",
+    "AuctionConfig",
+    "Workload",
+    "select_auction_mechanism",
 ]
