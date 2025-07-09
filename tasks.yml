@@ -21,7 +21,7 @@
   dependencies: []
   acceptance_criteria:
   - Application works with updated version
-  status: open
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: 3
