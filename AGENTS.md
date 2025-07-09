@@ -34,6 +34,7 @@ Each agent resides in a folder under `agents/`. Every folder contains:
 
 ## Setup
 - Run `bash scripts/agent-setup.sh` to install Python dependencies and pre-commit hooks.
+- Ensure the `tenacity` package is installed (via the setup script) before running tests.
 
 ## PR Guidelines
 - Summarize changes in the PR description.
