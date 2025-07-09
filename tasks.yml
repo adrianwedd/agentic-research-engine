@@ -8,7 +8,7 @@
   dependencies: []
   acceptance_criteria:
   - New tests cover expected behavior
-  status: To Do
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: 2
@@ -125,7 +125,7 @@
   dependencies: []
   acceptance_criteria:
   - Feature behaves as expected
-  status: open
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: CR-MISC-011
@@ -359,7 +359,7 @@
   dependencies: []
   acceptance_criteria:
   - Feature behaves as expected
-  status: open
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: FI-04
