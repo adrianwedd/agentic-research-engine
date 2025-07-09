@@ -117,6 +117,14 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
 
 A comprehensive test suite is crucial for maintaining system quality.
 
+Before running tests, make sure all Python dependencies are installed. The
+`agent-setup.sh` helper installs packages from `requirements.txt` (including the
+`tenacity` library required by several pipelines) and sets up pre-commit hooks:
+
+```bash
+bash scripts/agent-setup.sh
+```
+
 For a quick subset run only the core tests:
 
 ```bash
