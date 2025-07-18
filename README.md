@@ -6,16 +6,16 @@
 
 ## **1. Vision & Mission**
 
-The agentic-research-engine is a next-generation multi-agent research system designed to transcend the limitations of current agentic paradigms. Our mission is to build a system capable of genuine learning, dynamic collaboration, and autonomous self-improvement, moving beyond the rigid orchestrator-worker models that are stateful but static.[1]
-This system is architected to address critical challenges in agentic AI, including coordination complexity, high operational cost, and the inability to learn from experience. By integrating advanced cognitive architectures with flexible collaboration protocols, the agentic-research-engine aims to become a true partner in the complex processes of research, discovery, and engineering.[1]
+The agentic-research-engine is a next-generation multi-agent research system designed to transcend the limitations of current agentic paradigms. Our mission is to build a system capable of genuine learning, dynamic collaboration, and autonomous self-improvement, moving beyond the rigid orchestrator-worker models that are stateful but static.
+This system is architected to address critical challenges in agentic AI, including coordination complexity, high operational cost, and the inability to learn from experience. By integrating advanced cognitive architectures with flexible collaboration protocols, the agentic-research-engine aims to become a true partner in the complex processes of research, discovery, and engineering.
 
 For the complete implementation blueprint, see [BLUEPRINT.md](BLUEPRINT.md).
 
 ## **2. Core Architectural Pillars**
 
-The architecture of the agentic-research-engine is founded on four key pillars that ensure robustness, intelligence, and adaptability [1]:
+The architecture of the agentic-research-engine is founded on four key pillars that ensure robustness, intelligence, and adaptability :
 
-1. **Hybrid Graph-Based Supervisor Model**: We abandon rigid, centralized control in favor of a dynamic, stateful graph for workflow management, inspired by LangGraph. This provides explicit control, deep observability, and resilience against failure.[1]
+1. **Hybrid Graph-Based Supervisor Model**: We abandon rigid, centralized control in favour of a dynamic, stateful graph for workflow management, inspired by LangGraph. This provides explicit control, deep observability, and resilience against failure.
 2. **Multi-Layered Long-Term Memory (LTM)**: To enable genuine cognition, the system incorporates a dedicated memory service that distinguishes between:
    * **Episodic Memory**: For learning from past tasks and experiences.
    * **Semantic Memory**: A trusted internal knowledge graph of verified facts.
@@ -23,18 +23,18 @@ The architecture of the agentic-research-engine is founded on four key pillars t
   * A scheduled Kubernetes CronJob calls the LTM `forget` API nightly to remove
     stale episodic records based on stored timestamps. The job emits a
     `ltm.deletions` metric for monitoring.
-3. **Institutionalized Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalizes a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.[1]
-4. **Multi-Faceted Evaluation Framework**: System performance is measured through a comprehensive framework that assesses not only task accuracy (via a BrowseComp-style benchmark) but also output quality, source fidelity, and collaboration efficiency. This data feeds a Reinforcement Learning from AI Feedback (RLAIF) loop, enabling the system to continuously improve its own policies.[1]
+3. **Institutionalized Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalizes a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.
+4. **Multi-Faceted Evaluation Framework**: System performance is measured through a comprehensive framework that assesses not only task accuracy (via a BrowseComp-style benchmark) but also output quality, source fidelity, and collaboration efficiency. This data feeds a Reinforcement Learning from AI Feedback (RLAIF) loop, enabling the system to continuously improve its own policies.
 
 ## **3. System Workflow Example**
 
-To understand how these pillars work in concert, consider a query like: *"Analyze the performance impact of the Transformer architecture compared to LSTMs for long-sequence NLP tasks."* [1]
+To understand how these pillars work in concert, consider a query like: *"Analyse the performance impact of the Transformer architecture compared to LSTMs for long-sequence NLP tasks."* 
 
-1. **Planning & LTM Query (Supervisor)**: The Supervisor receives the query. It first queries its **Episodic Memory** for similar past tasks and its **Semantic Memory** for core concepts like "Transformer" and "LSTM" to build initial context. It then constructs a research graph with parallel subgraphs for "Core Performance Comparison" and "Architectural Innovations for Long-Range Memory".[1]
-2. **Parallel Execution & Collaboration (Agent Teams)**: The Orchestration Engine executes the graph. For the "Innovations" subgraph, a team of a WebResearcher and a CodeResearcher is formed. They use a **dynamic group chat** to collaborate, sharing papers and code analysis on a shared scratchpad.[1]
-3. **Verification & Self-Correction (Evaluator)**: The team's summary is passed to the Evaluator agent. The Evaluator finds a minor misrepresentation and routes the task back with a critique. The team receives the feedback, corrects its summary, and resubmits for approval.[1]
-4. **Synthesis & Citation (Supervisor & CitationAgent)**: Once all subgraphs are complete and verified, the Supervisor synthesizes the findings into a coherent report. This draft is then passed to the mandatory CitationAgent, which ensures every claim is accurately attributed to its source.[1]
-5. **Memory Consolidation (MemoryManager)**: After the final report is delivered, the MemoryManager agent processes the entire task, consolidating the experience into Episodic Memory and extracting new, verified facts for the Semantic Memory knowledge graph.[1]
+1. **Planning & LTM Query (Supervisor)**: The Supervisor receives the query. It first queries its **Episodic Memory** for similar past tasks and its **Semantic Memory** for core concepts like "Transformer" and "LSTM" to build initial context. It then constructs a research graph with parallel subgraphs for "Core Performance Comparison" and "Architectural Innovations for Long-Range Memory".
+2. **Parallel Execution & Collaboration (Agent Teams)**: The Orchestration Engine executes the graph. For the "Innovations" subgraph, a team of a WebResearcher and a CodeResearcher is formed. They use a **dynamic group chat** to collaborate, sharing papers and code analysis on a shared scratchpad.
+3. **Verification & Self-Correction (Evaluator)**: The team's summary is passed to the Evaluator agent. The Evaluator finds a minor misrepresentation and routes the task back with a critique. The team receives the feedback, corrects its summary, and resubmits for approval.
+4. **Synthesis & Citation (Supervisor & CitationAgent)**: Once all subgraphs are complete and verified, the Supervisor synthesizes the findings into a coherent report. This draft is then passed to the mandatory CitationAgent, which ensures every claim is accurately attributed to its source.
+5. **Memory Consolidation (MemoryManager)**: After the final report is delivered, the MemoryManager agent processes the entire task, consolidating the experience into Episodic Memory and extracting new, verified facts for the Semantic Memory knowledge graph.
 
 ## **4. Repository Structure**
 
@@ -89,7 +89,7 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    It pulls the CPU-only PyTorch wheels so you don't need CUDA
    drivers for local testing.
    Optional features like LangSmith integration and TRL-based policy
-   optimization can be installed later:
+   optimisation can be installed later:
    ```bash
    pip install langsmith trl
    ```
@@ -112,6 +112,15 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
    ```bash
    ENVIRONMENT=dev SERVICE_VERSION=0.2.3 docker-compose up -d
    ```
+
+## Configuration
+
+Copy `.env.example` to `.env` and update the values for your environment. Common
+variables include `OPENAI_API_KEY`, proxy settings and optional integrations
+such as LangSmith. Refer to
+[docs/onboarding.md#environment-variables](docs/onboarding.md#environment-variables)
+for a full list and guidance.
+
 
 ## **6. Development Setup**
 
@@ -210,7 +219,7 @@ the simpler blue–green approach. See
 for the detailed rationale. A push to `main` deploys to the `staging`
 environment automatically. After verification, an operator can trigger the
 `promote-production` job to roll out the same release to production. In case of
-issues, `scripts/rollback.sh` reverts the selector to the previous color.
+issues, `scripts/rollback.sh` reverts the selector to the previous colour.
 
 ## **11. Project Roadmap**
 
@@ -218,16 +227,16 @@ This project is being executed in a phased approach to manage complexity and del
 
 * **Phase 1: Core Orchestration & Foundational Capabilities**
   * **Objective**: Establish the foundational architecture and a baseline research capability.
-  * **Key Deliverables**: LangGraph-based orchestration engine, observability layer, Supervisor and WebResearcher agents, BrowseComp benchmark.[1]
+  * **Key Deliverables**: LangGraph-based orchestration engine, observability layer, Supervisor and WebResearcher agents, BrowseComp benchmark.
 * **Phase 2: Advanced Cognition & Evaluation**
   * **Objective**: Introduce memory and self-correction to improve accuracy and reliability.
-  * **Key Deliverables**: LTM service (Episodic Memory), Evaluator agent with self-correction loop, LLM-as-a-Judge pipeline.[1]
+  * **Key Deliverables**: LTM service (Episodic Memory), Evaluator agent with self-correction loop, LLM-as-a-Judge pipeline.
 * **Phase 3: Dynamic Collaboration & Self-Improvement**
   * **Objective**: Enable complex collaboration and system-level learning.
-  * **Key Deliverables**: Dynamic group chat and hierarchical teams, RLAIF loop with Reward Model, Semantic Memory (knowledge graph).[1]
-* **Phase 4: Production Hardening & Specialization**
+  * **Key Deliverables**: Dynamic group chat and hierarchical teams, RLAIF loop with Reward Model, Semantic Memory (knowledge graph).
+* **Phase 4: Production Hardening & Specialisation**
   * **Objective**: Refine the system for production use, focusing on efficiency and robustness.
-  * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.[1]
+  * **Key Deliverables**: Procedural Memory, multi-agent fine-tuning pipeline, mandatory CitationAgent, MAST-based failure testing.
 
 ## **12. Contributing**
 
@@ -244,6 +253,11 @@ Contributions are welcome and encouraged! Please follow these steps to contribut
 All pull requests will be automatically validated by the CI pipeline (P1-02), which includes running linters, unit tests, and checking for code coverage. A review from at least one core team member is required for a PR to be merged.
 Branch protection rules on `main` enforce these checks so direct pushes are rejected. You can verify the policy by running `scripts/check_branch_protection.py` with a GitHub token.
 For instructions on running the pipeline locally and the required 80% coverage threshold, see [docs/ci.md](docs/ci.md).
+
+## Support
+
+If you run into problems or have questions, please open an issue on GitHub.
+We actively monitor the repository and will help as soon as possible.
 
 ## **13. License**
 
