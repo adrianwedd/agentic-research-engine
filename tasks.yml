@@ -375,3 +375,140 @@
   status: done
   assigned_to: ''
   epic: ''
+- task_id: P3-TEST-01
+  title: Replace deprecated utcnow usage
+  description: Replace deprecated utcnow usage
+  area: deps
+  actionable_steps:
+  - Replace datetime.utcnow calls with datetime.now(datetime.UTC)
+  - Add regression test for timestamp correctness
+  dependencies: []
+  acceptance_criteria:
+  - Application works with timezone-aware timestamps
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-001
+  title: SkillLibrary-based MemoryManager overhaul
+  description: SkillLibrary-based MemoryManager overhaul
+  area: services
+  actionable_steps:
+  - Design SkillLibrary schema with metadata fields
+  - Refactor MemoryManager to use SkillLibrary
+  - Add semantic lookup tests
+  dependencies: []
+  acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-002
+  title: Unsupervised SkillDiscoveryModule
+  description: Unsupervised SkillDiscoveryModule
+  area: research
+  actionable_steps:
+  - Evaluate DUSDi algorithm for skill discovery
+  - Integrate exploration environment interface
+  - Store discovered skills in SkillLibrary
+  dependencies: []
+  acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-003
+  title: LLM-guided semantic skill decomposition
+  description: LLM-guided semantic skill decomposition
+  area: agents
+  actionable_steps:
+  - Define LLM prompt templates for sub-task description
+  - Translate output into reward functions
+  - Persist semantic scaffolding in skill metadata
+  dependencies: []
+  acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-004
+  title: Hierarchical Policy Executor
+  description: Hierarchical Policy Executor
+  area: agents
+  actionable_steps:
+  - Implement two-level FuN architecture
+  - Integrate goal-conditioned Worker policy
+  - Validate with long-horizon integration tests
+  dependencies: []
+  acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-01A
+  title: Complete FastAPI migration for all services
+  description: Complete FastAPI migration for all services
+  area: services
+  actionable_steps:
+  - Replace HTTPServer with FastAPI apps
+  - Update deployment files for uvicorn workers
+  - Ensure endpoints maintain behavior
+  dependencies: []
+  acceptance_criteria:
+  - All services run under FastAPI with no blocking calls
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-07A
+  title: Add SQL query tool connectors to Tool Registry
+  description: Add SQL query tool connectors to Tool Registry
+  area: tools
+  actionable_steps:
+  - Implement connectors for SQLite and PostgreSQL
+  - Register tools with RBAC rules
+  - Document usage examples
+  dependencies: []
+  acceptance_criteria:
+  - Agents can run parameterized SQL queries through the registry
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-08A
+  title: Document spatio-temporal memory research findings
+  description: Document spatio-temporal memory research findings
+  area: docs
+  actionable_steps:
+  - Summarize proposed data model and API
+  - Add research report under docs/research/
+  - Link document from mkdocs navigation
+  dependencies: []
+  acceptance_criteria:
+  - New document linked from mkdocs navigation
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-09A
+  title: Update onboarding docs with embedding cache guidance
+  description: Update onboarding docs with embedding cache guidance
+  area: docs
+  actionable_steps:
+  - Explain EMBED_CACHE_SIZE and caching benefits
+  - Reference scripts/agent-setup.sh for environment setup
+  dependencies: []
+  acceptance_criteria:
+  - Onboarding guide includes caching configuration section
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: P5-01
+  title: Implement System Monitoring service
+  description: Implement System Monitoring service
+  area: services
+  actionable_steps:
+  - Integrate psutil to record CPU and memory usage
+  - Export metrics through OpenTelemetry
+  dependencies: []
+  acceptance_criteria:
+  - Monitoring service emits cpu_usage and memory_usage metrics
+  status: open
+  assigned_to: ''
+  epic: ''
