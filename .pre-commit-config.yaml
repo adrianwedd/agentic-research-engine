@@ -29,3 +29,9 @@ repos:
         entry: bash scripts/run_core_tests.sh
         language: system
         pass_filenames: false
+      - id: link-check
+        name: check documentation links
+        entry: python scripts/link_check.py
+        language: python
+        pass_filenames: false
+        types: [markdown]
