@@ -25,6 +25,14 @@ The script installs the core dependencies while respecting environment variables
 like `HTTP_PROXY`, `HTTPS_PROXY`, and `CUDA_VISIBLE_DEVICES` for proxy routing
 and GPU selection. Use this when you don't need the full toolchain.
 
+## Link Checker
+Validate links in Markdown files with the link checker script:
+
+```bash
+python scripts/link_check.py
+```
+Run this before submitting a pull request to catch any broken documentation links.
+
 ## Troubleshooting
 
 ### pip network timeouts

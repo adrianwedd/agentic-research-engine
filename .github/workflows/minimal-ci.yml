@@ -57,6 +57,8 @@ jobs:
 
       - name: Run linters and formatters
         run: pre-commit run --all-files
+      - name: Check Markdown links
+        run: python scripts/link_check.py
 
       - name: Run tests
         run: pytest --cov=./ --cov-report=xml --cov-report=html --cov-fail-under=80 -v

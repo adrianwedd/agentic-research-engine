@@ -50,6 +50,8 @@ jobs:
         run: bash scripts/agent-setup.sh
       - name: Run pre-commit
         run: pre-commit run --all-files
+      - name: Check Markdown links
+        run: python scripts/link_check.py
 
   api-spec:
     needs: changes
