@@ -461,7 +461,9 @@ class LTMServiceServer:
 
             def _check_role(self, method: str, path: str) -> bool:
                 role = self.headers.get("X-Role", "")
-                allowed = ROLE_PERMISSIONS.get((method, path), set())
+                allowed = ROLE_PERMISSIONS.get((method, path))
+                if allowed is None:
+                    return False
                 return role in allowed
 
             @staticmethod
