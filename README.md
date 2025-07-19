@@ -56,6 +56,9 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
 └── docs/               # Project documentation, including the full Change Request Ledger
 ```
 
+The versioned OpenAPI schema for the LTM service is stored at
+[`docs/api/ltm_openapi.yaml`](docs/api/ltm_openapi.yaml).
+
 ## **5. Getting Started**
 
 ### **Prerequisites**
