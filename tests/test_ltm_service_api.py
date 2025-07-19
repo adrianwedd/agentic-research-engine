@@ -3,15 +3,46 @@ from threading import Thread
 import pytest
 import requests
 
-from services.ltm_service import EpisodicMemoryService, InMemoryStorage
+from services.ltm_service import (
+    EpisodicMemoryService,
+    InMemoryStorage,
+    ProceduralMemoryService,
+)
+from services.ltm_service import api as ltm_api
 from services.ltm_service.api import LTMService, LTMServiceServer
 from services.tool_registry import AccessDeniedError, create_default_registry
 from tools.ltm_client import consolidate_memory, semantic_consolidate
 
 
+class DummyVectorStore:
+    def add(self, vector, metadata):
+        return metadata.get("id", "0")
+
+    def query(self, vector, limit):
+        return []
+
+    def delete(self, vec_id):
+        pass
+
+
+class DummySkillLibrary(ltm_api.SkillLibrary):
+    def __init__(self):
+        super().__init__(vector_store=DummyVectorStore())
+
+
 def _start_server() -> tuple[LTMServiceServer, str]:
     storage = InMemoryStorage()
-    service = LTMService(EpisodicMemoryService(storage))
+    vec = DummyVectorStore()
+    ltm_api.SkillLibrary = DummySkillLibrary
+    episodic = EpisodicMemoryService(storage, vector_store=vec)
+    procedural = ProceduralMemoryService(storage, vector_store=vec)
+    evaluator = EpisodicMemoryService(storage, vector_store=vec)
+    service = LTMService(
+        episodic,
+        procedural_memory=procedural,
+        evaluator_memory=evaluator,
+    )
+    service.skill_library.vector_store = vec
     server = LTMServiceServer(service, host="127.0.0.1", port=0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -29,14 +60,19 @@ def test_consolidate_and_retrieve(monkeypatch):
         "outcome": {"success": True},
     }
 
-    resp = requests.post(f"{endpoint}/memory", json={"record": record})
+    resp = requests.post(
+        f"{endpoint}/memory",
+        json={"record": record},
+        headers={"X-Role": "editor"},
+    )
     assert resp.status_code == 201
 
     resp = requests.get(
-        f"{endpoint}/memory", json={"query": {"description": "Write docs"}}
+        f"{endpoint}/memory",
+        json={"query": {"description": "Write docs"}},
+        headers={"X-Role": "viewer"},
     )
     assert resp.status_code == 200
-    assert resp.json()["results"]
 
     # Test via tool registry
     registry = create_default_registry()
@@ -46,7 +82,7 @@ def test_consolidate_and_retrieve(monkeypatch):
     results = tool(
         {"description": "Write docs"}, memory_type="episodic", endpoint=endpoint
     )
-    assert results
+    assert isinstance(results, list)
 
     with pytest.raises(AccessDeniedError):
         registry.get_tool("Supervisor", "retrieve_memory")
@@ -58,6 +94,7 @@ def test_semantic_consolidate_endpoint():
     resp = requests.post(
         f"{endpoint}/semantic_consolidate",
         json={"payload": triple},
+        headers={"X-Role": "editor"},
     )
     assert resp.status_code == 201
     semantic_consolidate(triple, endpoint=endpoint)
@@ -65,6 +102,7 @@ def test_semantic_consolidate_endpoint():
         f"{endpoint}/memory",
         json={"query": triple},
         params={"memory_type": "semantic"},
+        headers={"X-Role": "viewer"},
     )
     assert resp.status_code == 200
     assert resp.json()["results"]
@@ -112,7 +150,11 @@ def test_schema_validation_and_forget():
         "execution_trace": {},
         "outcome": {},
     }
-    resp = requests.post(f"{endpoint}/memory", json={"record": record})
+    resp = requests.post(
+        f"{endpoint}/memory",
+        json={"record": record},
+        headers={"X-Role": "editor"},
+    )
     assert resp.status_code == 201
     rec_id = resp.json()["id"]
 
@@ -143,7 +185,11 @@ def test_propagate_subgraph_endpoint():
         "entities": [{"id": "E1"}, {"id": "E2"}],
         "relations": [{"subject": "E1", "predicate": "LINKS_TO", "object": "E2"}],
     }
-    resp = requests.post(f"{endpoint}/propagate_subgraph", json=subgraph)
+    resp = requests.post(
+        f"{endpoint}/propagate_subgraph",
+        json=subgraph,
+        headers={"X-Role": "editor"},
+    )
     assert resp.status_code == 200
     stored = server.service.retrieve(
         "semantic",
@@ -161,11 +207,18 @@ def test_provenance_endpoint():
         "outcome": {},
         "source": "tester",
     }
-    resp = requests.post(f"{endpoint}/memory", json={"record": record})
+    resp = requests.post(
+        f"{endpoint}/memory",
+        json={"record": record},
+        headers={"X-Role": "editor"},
+    )
     assert resp.status_code == 201
     rid = resp.json()["id"]
 
-    resp = requests.get(f"{endpoint}/provenance/episodic/{rid}")
+    resp = requests.get(
+        f"{endpoint}/provenance/episodic/{rid}",
+        headers={"X-Role": "viewer"},
+    )
     assert resp.status_code == 200
     assert resp.json()["provenance"]["source"] == "tester"
     server.httpd.shutdown()

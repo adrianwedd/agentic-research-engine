@@ -5,15 +5,46 @@ from threading import Thread
 import pytest
 import requests
 
-from services.ltm_service import EpisodicMemoryService, InMemoryStorage
+from services.ltm_service import (
+    EpisodicMemoryService,
+    InMemoryStorage,
+    ProceduralMemoryService,
+)
+from services.ltm_service import api as ltm_api
 from services.ltm_service.api import LTMService, LTMServiceServer
+
+
+class DummyVectorStore:
+    def add(self, vector, metadata):
+        return metadata.get("id", "0")
+
+    def query(self, vector, limit):
+        return []
+
+    def delete(self, vec_id):
+        pass
+
+
+class DummySkillLibrary(ltm_api.SkillLibrary):
+    def __init__(self):
+        super().__init__(vector_store=DummyVectorStore())
+
 
 FIXTURE_DIR = Path("tests/fixtures/ltm_contract")
 
 
 def _start_server() -> tuple[LTMServiceServer, str]:
     storage = InMemoryStorage()
-    service = LTMService(EpisodicMemoryService(storage))
+    vec = DummyVectorStore()
+    ltm_api.SkillLibrary = DummySkillLibrary
+    episodic = EpisodicMemoryService(storage, vector_store=vec)
+    procedural = ProceduralMemoryService(storage, vector_store=vec)
+    evaluator = EpisodicMemoryService(storage, vector_store=vec)
+    service = LTMService(
+        episodic,
+        procedural_memory=procedural,
+        evaluator_memory=evaluator,
+    )
     server = LTMServiceServer(service, host="127.0.0.1", port=0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
