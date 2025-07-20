@@ -1,6 +1,6 @@
 # LTM Service API
 
-The Long-Term Memory (LTM) service exposes an OpenAPI specification to help developers integrate with the service. The versioned schema is stored at [`docs/api/ltm_openapi.yaml`](docs/api/ltm_openapi.yaml).
+The Long-Term Memory (LTM) service exposes an OpenAPI specification to help developers integrate with the service. The versioned schema is stored at [`docs/api/ltm_openapi.yaml`](docs/api/ltm_openapi.yaml) and is generated from [`services/ltm_service/openapi_app.py`](../services/ltm_service/openapi_app.py).
 
 ## Viewing the documentation
 
