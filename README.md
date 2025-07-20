@@ -15,7 +15,7 @@ For the complete implementation blueprint, see [BLUEPRINT.md](BLUEPRINT.md).
 
 The architecture of the agentic-research-engine is founded on four key pillars that ensure robustness, intelligence, and adaptability :
 
-1. **Hybrid Graph-Based Supervisor Model**: We abandon rigid, centralized control in favour of a dynamic, stateful graph for workflow management, inspired by LangGraph. This provides explicit control, deep observability, and resilience against failure.
+1. **Hybrid Graph-Based Supervisor Model**: We abandon rigid, centralised control in favour of a dynamic, stateful graph for workflow management, inspired by LangGraph. This provides explicit control, deep observability, and resilience against failure.
 2. **Multi-Layered Long-Term Memory (LTM)**: To enable genuine cognition, the system incorporates a dedicated memory service that distinguishes between:
    * **Episodic Memory**: For learning from past tasks and experiences.
    * **Semantic Memory**: A trusted internal knowledge graph of verified facts.
@@ -23,7 +23,7 @@ The architecture of the agentic-research-engine is founded on four key pillars t
   * A scheduled Kubernetes CronJob calls the LTM `forget` API nightly to remove
     stale episodic records based on stored timestamps. The job emits a
     `ltm.deletions` metric for monitoring.
-3. **Institutionalized Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalizes a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.
+3. **Institutionalised Self-Correction Loop**: Moving beyond ineffective self-reflection, the system institutionalises a formal critique-and-refinement process. A dedicated Evaluator agent provides external feedback on agent outputs, driving an iterative correction cycle to ensure high-quality, reliable results.
 4. **Multi-Faceted Evaluation Framework**: System performance is measured through a comprehensive framework that assesses not only task accuracy (via a BrowseComp-style benchmark) but also output quality, source fidelity, and collaboration efficiency. This data feeds a Reinforcement Learning from AI Feedback (RLAIF) loop, enabling the system to continuously improve its own policies.
 
 ## **3. System Workflow Example**
@@ -206,7 +206,7 @@ engine.error_logger = ErrorLoggingMiddleware()
 ```
 
 Set `engine.error_logger = None` to disable logging. The middleware records the
-node name, exception, and serialized state for easier debugging.
+node name, exception, and serialised state for easier debugging.
 
 ## **10. Continuous Deployment**
 
