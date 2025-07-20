@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-"""Persistent vector store implementations for episodic memory."""
+"""Persistent vector store implementations for episodic memory.
+
+The service now connects to an external Weaviate instance by default. If
+``WEAVIATE_URL`` is not set, a local embedded instance is started for
+development and tests. Authentication can be supplied via the
+``WEAVIATE_API_KEY`` environment variable.
+"""
 
 import concurrent.futures
 import os
@@ -32,30 +38,40 @@ class VectorStore:
 
 
 class WeaviateVectorStore(VectorStore):
-    """Persistent vector store backed by a local Weaviate instance."""
+    """Persistent vector store backed by Weaviate."""
 
     def __init__(
         self,
         *,
+        url: str | None = None,
+        api_key: str | None = None,
         persistence_path: str | None = None,
         workers: int | None = None,
     ) -> None:
         if weaviate is None:  # pragma: no cover - dependency missing
             raise RuntimeError("weaviate-client not installed")
 
-        options = EmbeddedOptions(
-            persistence_data_path=persistence_path or "/tmp/weaviate-data",
-            binary_path="/tmp/weaviate-bin",
-            additional_env_vars={
-                "ENABLE_MODULES": "",
-                "DISABLE_TELEMETRY": "true",
-                "DEFAULT_VECTORIZER_MODULE": "none",
-            },
-        )
-        self._client = weaviate.connect_to_embedded(options=options)
+        url = url or os.getenv("WEAVIATE_URL")
+        api_key = api_key or os.getenv("WEAVIATE_API_KEY")
+
         self._pool = concurrent.futures.ThreadPoolExecutor(
             max_workers=workers or int(os.getenv("VECTOR_STORE_WORKERS", "4"))
         )
+
+        if url:
+            auth = weaviate.AuthApiKey(api_key) if api_key else None
+            self._client = weaviate.Client(url, auth_client_secret=auth)
+        else:
+            options = EmbeddedOptions(
+                persistence_data_path=persistence_path or "/tmp/weaviate-data",
+                binary_path="/tmp/weaviate-bin",
+                additional_env_vars={
+                    "ENABLE_MODULES": "",
+                    "DISABLE_TELEMETRY": "true",
+                    "DEFAULT_VECTORIZER_MODULE": "none",
+                },
+            )
+            self._client = weaviate.connect_to_embedded(options=options)
 
         if "Memory" not in self._client.collections.list():
             self._client.collections.create(
