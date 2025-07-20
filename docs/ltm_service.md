@@ -20,3 +20,7 @@ The LTM service exposes multiple HTTP endpoints. Access is controlled using the 
 | `/provenance` | GET | `viewer`, `editor` |
 
 If a request is made with an unauthorized role, the service returns `403 Forbidden`.
+
+The `memory_type` field or query parameter accepted by several endpoints must be
+one of `episodic`, `semantic`, `procedural` or `evaluator`. Using any other
+value results in a `400 Bad Request` response.
