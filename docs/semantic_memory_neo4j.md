@@ -68,3 +68,10 @@ curl -X POST http://localhost:8081/semantic_consolidate \
      -H 'Content-Type: application/json' \
      -d '{"payload": {"subject": "Transformer", "predicate": "IS_A", "object": "Model"}}'
 ```
+
+## Migration Notes
+
+Earlier releases bundled a local Weaviate instance for episodic memory. The
+service now expects an external vector database. Configure the endpoint via
+`WEAVIATE_URL` (and optional `WEAVIATE_API_KEY`). The Neo4j setup described
+above is unaffected.

@@ -121,7 +121,8 @@ The versioned OpenAPI schema for the LTM service is stored at
 
 Copy `.env.example` to `.env` and update the values for your environment. Common
 variables include `OPENAI_API_KEY`, proxy settings and optional integrations
-such as LangSmith. Refer to
+such as LangSmith. Configure the vector database connection via
+`WEAVIATE_URL` and `WEAVIATE_API_KEY` when using an external instance. Refer to
 [docs/onboarding.md#environment-variables](docs/onboarding.md#environment-variables)
 for a full list and guidance.
 

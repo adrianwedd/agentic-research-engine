@@ -18,3 +18,8 @@ terraform apply \
 ```
 
 The service endpoint will be output after apply as `episodic-vector-db.<namespace>.svc.cluster.local:8080`.
+
+Configure the LTM service to connect by setting the following environment variables:
+
+- `WEAVIATE_URL` – endpoint of the Weaviate instance.
+- `WEAVIATE_API_KEY` – API key if authentication is enabled (optional).
