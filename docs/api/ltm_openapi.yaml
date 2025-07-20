@@ -10,7 +10,6 @@ components:
           title: Memory Type
           type: string
         record:
-          additionalProperties: true
           description: Record to store
           title: Record
           type: object
@@ -32,8 +31,7 @@ components:
       properties:
         query:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           title: Query
       title: CritiqueQuery
@@ -41,7 +39,6 @@ components:
     CritiqueRequest:
       properties:
         critique:
-          additionalProperties: true
           description: Critique record
           title: Critique
           type: object
@@ -62,13 +59,11 @@ components:
       properties:
         entities:
           items:
-            additionalProperties: true
             type: object
           title: Entities
           type: array
         relations:
           items:
-            additionalProperties: true
             type: object
           title: Relations
           type: array
@@ -89,7 +84,6 @@ components:
     ProvenanceResponse:
       properties:
         provenance:
-          additionalProperties: true
           description: Provenance metadata
           title: Provenance
           type: object
@@ -101,15 +95,13 @@ components:
       properties:
         query:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           description: Query to match
           title: Query
         task_context:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           description: Deprecated alternative query field
           title: Task Context
@@ -120,7 +112,6 @@ components:
         results:
           description: Matching records
           items:
-            additionalProperties: true
             type: object
           title: Results
           type: array
@@ -137,8 +128,7 @@ components:
           type: string
         payload:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: string
           description: JSON-LD object or Cypher string
           title: Payload
@@ -170,8 +160,7 @@ components:
           - items:
               type: number
             type: array
-          - additionalProperties: true
-            type: object
+          - type: object
           description: Vector or metadata
           title: Query
       required:
@@ -181,12 +170,10 @@ components:
     SkillRequest:
       properties:
         skill_metadata:
-          additionalProperties: true
           description: Arbitrary metadata
           title: Skill Metadata
           type: object
         skill_policy:
-          additionalProperties: true
           description: Skill policy data
           title: Skill Policy
           type: object
@@ -207,8 +194,7 @@ components:
       properties:
         location:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - type: object
           - type: 'null'
           description: Location context
           title: Location

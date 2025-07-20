@@ -57,7 +57,8 @@ This is a mono-repo containing all services, agent definitions, and infrastructu
 ```
 
 The versioned OpenAPI schema for the LTM service is stored at
-[`docs/api/ltm_openapi.yaml`](docs/api/ltm_openapi.yaml).
+[`docs/api/ltm_openapi.yaml`](docs/api/ltm_openapi.yaml). See
+[`docs/api.md`](docs/api.md) for details on how to regenerate the specification.
 
 ## **5. Getting Started**
 
