@@ -512,3 +512,16 @@
   status: open
   assigned_to: ''
   epic: ''
+- task_id: CR-TEST-016
+  title: Expand LTM service API tests
+  description: Add edge case and error path tests for LTM service API
+  area: tests
+  actionable_steps:
+  - Write additional tests
+  - Run pytest -k ltm_service
+  dependencies: []
+  acceptance_criteria:
+  - New tests pass
+  status: done
+  assigned_to: ''
+  epic: ''

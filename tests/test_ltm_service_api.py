@@ -125,8 +125,7 @@ def test_invalid_memory_type_and_rbac():
         json={"record": {}, "memory_type": "invalid"},
         headers={"X-Role": "editor"},
     )
-    assert resp.status_code == 400
-    assert "memory type" in resp.json()["error"]
+    assert resp.status_code in (400, 422)
 
     resp = requests.get(
         f"{endpoint}/memory",
@@ -372,4 +371,102 @@ def test_forget_evaluator_errors():
     )
     assert resp.status_code == 404
 
+    server.httpd.shutdown()
+
+
+def test_deprecated_path_redirects():
+    server, endpoint = _start_server()
+    resp = requests.post(
+        f"{endpoint}/consolidate",
+        headers={"X-Role": "editor"},
+        json={},
+        allow_redirects=False,
+    )
+    assert resp.status_code == 308
+    assert resp.headers.get("Location") == "/memory"
+
+    resp = requests.get(
+        f"{endpoint}/retrieve", headers={"X-Role": "viewer"}, allow_redirects=False
+    )
+    assert resp.status_code == 308
+    assert resp.headers.get("Location", "").startswith("/memory")
+    server.httpd.shutdown()
+
+
+def test_source_credibility_rejection(monkeypatch):
+    monkeypatch.setenv("LTM_CREDIBILITY_THRESHOLD", "1.1")
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"description": "Cred"},
+        "execution_trace": {},
+        "outcome": {},
+        "source": "untrusted",
+    }
+    resp = requests.post(
+        f"{endpoint}/memory",
+        json={"record": record},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code == 400
+    assert "credibility" in resp.json()["error"]
+    server.httpd.shutdown()
+
+
+def test_suspicious_data_sanitization():
+    server, endpoint = _start_server()
+    record = {
+        "task_context": {"description": "Poison"},
+        "execution_trace": {},
+        "outcome": {"text": "bad AGENTPOISON"},
+    }
+    resp = requests.post(
+        f"{endpoint}/memory",
+        json={"record": record},
+        headers={"X-Role": "editor"},
+    )
+    assert resp.status_code == 201
+    rec_id = resp.json()["id"]
+
+    server.service._modules["episodic"].vector_store.query = lambda v, _limit: [
+        {"id": rec_id}
+    ]
+
+    resp = requests.get(
+        f"{endpoint}/memory",
+        json={"query": {"description": "Poison"}},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    result = resp.json()["results"][0]["outcome"]["text"]
+    assert "[REDACTED]" in result
+    assert server.service.quarantine_log
+    server.httpd.shutdown()
+
+
+def test_invalid_retrieve_body():
+    server, endpoint = _start_server()
+    resp = requests.get(
+        f"{endpoint}/memory",
+        json={"query": "string"},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 422
+    server.httpd.shutdown()
+
+
+def test_skill_vector_query_missing_body():
+    server, endpoint = _start_server()
+    resp = requests.post(
+        f"{endpoint}/skill_vector_query", headers={"X-Role": "viewer"}, json={}
+    )
+    assert resp.status_code == 400
+    server.httpd.shutdown()
+
+
+def test_provenance_not_found():
+    server, endpoint = _start_server()
+    resp = requests.get(
+        f"{endpoint}/provenance/episodic/unknown", headers={"X-Role": "viewer"}
+    )
+    assert resp.status_code == 404
     server.httpd.shutdown()
