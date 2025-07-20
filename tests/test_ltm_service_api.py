@@ -97,6 +97,13 @@ def test_semantic_consolidate_endpoint():
         headers={"X-Role": "editor"},
     )
     assert resp.status_code == 201
+
+    resp = requests.post(
+        f"{endpoint}/semantic_consolidate",
+        json={"payload": triple},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 403
     semantic_consolidate(triple, endpoint=endpoint)
     resp = requests.get(
         f"{endpoint}/memory",
@@ -191,6 +198,13 @@ def test_propagate_subgraph_endpoint():
         headers={"X-Role": "editor"},
     )
     assert resp.status_code == 200
+
+    resp = requests.post(
+        f"{endpoint}/propagate_subgraph",
+        json=subgraph,
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 403
     stored = server.service.retrieve(
         "semantic",
         {"subject": "E1", "predicate": "LINKS_TO", "object": "E2"},
@@ -221,6 +235,12 @@ def test_provenance_endpoint():
     )
     assert resp.status_code == 200
     assert resp.json()["provenance"]["source"] == "tester"
+
+    resp = requests.get(
+        f"{endpoint}/provenance/episodic/{rid}",
+        headers={"X-Role": "guest"},
+    )
+    assert resp.status_code == 403
     server.httpd.shutdown()
 
 

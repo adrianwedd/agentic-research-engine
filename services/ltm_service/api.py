@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import parse_qs, urlparse
 
 try:
-    from pydantic import BaseModel, Field, ValidationError
+    from pydantic import BaseModel, Field, ValidationError, field_validator
 
     _HAS_PYDANTIC = True
 except Exception:  # pragma: no cover - fallback for test stubs
@@ -42,6 +42,12 @@ from .skill_library import SkillLibrary
 
 ALLOWED_MEMORY_TYPES: Set[str] = {"episodic", "semantic", "procedural", "evaluator"}
 
+
+def validate_memory_type(memory_type: str) -> None:
+    if memory_type not in ALLOWED_MEMORY_TYPES:
+        raise ValueError("invalid memory type")
+
+
 SUSPICIOUS_PATTERNS: List[str] = ["AGENTPOISON", "TRIGGER PHRASE"]
 
 ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
@@ -71,12 +77,21 @@ if _HAS_PYDANTIC:
         record: Dict = Field(...)
         memory_type: str = Field("episodic")
 
+        @field_validator("memory_type")
+        @classmethod
+        def _validate_memory_type(cls, v: str) -> str:
+            validate_memory_type(v)
+            return v
+
 else:  # pragma: no cover - used in tests without pydantic
 
     @dataclass
     class ConsolidateRequest:
         record: Dict
         memory_type: str = "episodic"
+
+        def __post_init__(self) -> None:
+            validate_memory_type(self.memory_type)
 
 
 if _HAS_PYDANTIC:
@@ -248,8 +263,7 @@ class LTMService:
         return sanitized
 
     def consolidate(self, memory_type: str, record: Dict) -> str:
-        if memory_type not in ALLOWED_MEMORY_TYPES:
-            raise ValueError(f"Unsupported memory type: {memory_type}")
+        validate_memory_type(memory_type)
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
@@ -384,8 +398,7 @@ class LTMService:
         return module.forget_experience(identifier, hard=hard)
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
-        if memory_type not in ALLOWED_MEMORY_TYPES:
-            raise ValueError(f"Unsupported memory type: {memory_type}")
+        validate_memory_type(memory_type)
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
@@ -405,16 +418,14 @@ class LTMService:
         return sanitized
 
     def get_provenance(self, memory_type: str, identifier: str) -> Dict:
-        if memory_type not in ALLOWED_MEMORY_TYPES:
-            raise ValueError(f"Unsupported memory type: {memory_type}")
+        validate_memory_type(memory_type)
         module = self._modules.get(memory_type)
         if module is None or not hasattr(module, "get_provenance"):
             raise ValueError(f"Unknown memory type: {memory_type}")
         return module.get_provenance(identifier)
 
     def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
-        if memory_type not in ALLOWED_MEMORY_TYPES:
-            raise ValueError(f"Unsupported memory type: {memory_type}")
+        validate_memory_type(memory_type)
         module = self._modules.get(memory_type)
         if module is None:
             raise ValueError(f"Unknown memory type: {memory_type}")
@@ -579,8 +590,10 @@ class LTMServiceServer:
                 except ValidationError as exc:
                     self._send_json(422, {"error": exc.errors()})
                     return
-                if req.memory_type not in ALLOWED_MEMORY_TYPES:
-                    self._send_json(400, {"error": "invalid memory type"})
+                try:
+                    validate_memory_type(req.memory_type)
+                except ValueError as exc:
+                    self._send_json(400, {"error": str(exc)})
                     return
                 try:
                     rec_id = service.consolidate(req.memory_type, req.record)
@@ -640,8 +653,10 @@ class LTMServiceServer:
                         return
                     memory_type = parts[2]
                     identifier = parts[3]
-                    if memory_type not in ALLOWED_MEMORY_TYPES:
-                        self._send_json(400, {"error": "invalid memory type"})
+                    try:
+                        validate_memory_type(memory_type)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
                         return
                     try:
                         prov = service.get_provenance(memory_type, identifier)
@@ -659,8 +674,10 @@ class LTMServiceServer:
                     return
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]
-                if memory_type not in ALLOWED_MEMORY_TYPES:
-                    self._send_json(400, {"error": "invalid memory type"})
+                try:
+                    validate_memory_type(memory_type)
+                except ValueError as exc:
+                    self._send_json(400, {"error": str(exc)})
                     return
                 limit = int(params.get("limit", ["5"])[0])
                 data = self._json_body()
@@ -699,8 +716,10 @@ class LTMServiceServer:
                 identifier = parsed.path.split("/", 2)[2]
                 params = parse_qs(parsed.query)
                 memory_type = params.get("memory_type", ["episodic"])[0]
-                if memory_type not in ALLOWED_MEMORY_TYPES:
-                    self._send_json(400, {"error": "invalid memory type"})
+                try:
+                    validate_memory_type(memory_type)
+                except ValueError as exc:
+                    self._send_json(400, {"error": str(exc)})
                     return
                 data = self._json_body()
                 try:
