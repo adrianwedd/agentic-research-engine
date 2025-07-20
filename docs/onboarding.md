@@ -26,12 +26,19 @@ like `HTTP_PROXY`, `HTTPS_PROXY`, and `CUDA_VISIBLE_DEVICES` for proxy routing
 and GPU selection. Use this when you don't need the full toolchain.
 
 ## Link Checker
-Validate links in Markdown files with the link checker script:
+Validate links in Markdown files with the link checker script, which wraps the
+[`lychee`](https://github.com/lycheeverse/lychee) link checker:
 
 ```bash
 python scripts/link_check.py
 ```
-Run this before submitting a pull request to catch any broken documentation links.
+Run this before submitting a pull request to catch any broken documentation
+links. The setup script installs `lychee` automatically using `cargo`. If you
+need to install it manually, run:
+
+```bash
+cargo install lychee --locked --version 0.13.0
+```
 
 ## Troubleshooting
 

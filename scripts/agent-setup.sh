@@ -12,6 +12,11 @@ if ! command -v pre-commit >/dev/null; then
   pip install -q pre-commit==4.2.0
 fi
 
+if ! command -v lychee >/dev/null; then
+  echo "[setup] installing lychee..."
+  cargo install lychee --locked --version 0.13.0 >/dev/null
+fi
+
 echo "[setup] installing git hooks..."
 pre-commit install
 

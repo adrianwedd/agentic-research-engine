@@ -1,30 +1,32 @@
 #!/usr/bin/env python3
-"""Run markdown-link-check on all markdown files.
+"""Run `lychee` on all Markdown files.
 
-This script is a thin wrapper around `markdown-link-check` executed via `npx`.
-It scans provided paths (files or directories) for `.md` files and checks each
-with `markdown-link-check`.
+This script is a lightweight wrapper around the `lychee` link checker. It scans
+the provided paths (files or directories) for ``.md`` files and checks them in a
+single ``lychee`` invocation.
 """
 
 from __future__ import annotations
 
 import argparse
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 
-def run_check(file: Path) -> int:
-    """Run markdown-link-check on a single file."""
-    print(f"Checking {file}")
-    result = subprocess.run(
-        ["npx", "--yes", "markdown-link-check", "--quiet", str(file)],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    print(result.stdout)
-    return result.returncode
+def run_check(files: list[Path]) -> int:
+    """Run lychee on a list of files."""
+    if shutil.which("lychee") is None:
+        print(
+            "lychee is not installed. Install it with `cargo install lychee`.",
+            file=sys.stderr,
+        )
+        return 1
+
+    cmd = ["lychee", "--no-progress", "--max-redirects", "5"] + [str(f) for f in files]
+    print("Running:", " ".join(cmd))
+    return subprocess.call(cmd)
 
 
 def gather_files(paths: list[str]) -> list[Path]:
@@ -40,16 +42,14 @@ def gather_files(paths: list[str]) -> list[Path]:
 
 def main(paths: list[str]) -> int:
     files = gather_files(paths)
-    rc = 0
-    for f in files:
-        rc |= run_check(f)
-    return rc
+    if not files:
+        print("No markdown files found", file=sys.stderr)
+        return 1
+    return run_check(files)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Check Markdown links with markdown-link-check"
-    )
+    parser = argparse.ArgumentParser(description="Check Markdown links using lychee")
     parser.add_argument(
         "paths",
         nargs="*",
