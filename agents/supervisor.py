@@ -3,6 +3,7 @@ Supervisor Agent Implementation.
 This agent acts as the primary coordinator for research tasks.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -19,6 +20,7 @@ from engine.state import State
 from services.tool_registry import (
     AccessDeniedError,
     ToolRegistry,
+    ToolRegistryAsyncClient,
     create_default_registry,
 )
 
@@ -56,10 +58,18 @@ class SupervisorAgent:
         self.ltm_service = ltm_service
         self.orchestration_engine = orchestration_engine
         self.agent_registry = agent_registry
-        self.tool_registry = tool_registry or create_default_registry()
+        if isinstance(tool_registry, (ToolRegistry, ToolRegistryAsyncClient)):
+            self.tool_registry = tool_registry
+        else:
+            self.tool_registry = tool_registry or create_default_registry()
         self.procedural_memory = procedural_memory
         try:
-            self.tool_registry.get_tool("Supervisor", "knowledge_graph_search")
+            if isinstance(self.tool_registry, ToolRegistry):
+                self.tool_registry.get_tool("Supervisor", "knowledge_graph_search")
+            elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                asyncio.run(
+                    self.tool_registry.get_tool("Supervisor", "knowledge_graph_search")
+                )
             self.has_knowledge_graph_search = True
         except Exception:
             self.has_knowledge_graph_search = False
@@ -200,13 +210,24 @@ class SupervisorAgent:
         past: List[Dict] = []
         if self.ltm_endpoint:
             try:
-                past = self.tool_registry.invoke(
-                    "Supervisor",
-                    "retrieve_memory",
-                    {"query": query},
-                    limit=self.retrieval_limit,
-                    endpoint=self.ltm_endpoint,
-                )
+                if isinstance(self.tool_registry, ToolRegistry):
+                    past = self.tool_registry.invoke(
+                        "Supervisor",
+                        "retrieve_memory",
+                        {"query": query},
+                        limit=self.retrieval_limit,
+                        endpoint=self.ltm_endpoint,
+                    )
+                elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                    past = asyncio.run(
+                        self.tool_registry.invoke(
+                            "Supervisor",
+                            "retrieve_memory",
+                            {"query": query},
+                            limit=self.retrieval_limit,
+                            endpoint=self.ltm_endpoint,
+                        )
+                    )
             except AccessDeniedError:
                 past = []
             except Exception:  # pragma: no cover - network errors
@@ -316,9 +337,16 @@ class SupervisorAgent:
         facts: List[Dict[str, Any]] = []
         if self.has_knowledge_graph_search:
             try:
-                facts = self.tool_registry.invoke(
-                    "Supervisor", "knowledge_graph_search", {"text": cleaned}
-                )
+                if isinstance(self.tool_registry, ToolRegistry):
+                    facts = self.tool_registry.invoke(
+                        "Supervisor", "knowledge_graph_search", {"text": cleaned}
+                    )
+                elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                    facts = asyncio.run(
+                        self.tool_registry.invoke(
+                            "Supervisor", "knowledge_graph_search", {"text": cleaned}
+                        )
+                    )
             except Exception:
                 facts = []
         plan = self.plan_research_task(cleaned)

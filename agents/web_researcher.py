@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import time
 from typing import Any, Callable, Dict, List, Optional
 
 from engine.orchestration_engine import GraphState
 from engine.state import State
-from services.tool_registry import ToolRegistry
+from services.tool_registry import ToolRegistry, ToolRegistryAsyncClient
 
 from .base import BaseAgent
 
@@ -24,7 +25,8 @@ class WebResearcherAgent(BaseAgent):
     ) -> None:
         """Initialize with secure tool access and rate limiting."""
         super().__init__("WebResearcher", tool_registry, ltm_endpoint=ltm_endpoint)
-        self.tool_registry = tool_registry  # type: ignore[assignment]
+        if not isinstance(tool_registry, (ToolRegistry, ToolRegistryAsyncClient)):
+            self.tool_registry = tool_registry  # type: ignore[assignment]
         self.rate_limit = rate_limit_per_minute
         self.max_retries = max_retries
         self.call_times: List[float] = []
@@ -77,6 +79,10 @@ class WebResearcherAgent(BaseAgent):
     def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> Any:
         if self.registry is not None:
             return self.registry.invoke(self.role, name, *args, **kwargs)
+        if hasattr(self, "async_registry") and self.async_registry is not None:
+            return asyncio.run(
+                self.async_registry.invoke(self.role, name, *args, **kwargs)
+            )
         tool = self.tool_registry[name]
         return tool(*args, **kwargs)
 
@@ -87,7 +93,13 @@ class WebResearcherAgent(BaseAgent):
                 return True
             except Exception:
                 return False
-        return callable(self.tool_registry.get(name))
+        if hasattr(self, "async_registry") and self.async_registry is not None:
+            try:
+                asyncio.run(self.async_registry.get_tool(self.role, name))
+                return True
+            except Exception:
+                return False
+        return callable(self.tool_registry.get(name)) if self.tool_registry else False
 
     def _check_rate_limit(self) -> None:
         if os.getenv("PYTEST_DISABLE_RATE_LIMIT"):

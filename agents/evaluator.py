@@ -7,6 +7,7 @@ and drives the iterative correction cycle.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -21,7 +22,11 @@ import yaml
 
 from agents.critique import Critique
 from services.monitoring.events import EvaluationCompletedEvent, publish_event
-from services.tool_registry import ToolRegistry, create_default_registry
+from services.tool_registry import (
+    ToolRegistry,
+    ToolRegistryAsyncClient,
+    create_default_registry,
+)
 
 
 class EvaluatorAgent:
@@ -65,7 +70,10 @@ class EvaluatorAgent:
         self.allowlist = set(config.get("allowlist", []))
         self.blocklist = set(config.get("blocklist", []))
 
-        self.tool_registry = tool_registry or create_default_registry()
+        if isinstance(tool_registry, (ToolRegistry, ToolRegistryAsyncClient)):
+            self.tool_registry = tool_registry
+        else:
+            self.tool_registry = tool_registry or create_default_registry()
 
         self.reputation_url = os.getenv(
             "REPUTATION_API_URL",
@@ -255,14 +263,26 @@ class EvaluatorAgent:
                 "evaluation_score": float(vector.get("accuracy_score", 0.0)),
                 "timestamp": event.timestamp.isoformat(),
             }
-            self.tool_registry.invoke(
-                "Evaluator",
-                "reputation_event",
-                payload,
-                url=self.reputation_url,
-                token=self.reputation_token,
-                retries=2,
-            )
+            if isinstance(self.tool_registry, ToolRegistry):
+                self.tool_registry.invoke(
+                    "Evaluator",
+                    "reputation_event",
+                    payload,
+                    url=self.reputation_url,
+                    token=self.reputation_token,
+                    retries=2,
+                )
+            elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                asyncio.run(
+                    self.tool_registry.invoke(
+                        "Evaluator",
+                        "reputation_event",
+                        payload,
+                        url=self.reputation_url,
+                        token=self.reputation_token,
+                        retries=2,
+                    )
+                )
         except Exception:
             logging.exception("Failed to publish reputation event")
         critique = self.generate_correction_feedback(results)
