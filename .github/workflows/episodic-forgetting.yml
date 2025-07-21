@@ -1,0 +1,28 @@
+name: Episodic Forgetting
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-job:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      LTM_BASE_URL: ${{ secrets.LTM_BASE_URL }}
+      LTM_TTL_DAYS: ${{ secrets.LTM_TTL_DAYS }}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+      - name: Setup environment
+        run: bash scripts/agent-setup.sh
+      - name: Run episodic forgetting job
+        run: python scripts/episodic_forgetting_job.py
