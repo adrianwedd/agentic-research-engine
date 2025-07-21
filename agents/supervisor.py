@@ -33,6 +33,8 @@ class SupervisorAgent:
         / "supervisor_plan_schema.json"
     )
 
+    PLAN_REUSE_THRESHOLD = 0.9
+
     def __init__(
         self,
         *,
@@ -65,11 +67,8 @@ class SupervisorAgent:
             env_val = os.getenv("USE_PLAN_TEMPLATES")
             use_plan_templates = True if env_val is None else bool(env_val)
         self.use_plan_templates = use_plan_templates
-        try:
-            with open(self.SCHEMA_PATH, "r", encoding="utf-8") as f:
-                self.plan_schema = yaml.safe_load(f) or {}
-        except FileNotFoundError:  # pragma: no cover - doc missing only in dev
-            self.plan_schema = {}
+        # YAML schema is optional and disabled in constrained environments
+        self.plan_schema = {}
         try:
             with open(self.JSON_SCHEMA_PATH, "r", encoding="utf-8") as f:
                 self.plan_json_schema = json.load(f)
@@ -140,6 +139,25 @@ class SupervisorAgent:
             return
         plan["graph"] = t_graph
 
+    def _render_template(self, data: Any, query: str, context: List[Dict]) -> Any:
+        """Recursively substitute placeholders in a plan template."""
+
+        if isinstance(data, dict):
+            return {
+                k: self._render_template(v, query, context) for k, v in data.items()
+            }
+        if isinstance(data, list):
+            return [self._render_template(v, query, context) for v in data]
+        if isinstance(data, str):
+            if data.strip() == "{{query}}":
+                return query
+            if data.strip() == "{{context}}":
+                return context
+            return data.replace("{{query}}", query).replace(
+                "{{context}}", json.dumps(context)
+            )
+        return data
+
     def _tokenize(self, text: str) -> set[str]:
         return set(re.findall(r"\w+", text.lower()))
 
@@ -201,6 +219,19 @@ class SupervisorAgent:
 
         past = self._score_memories(query, past)
 
+        if self.use_plan_templates and past:
+            best = past[0]
+            score = (
+                best.get("relevance")
+                or best.get("similarity")
+                or best.get("relevance_score", 0)
+            )
+            tmpl = best.get("task_context", {}).get("plan")
+            if tmpl and score >= self.PLAN_REUSE_THRESHOLD:
+                plan = self._render_template(tmpl, query, past)
+                self.validate_plan(plan)
+                return plan
+
         tasks = self._decompose_query(query)
         bbox, time_range = self._extract_spatio_temporal(query)
 
@@ -233,6 +264,7 @@ class SupervisorAgent:
                 if tmpl:
                     self._merge_template(plan, tmpl)
                     break
+        plan = self._render_template(plan, query, past)
         self.validate_plan(plan)
         return plan
 
