@@ -11,7 +11,11 @@ from opentelemetry.sdk.trace.export import (
     SpanExportResult,
 )
 
-from services.tool_registry import AccessDeniedError, ToolRegistry
+from services.tool_registry import (
+    AccessDeniedError,
+    ToolRegistry,
+    ToolRegistryAsyncClient,
+)
 from services.tool_registry.registry import ToolRegistryServer
 from services.tracing.tracing_schema import ToolCallTrace
 
@@ -174,3 +178,27 @@ def test_tool_init_failure_recorded():
     assert span.attributes.get("init.failed") is True
     assert span.attributes.get("allowed_roles") == "A"
     assert any(evt.name == "exception" for evt in span.events)
+
+
+@pytest.mark.asyncio
+async def test_async_client_interaction(tmp_path):
+    config = tmp_path / "config.yml"
+    config.write_text("permissions:\n  dummy:\n    - WebResearcher\n")
+
+    registry = ToolRegistry()
+    registry.register_tool("dummy", dummy_tool)
+    registry.load_permissions(str(config))
+    server = ToolRegistryServer(registry, host="127.0.0.1", port=0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    endpoint = f"http://127.0.0.1:{server.httpd.server_port}"
+    client = ToolRegistryAsyncClient(endpoint)
+    try:
+        tool = await client.get_tool("WebResearcher", "dummy")
+        assert tool == "dummy"
+        with pytest.raises(AccessDeniedError):
+            await client.get_tool("Supervisor", "dummy")
+    finally:
+        await client.close()
+        server.httpd.shutdown()
+        thread.join()

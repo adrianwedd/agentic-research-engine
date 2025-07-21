@@ -35,6 +35,8 @@ from tools import (
 )
 from tools.validation import validate_path_or_url
 
+from .async_client import ToolRegistryAsyncClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -224,4 +226,9 @@ def create_default_registry(config_path: str | None = None) -> ToolRegistry:
     return registry
 
 
-__all__ = ["AccessDeniedError", "ToolRegistry", "create_default_registry"]
+__all__ = [
+    "AccessDeniedError",
+    "ToolRegistry",
+    "create_default_registry",
+    "ToolRegistryAsyncClient",
+]

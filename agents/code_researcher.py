@@ -2,11 +2,12 @@ from __future__ import annotations
 
 """CodeResearcher Agent implementation."""
 
+import asyncio
 import time
 from typing import Any, Callable, Dict, List, Optional
 
 from engine.orchestration_engine import GraphState
-from services.tool_registry import ToolRegistry
+from services.tool_registry import ToolRegistry, ToolRegistryAsyncClient
 
 from .base import BaseAgent
 
@@ -23,7 +24,8 @@ class CodeResearcherAgent(BaseAgent):
         ltm_endpoint: str | None = None,
     ) -> None:
         super().__init__("CodeResearcher", tool_registry, ltm_endpoint=ltm_endpoint)
-        self.tool_registry = tool_registry  # type: ignore[assignment]
+        if not isinstance(tool_registry, (ToolRegistry, ToolRegistryAsyncClient)):
+            self.tool_registry = tool_registry  # type: ignore[assignment]
         self.rate_limit = rate_limit_per_minute
         self.max_retries = max_retries
         self.call_times: List[float] = []
@@ -42,6 +44,10 @@ class CodeResearcherAgent(BaseAgent):
     def _invoke_tool(self, name: str, *args: Any, **kwargs: Any) -> Any:
         if self.registry is not None:
             return self.registry.invoke(self.role, name, *args, **kwargs)
+        if hasattr(self, "async_registry") and self.async_registry is not None:
+            return asyncio.run(
+                self.async_registry.invoke(self.role, name, *args, **kwargs)
+            )
         tool = self.tool_registry[name]
         return tool(*args, **kwargs)
 

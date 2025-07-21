@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -8,7 +9,11 @@ import requests
 
 from engine.state import State
 from services import load_llm_client
-from services.tool_registry import ToolRegistry, create_default_registry
+from services.tool_registry import (
+    ToolRegistry,
+    ToolRegistryAsyncClient,
+    create_default_registry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,10 @@ class MemoryManagerAgent:
         self.ltm_service = ltm_service
         self.pass_threshold = pass_threshold
         self.novelty_threshold = novelty_threshold
-        self.tool_registry = tool_registry or create_default_registry()
+        if isinstance(tool_registry, (ToolRegistry, ToolRegistryAsyncClient)):
+            self.tool_registry = tool_registry
+        else:
+            self.tool_registry = tool_registry or create_default_registry()
 
     # ------------------------------------------------------------------
     # Retrieval helpers
@@ -72,30 +80,62 @@ class MemoryManagerAgent:
         return []
 
     def _add_skill(self, skill: Dict[str, Any]) -> None:
-        self.tool_registry.invoke(
-            "MemoryManager",
-            "add_skill",
-            skill,
-            endpoint=self.endpoint,
-        )
+        if isinstance(self.tool_registry, ToolRegistry):
+            self.tool_registry.invoke(
+                "MemoryManager",
+                "add_skill",
+                skill,
+                endpoint=self.endpoint,
+            )
+        elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+            asyncio.run(
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "add_skill",
+                    skill,
+                    endpoint=self.endpoint,
+                )
+            )
 
     def _query_skill_vector(self, query: Any, limit: int = 5) -> List[Dict[str, Any]]:
-        return self.tool_registry.invoke(
-            "MemoryManager",
-            "skill_vector_query",
-            {"query": query, "limit": limit},
-            endpoint=self.endpoint,
-        )
+        if isinstance(self.tool_registry, ToolRegistry):
+            return self.tool_registry.invoke(
+                "MemoryManager",
+                "skill_vector_query",
+                {"query": query, "limit": limit},
+                endpoint=self.endpoint,
+            )
+        if isinstance(self.tool_registry, ToolRegistryAsyncClient):
+            return asyncio.run(
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "skill_vector_query",
+                    {"query": query, "limit": limit},
+                    endpoint=self.endpoint,
+                )
+            )
+        return []
 
     def _query_skill_metadata(
         self, query: Dict[str, Any], limit: int = 5
     ) -> List[Dict[str, Any]]:
-        return self.tool_registry.invoke(
-            "MemoryManager",
-            "skill_metadata_query",
-            {"query": query, "limit": limit},
-            endpoint=self.endpoint,
-        )
+        if isinstance(self.tool_registry, ToolRegistry):
+            return self.tool_registry.invoke(
+                "MemoryManager",
+                "skill_metadata_query",
+                {"query": query, "limit": limit},
+                endpoint=self.endpoint,
+            )
+        if isinstance(self.tool_registry, ToolRegistryAsyncClient):
+            return asyncio.run(
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "skill_metadata_query",
+                    {"query": query, "limit": limit},
+                    endpoint=self.endpoint,
+                )
+            )
+        return []
 
     def _quality_passed(self, state: State) -> bool:
         return True
@@ -210,31 +250,61 @@ class MemoryManagerAgent:
             logger.info("MemoryManager: novelty gate failed")
             return state
         try:
-            self.tool_registry.invoke(
-                "MemoryManager",
-                "consolidate_memory",
-                record,
-                endpoint=self.endpoint,
-            )
+            if isinstance(self.tool_registry, ToolRegistry):
+                self.tool_registry.invoke(
+                    "MemoryManager",
+                    "consolidate_memory",
+                    record,
+                    endpoint=self.endpoint,
+                )
+            elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                asyncio.run(
+                    self.tool_registry.invoke(
+                        "MemoryManager",
+                        "consolidate_memory",
+                        record,
+                        endpoint=self.endpoint,
+                    )
+                )
             skill = state.data.get("skill")
             if isinstance(skill, dict):
                 self._add_skill(skill)
             for triple in self._extract_triples(state):
-                self.tool_registry.invoke(
-                    "MemoryManager",
-                    "semantic_consolidate",
-                    {"payload": triple, "format": "jsonld"},
-                    endpoint=self.endpoint,
-                )
+                if isinstance(self.tool_registry, ToolRegistry):
+                    self.tool_registry.invoke(
+                        "MemoryManager",
+                        "semantic_consolidate",
+                        {"payload": triple, "format": "jsonld"},
+                        endpoint=self.endpoint,
+                    )
+                elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                    asyncio.run(
+                        self.tool_registry.invoke(
+                            "MemoryManager",
+                            "semantic_consolidate",
+                            {"payload": triple, "format": "jsonld"},
+                            endpoint=self.endpoint,
+                        )
+                    )
             entities = state.data.get("entities")
             relations = state.data.get("relations")
             if isinstance(entities, list) and isinstance(relations, list):
-                self.tool_registry.invoke(
-                    "MemoryManager",
-                    "propagate_subgraph",
-                    {"entities": entities, "relations": relations},
-                    endpoint=self.endpoint,
-                )
+                if isinstance(self.tool_registry, ToolRegistry):
+                    self.tool_registry.invoke(
+                        "MemoryManager",
+                        "propagate_subgraph",
+                        {"entities": entities, "relations": relations},
+                        endpoint=self.endpoint,
+                    )
+                elif isinstance(self.tool_registry, ToolRegistryAsyncClient):
+                    asyncio.run(
+                        self.tool_registry.invoke(
+                            "MemoryManager",
+                            "propagate_subgraph",
+                            {"entities": entities, "relations": relations},
+                            endpoint=self.endpoint,
+                        )
+                    )
             # spatio-temporal retrieval
             plan = (
                 state.data.get("plan", {})
