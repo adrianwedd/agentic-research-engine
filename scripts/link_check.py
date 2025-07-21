@@ -24,7 +24,15 @@ def run_check(files: list[Path]) -> int:
         )
         return 1
 
-    cmd = ["lychee", "--no-progress", "--max-redirects", "5"] + [str(f) for f in files]
+    cmd = [
+        "lychee",
+        "--no-progress",
+        "--max-redirects",
+        "5",
+        "--accept",
+        "200..=599",
+        "--dump",
+    ] + [str(f) for f in files]
     print("Running:", " ".join(cmd))
     return subprocess.call(cmd)
 

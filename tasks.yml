@@ -385,7 +385,7 @@
   dependencies: []
   acceptance_criteria:
   - Application works with timezone-aware timestamps
-  status: open
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: CR-001
@@ -509,7 +509,7 @@
   dependencies: []
   acceptance_criteria:
   - Monitoring service emits cpu_usage and memory_usage metrics
-  status: open
+  status: done
   assigned_to: ''
   epic: ''
 - task_id: CR-TEST-016
