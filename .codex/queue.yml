@@ -14,7 +14,7 @@
     in Python 3.12. Replace with `datetime.now(datetime.UTC)` to ensure timezone-aware
     timestamps.'
   priority: medium
-  status: open
+  status: done
   steps:
   - Investigate Supervisor merging logic
   - Add regression test for plan length reduction
