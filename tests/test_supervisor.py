@@ -247,6 +247,36 @@ def test_plan_template_applied_when_enabled():
     server.httpd.shutdown()
 
 
+def test_high_score_plan_reused_with_slots():
+    server, endpoint = _start_server()
+    template_plan = {
+        "query": "{{query}}",
+        "context": "{{context}}",
+        "graph": {
+            "nodes": [
+                {"id": "research_0", "agent": "WebResearcher", "topic": "{{query}}"},
+                {"id": "synthesis", "agent": "Supervisor", "task": "synthesize"},
+            ],
+            "edges": [{"from": "research_0", "to": "synthesis"}],
+        },
+        "evaluation": {"metric": "quality"},
+    }
+    record = {
+        "task_context": {"query": "reuse", "plan": template_plan},
+        "execution_trace": {},
+        "outcome": {"success": True},
+    }
+    requests.post(f"{endpoint}/memory", json={"record": record})
+
+    agent = SupervisorAgent(ltm_endpoint=endpoint)
+    plan = agent.plan_research_task("reuse")
+
+    assert plan["query"] == "reuse"
+    assert plan["context"]
+    assert plan["graph"]["nodes"][0]["topic"] == "reuse"
+    server.httpd.shutdown()
+
+
 def test_skill_based_agent_selection():
     skills = {"A1": ["transformer", "lstm"], "A2": ["finance"]}
     agent = SupervisorAgent(
