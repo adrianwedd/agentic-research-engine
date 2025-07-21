@@ -120,7 +120,12 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--version", default=None)
     parser.add_argument("--test-split", type=float, default=0.1)
-    parser.add_argument("--out-root", type=Path, default=Path("models/evaluator"))
+    parser.add_argument(
+        "--out-root",
+        type=Path,
+        default=Path("models/evaluator_finetuned"),
+        help="Directory to store fine-tuned model artifacts",
+    )
     args = parser.parse_args()
 
     version = (
