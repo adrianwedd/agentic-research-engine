@@ -6,13 +6,18 @@ import sqlite3
 from typing import Sequence
 
 import pandas as pd
+from opentelemetry import trace
 
 
 class SQLiteQueryTool:
     """Execute read-only SQL queries against a SQLite database."""
 
     def __init__(self, db_path: str) -> None:
-        self.db_path = db_path
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "tool.constructor", attributes={"tool.class": self.__class__.__name__}
+        ):
+            self.db_path = db_path
 
     def run_query(self, sql: str, params: Sequence | None = None) -> pd.DataFrame:
         """Run a SQL query and return the results as a DataFrame."""

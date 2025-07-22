@@ -4,10 +4,34 @@ import sqlite3
 import asyncpg
 import pandas as pd
 import pytest
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    SimpleSpanProcessor,
+    SpanExporter,
+    SpanExportResult,
+)
 
 from services.tool_registry import create_default_registry
 from tools.postgres_query import PostgresQueryTool
 from tools.sqlite_query import SqliteQueryTool
+
+
+class InMemorySpanExporter(SpanExporter):
+    def __init__(self) -> None:
+        self.spans = []
+
+    def export(self, spans):
+        self.spans.extend(spans)
+        return SpanExportResult.SUCCESS
+
+    def shutdown(self) -> None:  # pragma: no cover - not needed
+        pass
+
+    def force_flush(
+        self, timeout_millis: int = 30_000
+    ) -> bool:  # pragma: no cover - not needed
+        return True
 
 
 def test_sqlite_query(tmp_path):
@@ -78,3 +102,20 @@ async def test_postgres_query_via_registry():
             "SELECT count(*) FROM orders WHERE status=$1", ["open"]
         )
         assert df.iloc[0, 0] == 2
+
+
+def test_sqlite_constructor_span_emitted(tmp_path):
+    exporter = InMemorySpanExporter()
+    trace.set_tracer_provider(TracerProvider())
+    provider = trace.get_tracer_provider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+
+    db_file = tmp_path / "span.db"
+    conn = sqlite3.connect(db_file)
+    conn.execute("CREATE TABLE t(id INT)")
+    conn.commit()
+
+    registry = create_default_registry()
+    registry.invoke("CodeResearcher", "sqlite_query", str(db_file))
+
+    assert any(span.name == "tool.constructor" for span in exporter.spans)
