@@ -1,4 +1,5 @@
 import json
+from importlib import metadata
 from threading import Thread
 
 import pytest
@@ -15,6 +16,7 @@ from services.tool_registry import (
     AccessDeniedError,
     ToolRegistry,
     ToolRegistryAsyncClient,
+    create_default_registry,
 )
 from services.tool_registry.registry import ToolRegistryServer
 from services.tracing.tracing_schema import ToolCallTrace
@@ -205,3 +207,22 @@ async def test_async_client_interaction(tmp_path):
         await client.close()
         server.httpd.shutdown()
         thread.join()
+
+
+def dummy_plugin_tool():
+    return "plugin"
+
+
+def test_entrypoint_plugins(monkeypatch):
+    ep = metadata.EntryPoint(
+        name="dummy_plugin",
+        value="tests.test_tool_registry:dummy_plugin_tool",
+        group="agentic_research_engine.tools",
+    )
+
+    def fake_entry_points(*args, **kwargs):  # pragma: no cover - deterministic
+        return [ep] if kwargs.get("group") == ep.group else []
+
+    monkeypatch.setattr(metadata, "entry_points", fake_entry_points)
+    registry = create_default_registry(load_plugins=True)
+    assert registry.invoke("WebResearcher", "dummy_plugin") == "plugin"

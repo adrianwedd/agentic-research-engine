@@ -187,6 +187,23 @@ If the pages contain only images, the function can perform OCR using
 ``PDF_READER_ENABLE_OCR`` environment variable to ``true``. OCR requires the
 Tesseract binary to be installed and accessible on the system.
 
+### **Tool Plugins**
+
+External tools can be added via Python packages that expose entry points in the
+`agentic_research_engine.tools` group. Each entry point's name becomes the tool
+name within the registry and must resolve to a callable.
+
+Example `pyproject.toml` snippet:
+
+```toml
+[project.entry-points."agentic_research_engine.tools"]
+mytool = "my_package.tools:mytool"
+```
+
+After installing the package, `create_default_registry()` auto-discovers the
+plugin and registers it. Configure permissions for the new tool in
+`services/tool_registry/config.yml` just like the built-in tools.
+
 ## **8. Secrets Management**
 
 Store API keys and credentials in a dedicated secrets manager such as
