@@ -15,7 +15,7 @@ readability-lxml==0.8.1
 jsonschema==4.24.0
 pykwalify==1.8.0
 fastapi==0.110.0
-uvicorn==0.27.0
+uvicorn==0.35.0
 starlette==0.36.3
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
