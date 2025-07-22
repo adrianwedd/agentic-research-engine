@@ -5,6 +5,11 @@ import random
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+try:
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover - fallback if PyYAML missing
+    yaml = None
+
 REQUIRED_FIELDS = [
     "original_text",
     "erroneous_version",
@@ -13,7 +18,21 @@ REQUIRED_FIELDS = [
 ]
 
 
-def validate_records(records: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
+def load_config(path: Path) -> Dict:
+    text = path.read_text(encoding="utf-8")
+    if path.suffix in {".yml", ".yaml"}:
+        if yaml is None:
+            raise RuntimeError("PyYAML required for YAML config parsing")
+        return yaml.safe_load(text) or {}
+    if path.suffix == ".json":
+        return json.loads(text or "{}")
+    return {}
+
+
+def validate_records(
+    records: List[Dict], required_fields: List[str] | None = None
+) -> Tuple[List[Dict], List[Dict]]:
+    required_fields = required_fields or REQUIRED_FIELDS
     valid: List[Dict] = []
     invalid: List[Dict] = []
     seen = set()
@@ -22,7 +41,7 @@ def validate_records(records: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
         if not isinstance(rec, dict):
             errors.append("record is not an object")
         else:
-            for field in REQUIRED_FIELDS:
+            for field in required_fields:
                 if not rec.get(field):
                     errors.append(f"missing {field}")
             if (
@@ -80,21 +99,31 @@ def main() -> None:
     parser.add_argument("dataset", type=Path, help="Path to dataset JSON file")
     parser.add_argument("--out-dir", type=Path, default=Path("data/curated"))
     parser.add_argument("--sample-percent", type=float, default=5.0)
+    parser.add_argument("--config", type=Path)
     args = parser.parse_args()
 
-    data = json.loads(args.dataset.read_text(encoding="utf-8"))
-    valid, invalid = validate_records(data)
-    version_id = save_version(valid, args.out_dir)
-    invalid_path = args.out_dir / version_id / "invalid_records.json"
+    config: Dict = {}
+    if args.config:
+        config = load_config(args.config)
+
+    dataset_path = Path(config.get("dataset", args.dataset))
+    out_dir = Path(config.get("out_dir", args.out_dir))
+    sample_percent = float(config.get("sample_percent", args.sample_percent))
+    required_fields = config.get("required_fields")
+
+    data = json.loads(dataset_path.read_text(encoding="utf-8"))
+    valid, invalid = validate_records(data, required_fields)
+    version_id = save_version(valid, out_dir)
+    invalid_path = out_dir / version_id / "invalid_records.json"
     if invalid:
         invalid_path.write_text(json.dumps(invalid, indent=2), encoding="utf-8")
         print(f"Flagged {len(invalid)} invalid records -> {invalid_path}")
     print(f"Saved {len(valid)} validated records under version {version_id}")
 
-    sample = sample_for_review(valid, args.sample_percent)
+    sample = sample_for_review(valid, sample_percent)
     review = interactive_review(sample)
     if review:
-        review_path = args.out_dir / version_id / "human_review.json"
+        review_path = out_dir / version_id / "human_review.json"
         review_path.write_text(json.dumps(review, indent=2), encoding="utf-8")
         print(f"Stored human review results to {review_path}")
 
