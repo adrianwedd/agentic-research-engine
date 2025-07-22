@@ -162,6 +162,53 @@ def test_snapshot_endpoint():
     assert results and results[0]["value"] == "v1"
 
 
+def test_snapshot_endpoint_version_progression():
+    client, _ = _create_client()
+
+    data1 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v1",
+        "valid_from": 0,
+        "valid_to": 50,
+        "location": {"lat": 1, "lon": 1},
+    }
+    client.post("/temporal_consolidate", json=data1, headers={"X-Role": "editor"})
+
+    import time
+
+    time.sleep(0.05)
+
+    data2 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v2",
+        "valid_from": 50,
+        "valid_to": None,
+        "location": {"lat": 1.5, "lon": 1.5},
+    }
+    client.post("/temporal_consolidate", json=data2, headers={"X-Role": "editor"})
+
+    tx_at = time.time()
+    resp_old = client.get(
+        "/snapshot",
+        params={"valid_at": 25, "tx_at": tx_at},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp_old.status_code == 200
+    assert resp_old.json()["results"][0]["value"] == "v1"
+
+    resp_new = client.get(
+        "/snapshot",
+        params={"valid_at": 75, "tx_at": tx_at},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp_new.status_code == 200
+    assert resp_new.json()["results"][0]["value"] == "v2"
+
+
 def test_skill_endpoints():
     client, _ = _create_client()
 
