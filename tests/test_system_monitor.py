@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from opentelemetry.sdk.metrics.export import InMemoryMetricReader
+from opentelemetry.sdk.metrics.export import (
+    InMemoryMetricReader,
+    MetricExporter,
+    MetricExportResult,
+    PeriodicExportingMetricReader,
+)
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
 from services.monitoring import system_monitor as sm
@@ -19,6 +24,26 @@ class InMemorySpanExporter(SpanExporter):
         pass
 
     def force_flush(self, timeout_millis: int = 30_000) -> bool:
+        return True
+
+
+class DummyMetricExporter(MetricExporter):
+    def __init__(self) -> None:
+        super().__init__()
+        self.records = []
+
+    def export(self, metrics_data, timeout_millis: int = 10_000):
+        self.records.append(metrics_data)
+        return MetricExportResult.SUCCESS
+
+    def shutdown(
+        self, timeout_millis: int = 30_000, **kwargs
+    ) -> None:  # pragma: no cover - not used
+        pass
+
+    def force_flush(
+        self, timeout_millis: int = 30_000
+    ) -> bool:  # pragma: no cover - not used
         return True
 
 
@@ -81,3 +106,70 @@ def test_from_otlp_uses_env_metadata(monkeypatch):
     span = span_exporter.spans[0]
     assert span.resource.attributes["environment"] == "test"
     assert span.resource.attributes["service.version"] == "1.0.0"
+
+
+def test_track_agent_performance_records_all_metrics():
+    import importlib
+
+    import opentelemetry.metrics._internal as metrics_internal
+    import opentelemetry.trace as trace
+
+    importlib.reload(trace)
+    importlib.reload(metrics_internal)
+    metric_reader = InMemoryMetricReader()
+    span_exporter = InMemorySpanExporter()
+    monitor = SystemMonitor(metric_reader, span_exporter)
+
+    monitor.track_agent_performance(
+        "agent1",
+        {
+            "task_completion_time": 2.5,
+            "resource_consumption": 15,
+            "quality_score": 0.95,
+            "error_rate": 1,
+            "collaboration_effectiveness": 0.9,
+        },
+    )
+
+    data = metric_reader.get_metrics_data()
+    names = {
+        m.name
+        for rm in data.resource_metrics
+        for sm in rm.scope_metrics
+        for m in sm.metrics
+    }
+    assert {
+        "agent.task_completion_time",
+        "agent.resource_consumption",
+        "agent.quality_score",
+        "agent.error_count",
+        "agent.collaboration_effectiveness",
+    } <= names
+
+
+def test_metrics_exported_with_mock_exporter(monkeypatch):
+    import importlib
+
+    import opentelemetry.metrics._internal as metrics_internal
+    import opentelemetry.trace as trace
+
+    importlib.reload(trace)
+    importlib.reload(metrics_internal)
+    metric_exporter = DummyMetricExporter()
+    metric_reader = PeriodicExportingMetricReader(metric_exporter)
+    span_exporter = InMemorySpanExporter()
+    monkeypatch.setattr(
+        sm, "OTLPMetricExporter", lambda endpoint, insecure=True: metric_exporter
+    )
+    monkeypatch.setattr(
+        sm, "PeriodicExportingMetricReader", lambda exporter: metric_reader
+    )
+    monkeypatch.setattr(
+        sm, "OTLPSpanExporter", lambda endpoint, insecure=True: span_exporter
+    )
+
+    monitor = SystemMonitor.from_otlp("http://example.com")
+    monitor.track_agent_performance("agent1", {"task_completion_time": 1})
+    metric_reader.collect()
+
+    assert metric_exporter.records
