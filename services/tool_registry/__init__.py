@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 import os
+from importlib import metadata
 from typing import Callable, Dict, Iterable, Optional
 
 import yaml
@@ -38,6 +39,8 @@ from tools.validation import validate_path_or_url
 from .async_client import ToolRegistryAsyncClient
 
 logger = logging.getLogger(__name__)
+
+PLUGIN_ENTRYPOINT_GROUP = "agentic_research_engine.tools"
 
 
 class AccessDeniedError(Exception):
@@ -180,6 +183,23 @@ class ToolRegistry:
         self._permissions = {tool: set(roles or []) for tool, roles in perms.items()}
 
 
+def load_plugin_tools() -> Dict[str, Callable[..., object]]:
+    """Load tool callables exposed via package entry points."""
+
+    try:
+        eps = metadata.entry_points(group=PLUGIN_ENTRYPOINT_GROUP)
+    except TypeError:  # pragma: no cover - py < 3.10
+        eps = metadata.entry_points().get(PLUGIN_ENTRYPOINT_GROUP, [])  # type: ignore[attr-defined]
+
+    plugins: Dict[str, Callable[..., object]] = {}
+    for ep in eps:
+        try:
+            plugins[ep.name] = ep.load()
+        except Exception:  # pragma: no cover - defensive
+            logger.warning("Failed to load plugin %s", ep.name, exc_info=True)
+    return plugins
+
+
 DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
     "web_search": web_search.web_search
     if hasattr(web_search, "web_search")
@@ -204,8 +224,10 @@ DEFAULT_TOOLS: Dict[str, Callable[..., object]] = {
 }
 
 
-def create_default_registry(config_path: str | None = None) -> ToolRegistry:
-    """Create a ToolRegistry with all built-in tools registered."""
+def create_default_registry(
+    config_path: str | None = None, *, load_plugins: bool = True
+) -> ToolRegistry:
+    """Create a ToolRegistry with all built-in and plugin tools registered."""
 
     registry = ToolRegistry()
 
@@ -223,6 +245,11 @@ def create_default_registry(config_path: str | None = None) -> ToolRegistry:
         allowed = perms.get(name)
         registry.register_tool(name, func, allowed_roles=allowed)
 
+    if load_plugins:
+        for name, func in load_plugin_tools().items():
+            allowed = perms.get(name)
+            registry.register_tool(name, func, allowed_roles=allowed)
+
     return registry
 
 
@@ -230,5 +257,6 @@ __all__ = [
     "AccessDeniedError",
     "ToolRegistry",
     "create_default_registry",
+    "load_plugin_tools",
     "ToolRegistryAsyncClient",
 ]
