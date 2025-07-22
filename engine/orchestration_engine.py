@@ -17,7 +17,18 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Sequence
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    ContextManager,
+    Dict,
+    Iterable,
+    Optional,
+    Sequence,
+    TypeAlias,
+    cast,
+)
 
 try:  # optional dependency
     from opentelemetry import trace
@@ -25,11 +36,11 @@ except Exception:  # pragma: no cover - fallback tracer
     import contextlib
 
     class _Tracer:
-        def start_as_current_span(self, *_a, **_k):
+        def start_as_current_span(self, *_a: Any, **_k: Any) -> ContextManager[Any]:
             return contextlib.nullcontext()
 
     class _Trace:
-        def get_tracer(self, *_a, **_k):
+        def get_tracer(self, *_a: Any, **_k: Any) -> "_Tracer":
             return _Tracer()
 
     trace = _Trace()
@@ -46,7 +57,7 @@ CONFIG_KEY_NODE_FINISHED = "callbacks.on_node_finished"
 # ``GraphState`` is currently an alias of ``State``. Future iterations may
 # introduce a dedicated class with additional orchestration-specific fields.
 
-GraphState = State
+GraphState: TypeAlias = State
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +111,7 @@ class Node:
     func: (
         Callable[[State, Dict[str, Any]], Awaitable[State]]
         | Callable[[State, Dict[str, Any]], State]
+        | "OrchestrationEngine"
     )
 
     retries: int = 0
@@ -123,18 +135,23 @@ class Node:
                     if self.node_type == NodeType.SUBGRAPH:
                         if isinstance(self.func, OrchestrationEngine):
                             result = await self.func.run_async(state)
-                            if isinstance(result, GraphState):
+                            if isinstance(result, State):
                                 state.scratchpad.update(result.scratchpad)
                         else:
                             raise TypeError(
                                 "subgraph node must be an OrchestrationEngine"
                             )
                     elif asyncio.iscoroutinefunction(self.func):
-                        result = await self.func(state, state.scratchpad)
+                        result = await cast(
+                            Callable[[State, Dict[str, Any]], Awaitable[State]],
+                            self.func,
+                        )(state, state.scratchpad)
                     else:
-                        result = self.func(state, state.scratchpad)
+                        result = cast(
+                            Callable[[State, Dict[str, Any]], State], self.func
+                        )(state, state.scratchpad)
 
-                    if isinstance(result, GraphState):
+                    if isinstance(result, State):
                         if self.node_type == NodeType.SUBGRAPH:
                             out_state = _merge_states(state, result)
                         else:
@@ -263,7 +280,10 @@ class OrchestrationEngine:
     def add_node(
         self,
         name: str,
-        func: Callable[[State], Awaitable[State]] | Callable[[State], State],
+        func: (
+            Callable[[State, Dict[str, Any]], Awaitable[State]]
+            | Callable[[State, Dict[str, Any]], State]
+        ),
         *,
         retries: int = 0,
         node_type: NodeType = NodeType.DEFAULT,
@@ -371,6 +391,7 @@ class OrchestrationEngine:
                 )
             self.current_next_node = node_name
             while node_name:
+                assert isinstance(node_name, str)
                 if state.status == "PAUSED" or self._pause_flag:
                     self.current_next_node = node_name
                     return state
@@ -384,7 +405,7 @@ class OrchestrationEngine:
                 )
                 next_state = await node.run(state)
                 if node.node_type == NodeType.SUBGRAPH and isinstance(
-                    next_state, GraphState
+                    next_state, State
                 ):
                     state = _merge_states(prev_state, next_state)
                 else:
@@ -403,7 +424,7 @@ class OrchestrationEngine:
                     state.update({"status": "PAUSED"})
                     self.current_next_node = self.order.get(node_name)
                     if hasattr(self.review_queue, "enqueue"):
-                        self.review_queue.enqueue(
+                        cast(Any, self.review_queue).enqueue(
                             thread_id, state, self.current_next_node
                         )
                     return state
@@ -416,7 +437,7 @@ class OrchestrationEngine:
                     "route",
                     attributes={"node": node_name, "decision": str(dest)},
                 ):
-                    if path_map:
+                    if path_map and isinstance(dest, str):
                         dest = path_map.get(dest, dest)
                     next_node = dest if isinstance(dest, str) else None
                     if next_node:
@@ -435,7 +456,7 @@ class OrchestrationEngine:
                         ):
                             pass
             else:
-                next_node = self.order.get(node_name)
+                next_node = self.order.get(cast(str, node_name))
                 if next_node:
                     tracer = trace.get_tracer(__name__)
                     edge_type = None
@@ -460,7 +481,7 @@ class OrchestrationEngine:
                 state.update({"status": "PAUSED"})
                 self.current_next_node = next_node
                 if hasattr(self.review_queue, "enqueue"):
-                    self.review_queue.enqueue(thread_id, state, next_node)
+                    cast(Any, self.review_queue).enqueue(thread_id, state, next_node)
                 return state
 
             node_name = next_node
@@ -588,7 +609,7 @@ class OrchestrationEngine:
         if node in self.routers_map:
             router, path_map = self.routers_map[node]
             dest = router(state)
-            if path_map:
+            if path_map and isinstance(dest, str):
                 dest = path_map.get(dest, dest)
             return dest if isinstance(dest, str) else None
         return self.order.get(node)
