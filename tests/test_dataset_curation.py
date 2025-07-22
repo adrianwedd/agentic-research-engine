@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 
@@ -41,3 +42,10 @@ def test_versioning_creates_output(tmp_path):
     assert out_file.is_file()
     loaded = json.loads(out_file.read_text())
     assert loaded == records
+
+
+def test_version_id_format(tmp_path):
+    version = dataset_curation.save_version([], tmp_path)
+    assert re.match(r"^\d{8}_\d{6}$", version)
+    out_file = tmp_path / version / "dataset.json"
+    assert out_file.is_file()
