@@ -44,4 +44,5 @@ playwright==1.52.0
 pytest-playwright==0.4.4
 nats-py==2.6.0
 mypy==1.16.1
+openapi-core==0.19.5
 
