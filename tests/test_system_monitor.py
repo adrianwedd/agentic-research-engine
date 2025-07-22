@@ -173,3 +173,79 @@ def test_metrics_exported_with_mock_exporter(monkeypatch):
     metric_reader.collect()
 
     assert metric_exporter.records
+
+
+def test_metric_types_histogram_and_counter():
+    import importlib
+
+    import opentelemetry.metrics._internal as metrics_internal
+    import opentelemetry.trace as trace
+    from opentelemetry.sdk.metrics.export import Histogram, Sum
+
+    importlib.reload(trace)
+    importlib.reload(metrics_internal)
+    metric_reader = InMemoryMetricReader()
+    span_exporter = InMemorySpanExporter()
+    monitor = SystemMonitor(metric_reader, span_exporter)
+
+    monitor.track_agent_performance(
+        "agent1",
+        {
+            "task_completion_time": 1.0,
+            "resource_consumption": 5,
+            "quality_score": 0.9,
+            "error_rate": 2,
+            "collaboration_effectiveness": 0.8,
+        },
+    )
+
+    data = metric_reader.get_metrics_data()
+    types = {
+        m.name: type(m.data)
+        for rm in data.resource_metrics
+        for sm in rm.scope_metrics
+        for m in sm.metrics
+    }
+
+    assert types["agent.task_completion_time"] is Histogram
+    assert types["agent.resource_consumption"] is Histogram
+    assert types["agent.quality_score"] is Histogram
+    assert types["agent.collaboration_effectiveness"] is Histogram
+    assert types["agent.error_count"] is Sum
+
+
+def test_ltm_metrics_exported_with_mock_exporter(monkeypatch):
+    import importlib
+
+    import opentelemetry.metrics._internal as metrics_internal
+    import opentelemetry.trace as trace
+
+    importlib.reload(trace)
+    importlib.reload(metrics_internal)
+    metric_exporter = DummyMetricExporter()
+    metric_reader = PeriodicExportingMetricReader(metric_exporter)
+    span_exporter = InMemorySpanExporter()
+    monkeypatch.setattr(
+        sm, "OTLPMetricExporter", lambda endpoint, insecure=True: metric_exporter
+    )
+    monkeypatch.setattr(
+        sm, "PeriodicExportingMetricReader", lambda exporter: metric_reader
+    )
+    monkeypatch.setattr(
+        sm, "OTLPSpanExporter", lambda endpoint, insecure=True: span_exporter
+    )
+
+    monitor = SystemMonitor.from_otlp("http://example.com")
+    monitor.record_ltm_result("episodic", True)
+    monitor.record_ltm_result("semantic", False)
+    monitor.record_ltm_deletions(2)
+    metric_reader.collect()
+
+    assert metric_exporter.records
+    names = {
+        m.name
+        for rm in metric_exporter.records[0].resource_metrics
+        for sm in rm.scope_metrics
+        for m in sm.metrics
+    }
+    assert {"ltm.hits", "ltm.misses", "ltm.deletions"} <= names
