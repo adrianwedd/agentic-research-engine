@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""Command-line entry point for running or resuming research tasks."""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+from engine.state import State
+from orchestrator import orc
+
+
+def _read_prompt(path: str) -> str:
+    text = Path(path).read_text(encoding="utf-8")
+    try:
+        data = json.loads(text)
+        return data.get("prompt", text)
+    except Exception:
+        return text
+
+
+def _write_log(path: str | None, result: Any) -> None:
+    if not path:
+        print(json.dumps(result, indent=2))
+        return
+    Path(path).write_text(json.dumps(result, indent=2))
+
+
+def _cmd_run(args: argparse.Namespace) -> None:
+    if args.task_file:
+        prompt = _read_prompt(args.task_file)
+    elif args.prompt:
+        prompt = args.prompt
+    else:
+        raise SystemExit("prompt or --task-file required")
+    result = orc.run_task(prompt)
+    _write_log(args.log, result)
+
+
+def _cmd_resume(args: argparse.Namespace) -> None:
+    if not args.task_file:
+        raise SystemExit("--task-file required for resume")
+    text = Path(args.task_file).read_text(encoding="utf-8")
+    data = json.loads(text)
+    state = State.model_validate(data)
+    prompt = state.data.get("prompt", "")
+    result = orc.run_task(prompt)
+    _write_log(args.log, result)
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Research orchestrator CLI")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    run_p = sub.add_parser("run", help="Run a new task")
+    run_p.add_argument("prompt", nargs="?", help="Task prompt")
+    run_p.add_argument("--task-file")
+    run_p.add_argument("--log")
+    run_p.set_defaults(func=_cmd_run)
+
+    res_p = sub.add_parser("resume", help="Resume a task from file")
+    res_p.add_argument("--task-file", required=True)
+    res_p.add_argument("--log")
+    res_p.set_defaults(func=_cmd_resume)
+
+    args = parser.parse_args(argv)
+    args.func(args)
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()
