@@ -29,8 +29,6 @@ def run_check(files: list[Path]) -> int:
         "--no-progress",
         "--max-redirects",
         "5",
-        "--accept",
-        "200..=599",
         "--dump",
     ] + [str(f) for f in files]
     print("Running:", " ".join(cmd))

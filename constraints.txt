@@ -41,4 +41,5 @@ scikit-learn==1.7.0
 nats-py==2.6.0
 mypy==1.16.1
 mypy_extensions==1.1.0
+openapi-core==0.19.5
 
