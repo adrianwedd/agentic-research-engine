@@ -93,10 +93,13 @@ def test_registry_server_logs_denied_access(tmp_path, caplog):
     try:
         caplog.set_level("WARNING")
         requests.get(
-            f"{endpoint}/tool", params={"agent": "Supervisor", "name": "dummy"}
+            f"{endpoint}/tool",
+            params={"agent": "Supervisor", "name": "dummy"},
+            headers={"X-User": "alice"},
         )
         assert any(
             json.loads(record.message).get("role") == "Supervisor"
+            and json.loads(record.message).get("user") == "alice"
             for record in caplog.records
         )
     finally:

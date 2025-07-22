@@ -40,6 +40,7 @@ class ToolRegistryServer:
                 params = parse_qs(parsed.query)
                 role = params.get("agent", [""])[0]
                 name = params.get("name", [""])[0]
+                user = self.headers.get("X-User", "")
                 try:
                     registry.get_tool(role, name)
                 except AccessDeniedError as e:
@@ -51,6 +52,7 @@ class ToolRegistryServer:
                                 ).isoformat(),
                                 "role": role,
                                 "tool": name,
+                                "user": user,
                                 "client_ip": self.client_address[0],
                                 "path": self.path,
                                 "error": str(e),
