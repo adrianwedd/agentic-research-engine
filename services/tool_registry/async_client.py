@@ -6,8 +6,6 @@ from typing import Any, Dict, Optional
 
 import httpx
 
-from . import AccessDeniedError
-
 
 class ToolRegistryAsyncClient:
     """HTTP client using :class:`httpx.AsyncClient` to access the registry."""
@@ -22,6 +20,8 @@ class ToolRegistryAsyncClient:
         await self._client.aclose()
 
     async def get_tool(self, role: str, name: str) -> str:
+        from . import AccessDeniedError
+
         resp = await self._client.get(
             f"{self.base_url}/tool", params={"agent": role, "name": name}
         )
@@ -48,6 +48,8 @@ class ToolRegistryAsyncClient:
             "kwargs": kwargs,
             "intent": intent or "",
         }
+        from . import AccessDeniedError
+
         resp = await self._client.post(f"{self.base_url}/invoke", json=payload)
         if resp.status_code == 404:
             raise KeyError(tool)

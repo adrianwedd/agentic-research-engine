@@ -1,4 +1,3 @@
-import asyncio
 import importlib
 import json
 import os
@@ -47,8 +46,8 @@ def _make_registry(search_results: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-@pytest.mark.skip(reason="Flaky: triggers event loop deadlock in CI")
-def test_full_request_to_execution_trace():
+@pytest.mark.asyncio
+async def test_full_request_to_execution_trace():
     importlib.reload(trace)
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
@@ -67,7 +66,7 @@ def test_full_request_to_execution_trace():
     engine.add_node("WebResearcher", researcher)
     engine.add_edge("Supervisor", "WebResearcher")
 
-    result = asyncio.run(engine.run_async(GraphState()))
+    result = await engine.run_async(GraphState())
     assert result.data["research_result"]["sources"]
 
     span_names = [s.name for s in exporter.spans]
@@ -96,8 +95,8 @@ def test_foundational_benchmark_run():
     assert report["average_time"] >= 0
 
 
-@pytest.mark.skip(reason="Flaky: triggers event loop deadlock in CI")
-def test_dynamic_workflow_routing():
+@pytest.mark.asyncio
+async def test_dynamic_workflow_routing():
     registry_hits = _make_registry([{"url": "http://example.com", "title": "Ex"}])
     registry_empty = _make_registry([])
 
@@ -118,8 +117,8 @@ def test_dynamic_workflow_routing():
     eng.add_router("Research", router)
     eng.add_edge("Summarize", "End")
 
-    result = asyncio.run(
-        eng.run_async(GraphState(data={"sub_task": "topic"}), start_at="Research")
+    result = await eng.run_async(
+        GraphState(data={"sub_task": "topic"}), start_at="Research"
     )
     assert result.data.get("summary") is True
 
@@ -131,7 +130,7 @@ def test_dynamic_workflow_routing():
     eng2.add_router("Research", router)
     eng2.add_edge("Summarize", "End")
 
-    result2 = asyncio.run(
-        eng2.run_async(GraphState(data={"sub_task": "topic"}), start_at="Research")
+    result2 = await eng2.run_async(
+        GraphState(data={"sub_task": "topic"}), start_at="Research"
     )
     assert "summary" not in result2.data
