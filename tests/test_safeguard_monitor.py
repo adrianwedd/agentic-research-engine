@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 
 import pytest
@@ -11,6 +13,7 @@ def dummy_tool():
     return "ok"
 
 
+@pytest.mark.integration
 def test_blocked_tool_raises_and_logged(caplog):
     monitor = PolicyMonitor({"blocked_tools": ["dummy"]})
     set_monitor(monitor)
@@ -21,8 +24,19 @@ def test_blocked_tool_raises_and_logged(caplog):
         registry.invoke("A", "dummy")
     assert any("blocked" in r.message for r in caplog.records)
     assert any(e["type"] == "tool" and not e["allowed"] for e in monitor.events)
+    event = monitor.events[0]
+    payload = {
+        "prev_hash": "0",
+        "type": "tool",
+        "role": "A",
+        "tool": "dummy",
+        "allowed": False,
+    }
+    expected = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+    assert event["hash"] == expected
 
 
+@pytest.mark.integration
 def test_blocked_message_raises_and_logged(caplog):
     monitor = PolicyMonitor({"blocked_keywords": ["bad"]})
     set_monitor(monitor)
@@ -33,3 +47,13 @@ def test_blocked_message_raises_and_logged(caplog):
         chat.post_message("A", "this is bad")
     assert any("blocked" in r.message for r in caplog.records)
     assert any(e["type"] == "message" and not e["allowed"] for e in monitor.events)
+    event = monitor.events[1]
+    payload = {
+        "prev_hash": monitor.events[0]["hash"],
+        "type": "message",
+        "sender": "A",
+        "content": "this is bad",
+        "allowed": False,
+    }
+    expected = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+    assert event["hash"] == expected
