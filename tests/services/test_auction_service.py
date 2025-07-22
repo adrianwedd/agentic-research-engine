@@ -24,3 +24,19 @@ def test_custom_config():
     cfg = AuctionConfig(high_complexity=0.5, many_tasks=5)
     wl = Workload(complexity=0.6, num_tasks=6, budget=0.4)
     assert select_auction_mechanism(wl, cfg) == AuctionMechanism.GCAA
+
+
+def test_budget_sensitivity():
+    high_value = Workload(complexity=0.8, num_tasks=5, budget=0.5)
+    high_budget = Workload(complexity=0.8, num_tasks=5, budget=0.9)
+
+    assert select_auction_mechanism(high_value) == AuctionMechanism.SSI
+    assert select_auction_mechanism(high_budget) == AuctionMechanism.VCG
+
+
+def test_value_sensitivity():
+    low_value = Workload(complexity=0.3, num_tasks=2, budget=0.8)
+    high_value = Workload(complexity=0.9, num_tasks=2, budget=0.8)
+
+    assert select_auction_mechanism(low_value) == AuctionMechanism.COMBINATORIAL
+    assert select_auction_mechanism(high_value) == AuctionMechanism.VCG
