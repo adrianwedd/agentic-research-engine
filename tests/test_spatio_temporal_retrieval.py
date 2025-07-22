@@ -63,3 +63,47 @@ def test_memory_manager_spatial_query():
     ctx = state.data.get("spatial_context")
     assert ctx and ctx[0]["value"] == "v2"
     server.httpd.shutdown()
+
+
+def test_memory_manager_snapshot_query():
+    server, endpoint = _start_server()
+    mm = MemoryManagerAgent(endpoint=endpoint)
+
+    data1 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v1",
+        "valid_from": 0,
+        "valid_to": 50,
+        "location": {"lat": 1, "lon": 1},
+    }
+    requests.post(
+        f"{endpoint}/temporal_consolidate", json=data1, headers={"X-Role": "editor"}
+    )
+
+    import time
+
+    time.sleep(0.05)
+
+    data2 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v2",
+        "valid_from": 50,
+        "valid_to": None,
+        "location": {"lat": 1.5, "lon": 1.5},
+    }
+    requests.post(
+        f"{endpoint}/temporal_consolidate", json=data2, headers={"X-Role": "editor"}
+    )
+
+    snap_time = time.time() - 0.025
+    state = GraphState(
+        data={"plan": {"snapshot": {"valid_at": 25, "tx_at": snap_time}}}
+    )
+    mm(state)
+    ctx = state.data.get("snapshot_context")
+    assert ctx and ctx[0]["value"] == "v1"
+    server.httpd.shutdown()
