@@ -62,6 +62,18 @@ cargo install lychee --locked --version 0.13.0
 - Increase the default timeout with `--default-timeout=100`.
 - Configure `HTTP_PROXY` and `HTTPS_PROXY` when behind a corporate firewall.
 
+### pip resolver errors
+- Resolver loops or `ResolutionImpossible` messages usually mean incompatible
+  versions. Pin packages using the provided constraints file:
+  ```bash
+  pip install -r requirements.txt -c constraints.txt
+  ```
+- If issues persist, start from a clean environment and run the lightweight
+  bootstrap script:
+  ```bash
+  bash scripts/bootstrap_minimal.sh
+  ```
+
 ### Docker setup tips
 - Verify Docker is installed and the daemon is running:
   ```bash
@@ -69,6 +81,10 @@ cargo install lychee --locked --version 0.13.0
   ```
 - If using a proxy, set it for Docker via `~/.docker/config.json` or environment variables.
 - On Linux, ensure volume mounts use absolute paths and your user is in the `docker` group.
+- Builds failing with `failed to fetch` or `connection reset` often mean Docker
+  can't reach the registry. Mirror the proxy settings used for pip or check
+  corporate firewall rules.
+
 
 ### GPU environment prerequisites
 - Install the latest NVIDIA drivers and confirm with `nvidia-smi`.
