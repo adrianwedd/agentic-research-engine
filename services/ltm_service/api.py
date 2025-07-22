@@ -57,6 +57,7 @@ ROLE_PERMISSIONS: Dict[Tuple[str, str], Set[str]] = {
     ("POST", "/propagate_subgraph"): {"editor"},
     ("GET", "/memory"): {"viewer", "editor"},
     ("GET", "/spatial_query"): {"viewer", "editor"},
+    ("GET", "/snapshot"): {"viewer", "editor"},
     ("POST", "/skill"): {"editor"},
     ("POST", "/skill_vector_query"): {"viewer", "editor"},
     ("POST", "/skill_metadata_query"): {"viewer", "editor"},
@@ -362,6 +363,18 @@ class LTMService:
             },
         )
 
+    def get_snapshot(self, valid_at: float, tx_at: float) -> List[Dict[str, Any]]:
+        """Return fact versions valid at ``valid_at`` with respect to ``tx_at``."""
+        module = self._modules.get("semantic")
+        if not isinstance(module, SpatioTemporalMemoryService):
+            raise ValueError("Spatio-temporal memory module not available")
+        results = module.get_snapshot(valid_at=valid_at, tx_at=tx_at)
+        return self._sanitize_records(
+            results,
+            "spatio-temporal",
+            {"valid_at": valid_at, "tx_at": tx_at},
+        )
+
     def add_skill(
         self,
         policy: Dict[str, Any],
@@ -621,6 +634,21 @@ class LTMServiceServer:
                         return
                     try:
                         results = service.spatial_query(bbox, valid_from, valid_to)
+                    except ValueError as exc:
+                        self._send_json(400, {"error": str(exc)})
+                        return
+                    self._send_json(200, {"results": results})
+                    return
+                if parsed.path == "/snapshot":
+                    params = parse_qs(parsed.query)
+                    try:
+                        valid_at = float(params.get("valid_at", ["0"])[0])
+                        tx_at = float(params.get("tx_at", ["0"])[0])
+                    except ValueError:
+                        self._send_json(400, {"error": "invalid parameters"})
+                        return
+                    try:
+                        results = service.get_snapshot(valid_at, tx_at)
                     except ValueError as exc:
                         self._send_json(400, {"error": str(exc)})
                         return

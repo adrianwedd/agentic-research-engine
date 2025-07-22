@@ -19,6 +19,7 @@ except Exception:  # pragma: no cover - fallback for spec generation
         ("POST", "/temporal_consolidate"): {"editor"},
         ("POST", "/propagate_subgraph"): {"editor"},
         ("GET", "/memory"): {"viewer", "editor"},
+        ("GET", "/snapshot"): {"viewer", "editor"},
         # Deprecated paths kept for one release cycle
         ("POST", "/consolidate"): {"editor"},
         ("GET", "/retrieve"): {"viewer", "editor"},
@@ -235,6 +236,22 @@ def create_app(service: LTMService) -> FastAPI:
             coords,
             valid_from,
             valid_to,
+        )
+        return RetrieveResponse(results=results)
+
+    @app.get("/snapshot", summary="Retrieve spatio-temporal snapshot")
+    async def snapshot(
+        valid_at: float = Query(..., description="Valid time"),
+        tx_at: float = Query(..., description="Transaction time"),
+        x_role: str | None = Header(None),
+    ) -> RetrieveResponse:
+        role = x_role or ""
+        if not _check_role("GET", "/snapshot", role):
+            raise HTTPException(status_code=403, detail="forbidden")
+        results = await asyncio.to_thread(
+            service.get_snapshot,
+            valid_at,
+            tx_at,
         )
         return RetrieveResponse(results=results)
 

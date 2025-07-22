@@ -70,6 +70,19 @@ class MemoryManagerAgent:
         return []
 
     def _snapshot_query(self, valid_at: float, tx_at: float) -> List[Dict[str, Any]]:
+        if self.endpoint:
+            try:
+                resp = requests.get(
+                    f"{self.endpoint}/snapshot",
+                    params={"valid_at": valid_at, "tx_at": tx_at},
+                    headers={"X-Role": "viewer"},
+                    timeout=10,
+                )
+                resp.raise_for_status()
+                return resp.json().get("results", [])
+            except Exception:  # pragma: no cover - log only
+                logger.exception("snapshot query failed")
+                return []
         if self.ltm_service:
             try:
                 module = self.ltm_service._modules.get("semantic")

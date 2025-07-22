@@ -122,6 +122,46 @@ def test_spatial_query_endpoint():
     assert results[0]["value"] == "v2"
 
 
+def test_snapshot_endpoint():
+    client, _ = _create_client()
+
+    data1 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v1",
+        "valid_from": 0,
+        "valid_to": 50,
+        "location": {"lat": 1, "lon": 1},
+    }
+    client.post("/temporal_consolidate", json=data1, headers={"X-Role": "editor"})
+
+    import time
+
+    time.sleep(0.05)
+
+    data2 = {
+        "subject": "S",
+        "predicate": "P",
+        "object": "O",
+        "value": "v2",
+        "valid_from": 50,
+        "valid_to": None,
+        "location": {"lat": 1.5, "lon": 1.5},
+    }
+    client.post("/temporal_consolidate", json=data2, headers={"X-Role": "editor"})
+
+    tx_at = time.time() - 0.025
+    resp = client.get(
+        "/snapshot",
+        params={"valid_at": 25, "tx_at": tx_at},
+        headers={"X-Role": "viewer"},
+    )
+    assert resp.status_code == 200
+    results = resp.json()["results"]
+    assert results and results[0]["value"] == "v1"
+
+
 def test_skill_endpoints():
     client, _ = _create_client()
 
