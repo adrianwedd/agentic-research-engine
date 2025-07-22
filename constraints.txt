@@ -15,7 +15,7 @@ jsonschema==4.24.0
 pykwalify==1.8.0
 fastapi==0.110.0
 uvicorn==0.27.0
-starlette==0.40.0
+starlette==0.36.3
 opentelemetry-api==1.24.0
 opentelemetry-sdk==1.24.0
 opentelemetry-exporter-otlp==1.24.0
@@ -39,4 +39,6 @@ asyncpg==0.29.0
 neo4j==5.19.0
 scikit-learn==1.7.0
 nats-py==2.6.0
+mypy==1.16.1
+mypy_extensions==1.1.0
 
