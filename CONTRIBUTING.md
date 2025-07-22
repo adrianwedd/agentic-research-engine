@@ -49,6 +49,29 @@ bash scripts/agent-setup.sh
 
 The setup script installs CPU-only PyTorch by default. Optional packages like `langsmith` and `trl` can be installed separately.
 
+## Secrets Management
+
+API keys and credentials should never be committed to the repository. Use a dedicated secrets manager such as **HashiCorp Vault** or **AWS Secrets Manager** to store these values. Retrieve them at runtime and expose the results as environment variables.
+
+### Example: HashiCorp Vault
+
+1. Store your keys in Vault:
+
+   ```bash
+   vault kv put secret/agentic \
+       SEARCH_API_KEY=<your-search-key> \
+       FACT_CHECK_API_KEY=<your-fact-check-key>
+   ```
+
+2. Export the values before running the tools:
+
+   ```bash
+   export SEARCH_API_KEY=$(vault kv get -field=SEARCH_API_KEY secret/agentic)
+   export FACT_CHECK_API_KEY=$(vault kv get -field=FACT_CHECK_API_KEY secret/agentic)
+   ```
+
+You can source these commands from a setup script or run `vault agent` to template an `.env` file automatically. See [docs/security.md](docs/security.md) for more details.
+
 ## Pre-commit Hooks
 
 Formatting and linting are enforced with `pre-commit`. Install the tool and set
