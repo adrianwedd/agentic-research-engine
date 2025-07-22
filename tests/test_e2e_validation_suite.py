@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 import pytest
 
 from agents.citation_agent import CitationAgent
@@ -86,6 +89,16 @@ def test_e2e_tool_governance_enforcement(caplog):
         registry.invoke("Researcher", "shell.exec", "rm -rf /")
 
     assert any(e["type"] == "tool" and not e["allowed"] for e in monitor.events)
+    event = monitor.events[0]
+    payload = {
+        "prev_hash": "0",
+        "type": "tool",
+        "role": "Researcher",
+        "tool": "shell.exec",
+        "allowed": False,
+    }
+    expected = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+    assert event["hash"] == expected
 
     result = "task complete"
     assert result == "task complete"
