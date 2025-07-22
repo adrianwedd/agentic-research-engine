@@ -13,6 +13,16 @@ repos:
       - id: isort
   - repo: local
     hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
+        additional_dependencies: []
+        pass_filenames: false
+        args: [--config-file, mypy.ini]
+  - repo: local
+    hooks:
       - id: forbid-tool-imports
         name: forbid direct tool imports
         entry: scripts/check_tool_imports.py

@@ -33,7 +33,11 @@ class ManagerAgent:
             },
         }
 
-    def _wrap_agent(self, agent: Callable, name: str):
+    def _wrap_agent(
+        self,
+        agent: Callable[[List[Dict[str, Any]], State, Dict[str, Any]], Any],
+        name: str,
+    ) -> Callable[[GraphState, Dict[str, Any]], GraphState]:
         def node(state: GraphState, _: Dict[str, Any]) -> GraphState:
             result = agent([], state, state.scratchpad)
             if isinstance(result, dict):
