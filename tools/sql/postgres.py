@@ -6,13 +6,18 @@ from typing import Sequence
 
 import asyncpg
 import pandas as pd
+from opentelemetry import trace
 
 
 class PostgresQueryTool:
     """Execute SQL queries against a PostgreSQL database using asyncpg."""
 
     def __init__(self, dsn: str) -> None:
-        self.dsn = dsn
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "tool.constructor", attributes={"tool.class": self.__class__.__name__}
+        ):
+            self.dsn = dsn
 
     async def run_query(self, sql: str, params: Sequence | None = None) -> pd.DataFrame:
         """Run a SQL query and return the results as a DataFrame."""
