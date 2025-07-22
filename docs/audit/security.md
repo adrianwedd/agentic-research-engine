@@ -36,7 +36,7 @@ This guide describes how to monitor RBAC failures in the Tool Registry.
 Example log entry:
 
 ```json
-{"timestamp": "2024-01-01T12:00:00Z", "role": "Supervisor", "tool": "dummy", "client_ip": "127.0.0.1", "path": "/tool?agent=Supervisor&name=dummy", "error": "Role 'Supervisor' cannot access tool 'dummy'"}
+{"timestamp": "2024-01-01T12:00:00Z", "role": "Supervisor", "tool": "dummy", "user": "alice", "client_ip": "127.0.0.1", "path": "/tool?agent=Supervisor&name=dummy", "error": "Role 'Supervisor' cannot access tool 'dummy'"}
 ```
 
 Fields:
@@ -44,6 +44,7 @@ Fields:
 - `timestamp` – UTC time of the request
 - `role` – agent role making the request
 - `tool` – requested tool name
+- `user` – identity of the caller if provided
 - `client_ip` – IP address of the client
 - `path` – HTTP path and query
 - `error` – reason access was denied
