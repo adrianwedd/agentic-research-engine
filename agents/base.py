@@ -51,6 +51,7 @@ class BaseAgent:
         input_tokens: int | None = None,
         output_tokens: int | None = None,
         latency_ms: float | None = None,
+        tool_input: Any | None = None,
     ) -> None:
         """Record a tool invocation in the procedure and emit a trace span."""
         self._procedure.append({"action": name, "args": args, "kwargs": kwargs})
@@ -58,7 +59,9 @@ class BaseAgent:
             agent_id=agent_id,
             agent_role=self.role,
             tool_name=name,
-            tool_input={"args": args, "kwargs": kwargs},
+            tool_input=tool_input
+            if tool_input is not None
+            else {"args": args, "kwargs": kwargs},
             tool_output=result,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
