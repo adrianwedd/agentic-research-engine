@@ -1,8 +1,16 @@
+import base64
+import importlib
+
 import pytest
 
 from agents.web_researcher import WebResearcherAgent
 from engine.orchestration_engine import GraphState
 from services.tool_registry import ToolRegistry
+from tests.test_pdf_reader_tool import HELLO_PDF_B64
+from tools.pdf_reader import pdf_extract as real_pdf_extract
+
+html_scraper_module = importlib.import_module("tools.html_scraper")
+real_html_scraper = html_scraper_module.html_scraper
 
 pytestmark = pytest.mark.core
 
@@ -91,7 +99,7 @@ def test_webresearcher_node_executes_query():
     state = GraphState(
         data={"sub_task": "find papers on Transformer architecture", "agent_id": "A"}
     )
-    result = agent(state)
+    result = agent(state, {})
 
     assert queries, "web_search was not called"
     q = queries[0].lower()
@@ -156,3 +164,63 @@ def test_webresearcher_prefers_knowledge_graph():
     assert calls[0] == "kg"
     assert "web" not in calls
     assert result["facts"][0]["object"] == "Paris"
+
+
+def test_webresearcher_parses_http(monkeypatch):
+    html = "<html><body><article><p>Hello Web.</p></article></body></html>"
+    pdf_bytes = base64.b64decode(HELLO_PDF_B64)
+
+    def fake_get(url: str, timeout: int = 10, **_):
+        class DummyResp:
+            def __init__(
+                self, *, text: str | None = None, content: bytes | None = None
+            ) -> None:
+                self.text = text or ""
+                self.content = content or b""
+                self.status_code = 200
+
+            def raise_for_status(self) -> None:
+                pass
+
+        if url.endswith(".pdf"):
+            return DummyResp(content=pdf_bytes)
+        return DummyResp(text=html)
+
+    monkeypatch.setattr(html_scraper_module.requests, "get", fake_get)
+    pdf_module = importlib.import_module(real_pdf_extract.__module__)
+    monkeypatch.setattr(pdf_module.requests, "get", fake_get)
+
+    summaries: list[str] = []
+
+    def summarize(text: str) -> str:
+        summaries.append(text)
+        return "summary"
+
+    registry = ToolRegistry()
+    registry.register_tool(
+        "web_search",
+        lambda q: [
+            {"url": "http://example.com/doc.pdf", "title": "Doc"},
+            {"url": "http://example.com/page", "title": "Page"},
+        ],
+        allowed_roles=["WebResearcher"],
+    )
+    registry.register_tool(
+        "pdf_extract", real_pdf_extract, allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool(
+        "html_scraper", real_html_scraper, allowed_roles=["WebResearcher"]
+    )
+    registry.register_tool("summarize", summarize, allowed_roles=["WebResearcher"])
+    registry.register_tool(
+        "assess_source", lambda url: 1.0, allowed_roles=["WebResearcher"]
+    )
+
+    agent = WebResearcherAgent(registry)
+    result = agent.research_topic("topic", {})
+
+    assert result["topic"] == "topic"
+    assert len(result["sources"]) == 2
+    assert result["confidence"] == 1.0
+    assert any("Hello Web" in s for s in summaries)
+    assert any("Hello PDF" in s for s in summaries)
