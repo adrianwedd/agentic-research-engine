@@ -201,8 +201,10 @@ mytool = "my_package.tools:mytool"
 ```
 
 After installing the package, `create_default_registry()` auto-discovers the
-plugin and registers it. Configure permissions for the new tool in
-`services/tool_registry/config.yml` just like the built-in tools.
+plugin and registers it. The lightweight orchestrator adapters also scan this
+entry point group at startup so plugins become immediately available.
+Configure permissions for the new tool in `services/tool_registry/config.yml`
+just like the built-in tools.
 
 ## **8. Secrets Management**
 
