@@ -12,7 +12,7 @@ from engine.orchestrator import Orchestrator, Planner, Reflector
 
 app = FastAPI(title="Research Orchestrator")
 
-orc = Orchestrator(Planner(), Reflector())
+orc: Orchestrator = Orchestrator(Planner(), Reflector())
 
 
 class RunRequest(BaseModel):
@@ -20,9 +20,9 @@ class RunRequest(BaseModel):
 
 
 @app.post("/run")
-async def run_endpoint(req: RunRequest):
+async def run_endpoint(req: RunRequest) -> dict[str, str]:
     """FastAPI endpoint executing a research task."""
-    result = orc.run_task(req.prompt)
+    result: str = orc.run_task(req.prompt)
     return {"result": result}
 
 
@@ -31,7 +31,7 @@ def run_cli(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Run orchestrator task")
     parser.add_argument("prompt", help="Task prompt")
     args = parser.parse_args(argv)
-    result = orc.run_task(args.prompt)
+    result: str = orc.run_task(args.prompt)
     print(result)
 
 
