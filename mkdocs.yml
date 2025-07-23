@@ -16,6 +16,9 @@ nav:
       - Communication Guidelines: docs/architecture/llm_grounded_guided_evolution.md
       - Auction Mechanisms: docs/usage/auction_mechanisms.md
 
+  - Pipelines:
+      - Overview: docs/pipelines_overview.md
+
   - Epics:
       - Interactive Agent Cockpit: docs/epics/interactive_agent_cockpit_epic.md
       - P4-12R – Address Outstanding Phase 3 Gaps: docs/epics/p4_12r_phase3_gap_closure_epic.md
