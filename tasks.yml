@@ -375,3 +375,401 @@
   status: done
   assigned_to: ''
   epic: ''
+- task_id: P3-TEST-01
+  title: Replace deprecated utcnow usage
+  description: Replace deprecated utcnow usage
+  area: deps
+  actionable_steps:
+  - Replace datetime.utcnow calls with datetime.now(datetime.UTC)
+  - Add regression test for timestamp correctness
+  dependencies: []
+  acceptance_criteria:
+  - Application works with timezone-aware timestamps
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-001
+  title: SkillLibrary-based MemoryManager overhaul
+  description: SkillLibrary-based MemoryManager overhaul
+  area: services
+  actionable_steps:
+  - Design SkillLibrary schema with metadata fields
+  - Refactor MemoryManager to use SkillLibrary
+  - Add semantic lookup tests
+  dependencies: []
+  acceptance_criteria:
+  - MemoryManager stores skills with policy, embedding and metadata
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-002
+  title: Unsupervised SkillDiscoveryModule
+  description: Unsupervised SkillDiscoveryModule
+  area: research
+  actionable_steps:
+  - Evaluate DUSDi algorithm for skill discovery
+  - Integrate exploration environment interface
+  - Store discovered skills in SkillLibrary
+  dependencies: []
+  acceptance_criteria:
+  - URL discovers disentangled skills for the SkillLibrary
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-003
+  title: LLM-guided semantic skill decomposition
+  description: LLM-guided semantic skill decomposition
+  area: agents
+  actionable_steps:
+  - Define LLM prompt templates for sub-task description
+  - Translate output into reward functions
+  - Persist semantic scaffolding in skill metadata
+  dependencies: []
+  acceptance_criteria:
+  - LLM-generated sub-tasks and rewards stored in skill metadata
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-004
+  title: Hierarchical Policy Executor
+  description: Hierarchical Policy Executor
+  area: agents
+  actionable_steps:
+  - Implement two-level FuN architecture
+  - Integrate goal-conditioned Worker policy
+  - Validate with long-horizon integration tests
+  dependencies: []
+  acceptance_criteria:
+  - Manager selects goals and Worker executes skills via HRL
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-01A
+  title: Complete FastAPI migration for all services
+  description: Complete FastAPI migration for all services
+  area: services
+  actionable_steps:
+  - Replace HTTPServer with FastAPI apps
+  - Update deployment files for uvicorn workers
+  - Ensure endpoints maintain behavior
+  dependencies: []
+  acceptance_criteria:
+  - All services run under FastAPI with no blocking calls
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-07A
+  title: Add SQL query tool connectors to Tool Registry
+  description: Add SQL query tool connectors to Tool Registry
+  area: tools
+  actionable_steps:
+  - Implement connectors for SQLite and PostgreSQL
+  - Register tools with RBAC rules
+  - Document usage examples
+  dependencies: []
+  acceptance_criteria:
+  - Agents can run parameterized SQL queries through the registry
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-08A
+  title: Document spatio-temporal memory research findings
+  description: Document spatio-temporal memory research findings
+  area: docs
+  actionable_steps:
+  - Summarize proposed data model and API
+  - Add research report under docs/research/
+  - Link document from mkdocs navigation
+  dependencies: []
+  acceptance_criteria:
+  - New document linked from mkdocs navigation
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: CR-P4-09A
+  title: Update onboarding docs with embedding cache guidance
+  description: Update onboarding docs with embedding cache guidance
+  area: docs
+  actionable_steps:
+  - Explain EMBED_CACHE_SIZE and caching benefits
+  - Reference scripts/agent-setup.sh for environment setup
+  dependencies: []
+  acceptance_criteria:
+  - Onboarding guide includes caching configuration section
+  status: open
+  assigned_to: ''
+  epic: ''
+- task_id: P5-01
+  title: Implement System Monitoring service
+  description: Implement System Monitoring service
+  area: services
+  actionable_steps:
+  - Integrate psutil to record CPU and memory usage
+  - Export metrics through OpenTelemetry
+  dependencies: []
+  acceptance_criteria:
+  - Monitoring service emits cpu_usage and memory_usage metrics
+  status: open
+  assigned_to: ''
+  epic: ''
+
+# Suggested next tasks
+- task_id: NEXT-001
+  title: Mark recent tasks as done
+  description: Update statuses of completed tasks in tasks.yml
+  area: ops
+  actionable_steps:
+  - Change status fields from open to done for recent tasks
+  dependencies: []
+  acceptance_criteria:
+  - tasks.yml reflects the updated statuses
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-002
+  title: Add type hints to orchestrator
+  description: Add Python type hints to orchestrator.py
+  area: engine
+  actionable_steps:
+  - Annotate functions in orchestrator.py
+  - Run mypy
+  dependencies: []
+  acceptance_criteria:
+  - mypy reports no errors
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-003
+  title: Document pipeline architecture
+  description: Add overview of pipelines to documentation
+  area: docs
+  actionable_steps:
+  - Create docs/pipelines_overview.md
+  - Link in mkdocs.yml
+  dependencies: []
+  acceptance_criteria:
+  - Documentation site builds successfully
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-004
+  title: Add dataset loader for evaluation
+  description: Implement dataset loader utility for tests
+  area: tests
+  actionable_steps:
+  - Add loader under tests/utils
+  - Write unit test
+  dependencies: []
+  acceptance_criteria:
+  - pytest passes with the new loader
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-005
+  title: Implement plugin discovery mechanism
+  description: Automatically discover tool plugins at startup
+  area: engine
+  actionable_steps:
+  - Scan entry points for tool plugins
+  - Register discovered tools
+  dependencies: []
+  acceptance_criteria:
+  - Plugins load without manual registration
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-006
+  title: Write integration tests for WebResearcher
+  description: Add integration tests covering remote fetch behavior
+  area: tests
+  actionable_steps:
+  - Mock HTTP responses
+  - Assert parsed results
+  dependencies: []
+  acceptance_criteria:
+  - Integration tests pass
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-007
+  title: Add caching layer to memory store
+  description: Implement simple in-memory cache for embeddings
+  area: services
+  actionable_steps:
+  - Add cache interface to memory manager
+  - Evict entries using LRU policy
+  dependencies: []
+  acceptance_criteria:
+  - Cache improves retrieval latency in benchmarks
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-008
+  title: Create dataset ingestion CLI
+  description: CLI tool to ingest documents into the vector store
+  area: tools
+  actionable_steps:
+  - Add ingestion command under scripts/
+  - Document usage in README
+  dependencies: []
+  acceptance_criteria:
+  - CLI ingests sample dataset successfully
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-009
+  title: Expand evaluation prompt dataset
+  description: Add more prompts for model evaluation
+  area: research
+  actionable_steps:
+  - Collect new example queries
+  - Update tests referencing dataset
+  dependencies: []
+  acceptance_criteria:
+  - Tests use the expanded dataset
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-010
+  title: Add OpenTelemetry tracing instrumentation
+  description: Instrument services with OpenTelemetry spans
+  area: infra
+  actionable_steps:
+  - Wrap key functions with tracing decorators
+  - Verify traces in local collector
+  dependencies: []
+  acceptance_criteria:
+  - Traces appear in Jaeger during tests
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-011
+  title: Implement rate limiting middleware
+  description: Add middleware to throttle excessive requests
+  area: services
+  actionable_steps:
+  - Implement token bucket algorithm
+  - Add configuration option for limits
+  dependencies: []
+  acceptance_criteria:
+  - Middleware rejects requests over the limit
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-012
+  title: Document advanced search features
+  description: Describe boolean and proximity search options
+  area: docs
+  actionable_steps:
+  - Update docs/search_guide.md
+  - Build docs to verify
+  dependencies: []
+  acceptance_criteria:
+  - Documentation includes new section
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-013
+  title: Implement asynchronous task queue
+  description: Use Celery for background tasks
+  area: services
+  actionable_steps:
+  - Add Celery configuration
+  - Write example task
+  dependencies: []
+  acceptance_criteria:
+  - Celery workers process tasks in tests
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-014
+  title: Clean up outdated TODO comments
+  description: Remove or resolve obsolete TODOs across the repo
+  area: cleanup
+  actionable_steps:
+  - Search for TODO markers
+  - Delete or address each item
+  dependencies: []
+  acceptance_criteria:
+  - No TODO comments remain in tracked files
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-015
+  title: Add license headers to source files
+  description: Ensure files contain standard license boilerplate
+  area: cleanup
+  actionable_steps:
+  - Insert license header at top of each .py file
+  - Verify formatting with pre-commit
+  dependencies: []
+  acceptance_criteria:
+  - Pre-commit passes on modified files
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-016
+  title: Document naming conventions
+  description: Specify naming guidelines in CONTRIBUTING
+  area: docs
+  actionable_steps:
+  - Add section on variable and function naming
+  - Run docs build
+  dependencies: []
+  acceptance_criteria:
+  - CONTRIBUTING.md includes conventions section
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-017
+  title: Add docs build to CI
+  description: Ensure documentation builds during CI
+  area: infra
+  actionable_steps:
+  - Update GitHub Actions workflow
+  - Fail build on docs errors
+  dependencies: []
+  acceptance_criteria:
+  - CI fails if docs do not build
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-018
+  title: Replace print statements with logging
+  description: Use logging instead of print for debugging
+  area: cleanup
+  actionable_steps:
+  - Search for print calls
+  - Replace with logging calls
+  dependencies: []
+  acceptance_criteria:
+  - No print statements remain
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-019
+  title: Add GitHub issue templates
+  description: Provide templates for bug reports and features
+  area: docs
+  actionable_steps:
+  - Create .github/ISSUE_TEMPLATE directory
+  - Add bug and feature templates
+  dependencies: []
+  acceptance_criteria:
+  - Repository contains issue templates
+  status: pending
+  assigned_to: ''
+  epic: ''
+- task_id: NEXT-020
+  title: Setup logging configuration template
+  description: Provide default logging configuration file
+  area: services
+  actionable_steps:
+  - Add logging.yaml in configs/
+  - Document usage in README
+  dependencies: []
+  acceptance_criteria:
+  - Application loads configuration at startup
+  status: pending
+  assigned_to: ''
+  epic: ''
