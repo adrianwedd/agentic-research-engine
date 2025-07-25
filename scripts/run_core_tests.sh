@@ -2,5 +2,5 @@
 
 set -e
 
-# Run a minimal smoke test
-pytest tests/test_smoke.py -q "${@}"
+# Run the lightweight core test suite
+pytest -q
