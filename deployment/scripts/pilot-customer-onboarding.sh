@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pilot Customer Onboarding Automation Script
+# ORCHESTRIX Pilot Customer Onboarding Automation Script
 # Classification: STRATEGIC - CUSTOMER ONBOARDING
 # Comprehensive automation for Phase 2 pilot user onboarding and success management
 # Last Updated: 2025-08-08

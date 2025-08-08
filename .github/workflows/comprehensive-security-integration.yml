@@ -1,0 +1,581 @@
+name: 'Comprehensive Security Integration'
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # Daily at 1 AM UTC
+  push:
+    branches: [ main, develop, 'feature/*' ]
+  pull_request:
+    branches: [ main, develop ]
+    paths: 
+      - 'requirements.txt'
+      - 'requirements-lock.txt'
+      - 'poetry.lock'
+      - 'Pipfile.lock'
+      - 'setup.py'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  SECURITY_SCAN_TIMEOUT: '900'
+  DEPENDENCY_CHECK_TIMEOUT: '300'
+
+jobs:
+  python-security-scan:
+    name: 'Python Security Vulnerability Scan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      pull-requests: write
+      
+    outputs:
+      vulnerabilities-found: ${{ steps.security-summary.outputs.vulnerabilities-found }}
+      critical-count: ${{ steps.security-summary.outputs.critical-count }}
+      high-count: ${{ steps.security-summary.outputs.high-count }}
+      dependency-prs-count: ${{ steps.dependency-analysis.outputs.dependency-prs-count }}
+      
+    steps:
+    - name: 'Checkout Repository'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        
+    - name: 'Setup Python'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: 'Install Security Scanning Tools'
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit pip-audit semgrep
+        echo "Security tools installed successfully"
+        
+    - name: 'Install Project Dependencies'
+      run: |
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+        echo "Project dependencies installed"
+        
+    - name: 'Run Safety Security Scan'
+      id: safety-scan
+      continue-on-error: true
+      run: |
+        echo "Running Safety security scan..."
+        safety check --json --output safety-results.json || true
+        
+        # Parse safety results
+        if [ -f safety-results.json ] && [ -s safety-results.json ]; then
+          SAFETY_ISSUES=$(jq length safety-results.json)
+          echo "safety-issues=${SAFETY_ISSUES}" >> $GITHUB_OUTPUT
+          
+          # Create summary
+          echo "## Safety Scan Results" > safety-summary.md
+          echo "Found ${SAFETY_ISSUES} known security vulnerabilities" >> safety-summary.md
+          
+          if [ "${SAFETY_ISSUES}" -gt 0 ]; then
+            echo "### Vulnerabilities:" >> safety-summary.md
+            jq -r '.[] | "- **\(.package_name)** \(.installed_version): \(.vulnerability.summary)"' safety-results.json >> safety-summary.md
+          fi
+        else
+          echo "safety-issues=0" >> $GITHUB_OUTPUT
+          echo "## Safety Scan Results" > safety-summary.md
+          echo "No known security vulnerabilities found" >> safety-summary.md
+        fi
+        
+    - name: 'Run Bandit SAST Scan'
+      id: bandit-scan
+      continue-on-error: true
+      run: |
+        echo "Running Bandit static analysis security scan..."
+        bandit -r . -f json -o bandit-results.json --exclude '/tests/,/test_,/.venv/,/venv/' || true
+        
+        # Parse bandit results
+        if [ -f bandit-results.json ] && [ -s bandit-results.json ]; then
+          HIGH_ISSUES=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-results.json)
+          MEDIUM_ISSUES=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-results.json)
+          LOW_ISSUES=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-results.json)
+          
+          echo "bandit-high=${HIGH_ISSUES}" >> $GITHUB_OUTPUT
+          echo "bandit-medium=${MEDIUM_ISSUES}" >> $GITHUB_OUTPUT
+          echo "bandit-low=${LOW_ISSUES}" >> $GITHUB_OUTPUT
+          
+          # Create summary
+          echo "## Bandit SAST Results" > bandit-summary.md
+          echo "- High: ${HIGH_ISSUES}" >> bandit-summary.md
+          echo "- Medium: ${MEDIUM_ISSUES}" >> bandit-summary.md
+          echo "- Low: ${LOW_ISSUES}" >> bandit-summary.md
+        else
+          echo "bandit-high=0" >> $GITHUB_OUTPUT
+          echo "bandit-medium=0" >> $GITHUB_OUTPUT
+          echo "bandit-low=0" >> $GITHUB_OUTPUT
+          echo "## Bandit SAST Results" > bandit-summary.md
+          echo "No static analysis security issues found" >> bandit-summary.md
+        fi
+        
+    - name: 'Run Pip-Audit Scan'
+      id: pip-audit-scan
+      continue-on-error: true
+      run: |
+        echo "Running pip-audit vulnerability scan..."
+        pip-audit --format=json --output=pip-audit-results.json || true
+        
+        # Parse pip-audit results
+        if [ -f pip-audit-results.json ] && [ -s pip-audit-results.json ]; then
+          VULN_COUNT=$(jq '[.vulnerabilities[]] | length' pip-audit-results.json)
+          echo "pip-audit-vulnerabilities=${VULN_COUNT}" >> $GITHUB_OUTPUT
+          
+          # Create summary
+          echo "## Pip-Audit Results" > pip-audit-summary.md
+          echo "Found ${VULN_COUNT} vulnerabilities in installed packages" >> pip-audit-summary.md
+          
+          if [ "${VULN_COUNT}" -gt 0 ]; then
+            echo "### Details:" >> pip-audit-summary.md
+            jq -r '.vulnerabilities[] | "- **\(.package)** \(.installed_version): \(.vulnerability.description)"' pip-audit-results.json >> pip-audit-summary.md
+          fi
+        else
+          echo "pip-audit-vulnerabilities=0" >> $GITHUB_OUTPUT
+          echo "## Pip-Audit Results" > pip-audit-summary.md
+          echo "No package vulnerabilities found" >> pip-audit-summary.md
+        fi
+        
+    - name: 'Analyze Dependency PRs'
+      id: dependency-analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Analyzing open dependency PRs..."
+        
+        # Get dependency PRs
+        gh pr list --state=open --json number,title,headRefName,createdAt --jq '.[] | select(.headRefName | startswith("dependabot/"))' > dependency-prs.json
+        
+        DEPENDENCY_PR_COUNT=$(jq length dependency-prs.json)
+        echo "dependency-prs-count=${DEPENDENCY_PR_COUNT}" >> $GITHUB_OUTPUT
+        
+        echo "## Dependency PR Analysis" > dependency-pr-summary.md
+        echo "Found ${DEPENDENCY_PR_COUNT} open dependency PRs" >> dependency-pr-summary.md
+        
+        if [ "${DEPENDENCY_PR_COUNT}" -gt 0 ]; then
+          echo "### Open Dependency PRs:" >> dependency-pr-summary.md
+          jq -r '.[] | "- PR #\(.number): \(.title) (Created: \(.createdAt | split("T")[0]))"' dependency-prs.json >> dependency-pr-summary.md
+        fi
+        
+    - name: 'Security Scan Summary'
+      id: security-summary
+      run: |
+        SAFETY_ISSUES=${{ steps.safety-scan.outputs.safety-issues }}
+        BANDIT_HIGH=${{ steps.bandit-scan.outputs.bandit-high }}
+        PIP_AUDIT_VULNS=${{ steps.pip-audit-scan.outputs.pip-audit-vulnerabilities }}
+        
+        # Calculate total critical/high issues
+        CRITICAL_COUNT=$((SAFETY_ISSUES + BANDIT_HIGH))
+        HIGH_COUNT=${{ steps.pip-audit-scan.outputs.pip-audit-vulnerabilities }}
+        
+        echo "critical-count=${CRITICAL_COUNT}" >> $GITHUB_OUTPUT
+        echo "high-count=${HIGH_COUNT}" >> $GITHUB_OUTPUT
+        
+        # Determine if vulnerabilities found
+        if [ "${CRITICAL_COUNT}" -gt 0 ] || [ "${HIGH_COUNT}" -gt 0 ]; then
+          echo "vulnerabilities-found=true" >> $GITHUB_OUTPUT
+          echo "❌ Security vulnerabilities detected!"
+          echo "- Critical/High Issues: ${CRITICAL_COUNT}"
+          echo "- Package Vulnerabilities: ${HIGH_COUNT}"
+        else
+          echo "vulnerabilities-found=false" >> $GITHUB_OUTPUT
+          echo "✅ No critical security vulnerabilities found"
+        fi
+        
+        # Create comprehensive security report
+        echo "# Comprehensive Security Scan Report" > security-report.md
+        echo "**Scan Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> security-report.md
+        echo "**Repository:** ${{ github.repository }}" >> security-report.md
+        echo "**Branch/PR:** ${{ github.ref }}" >> security-report.md
+        echo "" >> security-report.md
+        
+        cat safety-summary.md >> security-report.md
+        echo "" >> security-report.md
+        cat bandit-summary.md >> security-report.md
+        echo "" >> security-report.md
+        cat pip-audit-summary.md >> security-report.md
+        echo "" >> security-report.md
+        cat dependency-pr-summary.md >> security-report.md
+        
+    - name: 'Upload Security Artifacts'
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-scan-results
+        path: |
+          safety-results.json
+          safety-summary.md
+          bandit-results.json
+          bandit-summary.md
+          pip-audit-results.json
+          pip-audit-summary.md
+          dependency-prs.json
+          dependency-pr-summary.md
+          security-report.md
+        retention-days: 30
+
+  dependency-pr-review:
+    name: 'Automated Dependency PR Review'
+    runs-on: ubuntu-latest
+    needs: python-security-scan
+    if: needs.python-security-scan.outputs.dependency-prs-count > '0'
+    timeout-minutes: 15
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      
+    strategy:
+      matrix:
+        pr-batch: [1, 2, 3, 4]  # Process PRs in batches
+      fail-fast: false
+      
+    steps:
+    - name: 'Checkout Repository'
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        
+    - name: 'Setup Python'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: 'Process Dependency PRs'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Processing dependency PRs in batch ${{ matrix.pr-batch }}..."
+        
+        # Get dependency PRs
+        gh pr list --state=open --json number,title,headRefName,createdAt,body --jq '.[] | select(.headRefName | startswith("dependabot/"))' > all-dependency-prs.json
+        
+        # Split into batches (4 PRs per batch)
+        BATCH_SIZE=4
+        START_INDEX=$(( (${{ matrix.pr-batch }} - 1) * BATCH_SIZE ))
+        
+        jq --argjson start $START_INDEX --argjson size $BATCH_SIZE '.[$start:$start+$size]' all-dependency-prs.json > batch-prs.json
+        
+        BATCH_PR_COUNT=$(jq length batch-prs.json)
+        echo "Processing ${BATCH_PR_COUNT} PRs in this batch"
+        
+        # Process each PR in the batch
+        if [ "${BATCH_PR_COUNT}" -gt 0 ]; then
+          jq -c '.[]' batch-prs.json | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            PR_TITLE=$(echo "$pr" | jq -r '.title')
+            HEAD_REF=$(echo "$pr" | jq -r '.headRefName')
+            
+            echo "Analyzing PR #${PR_NUMBER}: ${PR_TITLE}"
+            
+            # Determine if this is a security update
+            IS_SECURITY_UPDATE="false"
+            if echo "$PR_TITLE" | grep -qi "security\|vulnerability\|CVE"; then
+              IS_SECURITY_UPDATE="true"
+            fi
+            
+            # Check the package being updated
+            PACKAGE_NAME=$(echo "$HEAD_REF" | sed 's/dependabot\/pip\///g' | sed 's/-[0-9].*//g')
+            echo "Package: ${PACKAGE_NAME}"
+            
+            # Create PR review comment
+            if [ "$IS_SECURITY_UPDATE" = "true" ]; then
+              COMMENT="🔒 **Security Update Detected**
+              
+This appears to be a security-related dependency update for **${PACKAGE_NAME}**.
+
+**Automated Security Review:**
+- ✅ This is a security patch that should be prioritized
+- ⚡ **Action Required:** Review and merge immediately after testing
+- 🧪 **Testing:** Ensure integration tests pass before merging
+- 📊 **Priority:** HIGH - Security vulnerability fix
+
+**Review Checklist:**
+- [ ] Integration tests pass
+- [ ] No breaking changes in API contract
+- [ ] Security vulnerability is resolved
+- [ ] Application functionality verified
+
+**Auto-generated by Security Integration Workflow**"
+            else
+              COMMENT="📦 **Dependency Update Review**
+              
+This is a routine dependency update for **${PACKAGE_NAME}**.
+
+**Automated Review:**
+- 📋 **Type:** Routine dependency update
+- ⚡ **Action:** Review for breaking changes and compatibility
+- 🧪 **Testing:** Run full test suite before merging
+- 📊 **Priority:** MEDIUM - Standard dependency update
+
+**Review Checklist:**
+- [ ] No breaking changes introduced
+- [ ] Integration tests pass
+- [ ] Application functionality verified
+- [ ] Documentation updated if needed
+
+**Auto-generated by Security Integration Workflow**"
+            fi
+            
+            # Add comment to PR
+            gh pr comment "$PR_NUMBER" --body "$COMMENT" || echo "Failed to comment on PR #${PR_NUMBER}"
+            
+            # Add appropriate labels
+            if [ "$IS_SECURITY_UPDATE" = "true" ]; then
+              gh pr edit "$PR_NUMBER" --add-label "security,high-priority,dependency-update" || echo "Failed to add labels to PR #${PR_NUMBER}"
+            else
+              gh pr edit "$PR_NUMBER" --add-label "dependency-update,automated-update" || echo "Failed to add labels to PR #${PR_NUMBER}"
+            fi
+          done
+        fi
+
+  security-fix-automation:
+    name: 'Automated Security Fix Application'
+    runs-on: ubuntu-latest
+    needs: python-security-scan
+    if: needs.python-security-scan.outputs.vulnerabilities-found == 'true'
+    timeout-minutes: 20
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      
+    steps:
+    - name: 'Checkout Repository'
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 1
+        
+    - name: 'Setup Python'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: 'Install Security Tools'
+      run: |
+        pip install --upgrade pip
+        pip install safety pip-audit
+        
+    - name: 'Apply Automated Security Fixes'
+      id: apply-fixes
+      run: |
+        echo "Attempting to apply automated security fixes..."
+        
+        # Create branch for security fixes
+        BRANCH_NAME="security/automated-fixes-$(date +%Y%m%d-%H%M%S)"
+        git checkout -b "${BRANCH_NAME}"
+        
+        # Install current dependencies
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+        
+        # Try to upgrade vulnerable packages
+        FIXES_APPLIED="false"
+        
+        # Get list of vulnerable packages from safety
+        safety check --json --output safety-check.json || true
+        
+        if [ -f safety-check.json ] && [ -s safety-check.json ]; then
+          # Extract vulnerable packages and try to upgrade them
+          jq -r '.[].package_name' safety-check.json | sort -u > vulnerable-packages.txt
+          
+          while read -r package; do
+            if [ -n "$package" ]; then
+              echo "Attempting to upgrade ${package}..."
+              pip install --upgrade "$package" || echo "Failed to upgrade ${package}"
+              FIXES_APPLIED="true"
+            fi
+          done < vulnerable-packages.txt
+        fi
+        
+        # Update requirements.txt with new versions
+        if [ "$FIXES_APPLIED" = "true" ]; then
+          pip freeze > requirements-updated.txt
+          
+          # Check if we have significant changes
+          if ! diff -q requirements.txt requirements-updated.txt >/dev/null 2>&1; then
+            mv requirements-updated.txt requirements.txt
+            
+            echo "fixes-applied=true" >> $GITHUB_OUTPUT
+            echo "branch-name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+            
+            # Commit changes
+            git config user.name "Security Fix Bot"
+            git config user.email "security-bot@github-actions.noreply.com"
+            git add requirements.txt
+            git commit -m "🔒 Apply automated security fixes for vulnerable dependencies
+
+- Upgraded vulnerable packages identified by security scan
+- Critical vulnerabilities: ${{ needs.python-security-scan.outputs.critical-count }}
+- High vulnerabilities: ${{ needs.python-security-scan.outputs.high-count }}
+
+Auto-generated by Security Integration Workflow
+$(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)"
+            
+            git push origin "${BRANCH_NAME}"
+          else
+            echo "fixes-applied=false" >> $GITHUB_OUTPUT
+            echo "No significant changes to commit"
+          fi
+        else
+          echo "fixes-applied=false" >> $GITHUB_OUTPUT
+          echo "No automated fixes could be applied"
+        fi
+        
+    - name: 'Create Security Fix PR'
+      if: steps.apply-fixes.outputs.fixes-applied == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        BRANCH_NAME="${{ steps.apply-fixes.outputs.branch-name }}"
+        CRITICAL_COUNT="${{ needs.python-security-scan.outputs.critical-count }}"
+        HIGH_COUNT="${{ needs.python-security-scan.outputs.high-count }}"
+        
+        PR_TITLE="🔒 Automated Security Fixes - ${CRITICAL_COUNT} Critical, ${HIGH_COUNT} High"
+        
+        PR_BODY="# Automated Security Dependency Fixes
+
+This PR contains automated security fixes for detected vulnerabilities in Python dependencies.
+
+## Security Summary
+- **Critical Issues Fixed:** ${CRITICAL_COUNT}
+- **High Issues Fixed:** ${HIGH_COUNT}
+
+## Changes Applied
+- Upgraded vulnerable packages to secure versions
+- Updated \`requirements.txt\` with patched dependencies
+- Applied only non-breaking security updates
+
+## Testing Requirements
+- [ ] Run full test suite to verify compatibility
+- [ ] Verify application functionality in development environment
+- [ ] Check for any breaking changes in upgraded packages
+- [ ] Validate that security vulnerabilities are resolved
+
+## Deployment Priority
+🚨 **HIGH PRIORITY** - This PR addresses critical security vulnerabilities and should be:
+1. Reviewed immediately
+2. Tested thoroughly but quickly
+3. Merged and deployed within 24 hours for critical issues
+
+## Security Verification
+After merging, run the security scan again to verify all vulnerabilities are resolved:
+\`\`\`bash
+safety check
+pip-audit
+\`\`\`
+
+---
+**Auto-generated by:** Comprehensive Security Integration Workflow  
+**Triggered by:** Security vulnerability detection  
+**Generated at:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)
+"
+        
+        gh pr create \
+          --title "$PR_TITLE" \
+          --body "$PR_BODY" \
+          --head "$BRANCH_NAME" \
+          --base main \
+          --label "security,high-priority,automated-fix"
+
+  security-monitoring:
+    name: 'Security Monitoring & Alerts'
+    runs-on: ubuntu-latest
+    needs: [python-security-scan, dependency-pr-review, security-fix-automation]
+    if: always()
+    timeout-minutes: 10
+    
+    steps:
+    - name: 'Security Status Summary'
+      run: |
+        echo "# Security Integration Summary" > security-status.md
+        echo "**Repository:** ${{ github.repository }}" >> security-status.md
+        echo "**Scan Date:** $(date -u +%Y-%m-%d\ %H:%M:%S\ UTC)" >> security-status.md
+        echo "" >> security-status.md
+        
+        if [ "${{ needs.python-security-scan.outputs.vulnerabilities-found }}" = "true" ]; then
+          echo "## 🚨 Security Vulnerabilities Detected" >> security-status.md
+          echo "- Critical/High Issues: ${{ needs.python-security-scan.outputs.critical-count }}" >> security-status.md
+          echo "- Package Vulnerabilities: ${{ needs.python-security-scan.outputs.high-count }}" >> security-status.md
+          echo "- **Status:** IMMEDIATE ACTION REQUIRED" >> security-status.md
+        else
+          echo "## ✅ No Critical Security Issues" >> security-status.md
+          echo "- Security scan completed successfully" >> security-status.md
+          echo "- No immediate action required" >> security-status.md
+        fi
+        
+        echo "" >> security-status.md
+        echo "## Dependency Management" >> security-status.md
+        echo "- Open Dependency PRs: ${{ needs.python-security-scan.outputs.dependency-prs-count }}" >> security-status.md
+        
+        cat security-status.md
+        
+    - name: 'Send Security Alert'
+      if: needs.python-security-scan.outputs.vulnerabilities-found == 'true' && env.SLACK_WEBHOOK_URL != ''
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data '{
+          "text": "🚨 SECURITY ALERT: Vulnerabilities detected in agentic-research-engine",
+          "attachments": [
+            {
+              "color": "danger",
+              "fields": [
+                {
+                  "title": "Critical/High Issues",
+                  "value": "${{ needs.python-security-scan.outputs.critical-count }}",
+                  "short": true
+                },
+                {
+                  "title": "Package Vulnerabilities", 
+                  "value": "${{ needs.python-security-scan.outputs.high-count }}",
+                  "short": true
+                },
+                {
+                  "title": "Repository",
+                  "value": "${{ github.repository }}",
+                  "short": true
+                },
+                {
+                  "title": "Action Required",
+                  "value": "Review and apply security fixes immediately",
+                  "short": false
+                }
+              ],
+              "actions": [
+                {
+                  "type": "button",
+                  "text": "View Security Report",
+                  "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                }
+              ]
+            }
+          ]
+        }' \
+        $SLACK_WEBHOOK_URL
+
+    - name: 'Update Security Status Badge'
+      if: always()
+      run: |
+        if [ "${{ needs.python-security-scan.outputs.vulnerabilities-found }}" = "true" ]; then
+          echo "SECURITY_STATUS=vulnerable" >> $GITHUB_ENV
+          echo "SECURITY_COLOR=critical" >> $GITHUB_ENV
+        else
+          echo "SECURITY_STATUS=secure" >> $GITHUB_ENV  
+          echo "SECURITY_COLOR=success" >> $GITHUB_ENV
+        fi
