@@ -1,0 +1,800 @@
+# Advanced SLI/SLO Monitoring Stack
+# Classification: CRITICAL - OBSERVABILITY
+# Comprehensive monitoring with Service Level Indicators and Objectives
+# Last Updated: 2025-08-08
+
+# SLO Configuration ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-configuration
+  namespace: orchestrix-pilot
+  labels:
+    component: slo-monitoring
+data:
+  slo-config.yaml: |
+    slos:
+      episodic-memory-availability:
+        name: "Episodic Memory Service Availability"
+        service: "episodic-memory"
+        target: 99.9
+        time_window: "30d"
+        error_budget_policy: "burn_rate"
+        sli:
+          type: "availability"
+          query: |
+            sum(rate(http_requests_total{job="episodic-memory",status!~"5.."}[5m])) /
+            sum(rate(http_requests_total{job="episodic-memory"}[5m]))
+        alerting:
+          burn_rate_thresholds:
+            - window: "1h"
+              threshold: 14.4  # 2% budget in 1 hour
+              severity: "critical"
+            - window: "6h"
+              threshold: 6.0   # 10% budget in 6 hours
+              severity: "warning"
+            - window: "24h"
+              threshold: 3.0   # 30% budget in 24 hours
+              severity: "warning"
+      
+      episodic-memory-latency:
+        name: "Episodic Memory Service Latency"
+        service: "episodic-memory"
+        target: 95
+        time_window: "30d"
+        sli:
+          type: "latency"
+          threshold: "1.0"  # 1 second threshold
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{job="episodic-memory"}[5m])) by (le)
+            )
+        alerting:
+          burn_rate_thresholds:
+            - window: "1h"
+              threshold: 14.4
+              severity: "critical"
+            - window: "6h"
+              threshold: 6.0
+              severity: "warning"
+      
+      reputation-service-availability:
+        name: "Reputation Service Availability"
+        service: "reputation-service"
+        target: 99.9
+        time_window: "30d"
+        sli:
+          type: "availability"
+          query: |
+            sum(rate(http_requests_total{job="reputation-service",status!~"5.."}[5m])) /
+            sum(rate(http_requests_total{job="reputation-service"}[5m]))
+        alerting:
+          burn_rate_thresholds:
+            - window: "1h"
+              threshold: 14.4
+              severity: "critical"
+            - window: "6h"
+              threshold: 6.0
+              severity: "warning"
+      
+      system-performance:
+        name: "System Performance SLO"
+        target: 99.5
+        time_window: "30d"
+        sli:
+          type: "performance"
+          query: |
+            (
+              sum(rate(http_request_duration_seconds_bucket{le="2.0"}[5m])) /
+              sum(rate(http_request_duration_seconds_count[5m]))
+            ) * 100
+        alerting:
+          burn_rate_thresholds:
+            - window: "1h"
+              threshold: 10.0
+              severity: "critical"
+---
+# SLO Monitoring Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slo-monitor
+  namespace: orchestrix-pilot
+  labels:
+    app: slo-monitor
+    component: observability
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: slo-monitor
+  template:
+    metadata:
+      labels:
+        app: slo-monitor
+        component: observability
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: slo-monitor
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: slo-monitor
+        image: agentic/slo-monitor:v1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"
+        - name: ALERTMANAGER_URL
+          value: "http://alertmanager:9093"
+        - name: GRAFANA_URL
+          value: "http://grafana:3000"
+        - name: GRAFANA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secrets
+              key: api-key
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: SLO_CONFIG_PATH
+          value: "/etc/config/slo-config.yaml"
+        - name: UPDATE_INTERVAL
+          value: "60s"
+        - name: ERROR_BUDGET_ALERT_THRESHOLD
+          value: "0.8"  # Alert when 80% of error budget consumed
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        configMap:
+          name: slo-configuration
+      - name: tmp
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - slo-monitor
+              topologyKey: kubernetes.io/hostname
+---
+# SLO Monitor Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: slo-monitor
+  namespace: orchestrix-pilot
+  labels:
+    app: slo-monitor
+    component: observability
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: slo-monitor
+---
+# Enhanced Prometheus Configuration for SLO Monitoring
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-slo-config
+  namespace: orchestrix-pilot
+  labels:
+    component: prometheus-slo
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'orchestrix-pilot'
+        environment: 'pilot'
+    
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+    
+    scrape_configs:
+    - job_name: 'prometheus'
+      static_configs:
+      - targets: ['localhost:9090']
+    
+    - job_name: 'episodic-memory'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - orchestrix-pilot
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: episodic-memory
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_version]
+        action: replace
+        target_label: version
+      - source_labels: [__meta_kubernetes_pod_label_color]
+        action: replace
+        target_label: deployment_color
+    
+    - job_name: 'reputation-service'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - orchestrix-pilot
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: reputation-service
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+    
+    - job_name: 'slo-monitor'
+      static_configs:
+      - targets: ['slo-monitor:8080']
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    - job_name: 'istio-mesh'
+      kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+          - istio-system
+          - orchestrix-pilot
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: istio-proxy;http-monitoring
+    
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager:9093
+  
+  slo_rules.yml: |
+    groups:
+    - name: slo.rules
+      interval: 30s
+      rules:
+      # Episodic Memory SLI Rules
+      - record: sli:http_requests:rate5m
+        expr: sum(rate(http_requests_total[5m])) by (job, instance, method, status)
+      
+      - record: sli:http_request_duration:p95_5m
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, instance, le))
+      
+      - record: sli:http_request_duration:p99_5m
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, instance, le))
+      
+      # Availability SLI
+      - record: sli:episodic_memory:availability:rate5m
+        expr: |
+          sum(rate(http_requests_total{job="episodic-memory",status!~"5.."}[5m])) /
+          sum(rate(http_requests_total{job="episodic-memory"}[5m]))
+      
+      - record: sli:episodic_memory:availability:rate1h
+        expr: |
+          sum(rate(http_requests_total{job="episodic-memory",status!~"5.."}[1h])) /
+          sum(rate(http_requests_total{job="episodic-memory"}[1h]))
+      
+      - record: sli:episodic_memory:availability:rate1d
+        expr: |
+          sum(rate(http_requests_total{job="episodic-memory",status!~"5.."}[1d])) /
+          sum(rate(http_requests_total{job="episodic-memory"}[1d]))
+      
+      # Latency SLI
+      - record: sli:episodic_memory:latency:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="episodic-memory"}[5m])) by (le)
+          )
+      
+      - record: sli:episodic_memory:latency:p95_1h
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="episodic-memory"}[1h])) by (le)
+          )
+      
+      # Error Budget Calculations
+      - record: slo:episodic_memory:availability:error_budget
+        expr: |
+          1 - (
+            (1 - sli:episodic_memory:availability:rate1d) / (1 - 0.999)
+          )
+      
+      - record: slo:episodic_memory:latency:error_budget
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{job="episodic-memory",le="1.0"}[1d])) /
+            sum(rate(http_request_duration_seconds_count{job="episodic-memory"}[1d]))
+          ) / 0.95
+      
+      # Burn Rate Calculations
+      - record: slo:episodic_memory:availability:burn_rate_1h
+        expr: |
+          (1 - sli:episodic_memory:availability:rate1h) / (1 - 0.999)
+      
+      - record: slo:episodic_memory:availability:burn_rate_6h
+        expr: |
+          (1 - sli:episodic_memory:availability:rate5m) / (1 - 0.999)
+  
+  slo_alerts.yml: |
+    groups:
+    - name: slo.alerts
+      rules:
+      # High Burn Rate Alerts
+      - alert: HighErrorBudgetBurnRate
+        expr: slo:episodic_memory:availability:burn_rate_1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          service: episodic-memory
+          slo_type: availability
+        annotations:
+          summary: "High error budget burn rate detected"
+          description: "Error budget for {{ $labels.service }} availability SLO is burning at {{ $value }}x rate"
+          runbook_url: "https://runbooks.orchestrix.ai/slo/high-burn-rate"
+      
+      - alert: MediumErrorBudgetBurnRate
+        expr: slo:episodic_memory:availability:burn_rate_6h > 6.0
+        for: 15m
+        labels:
+          severity: warning
+          service: episodic-memory
+          slo_type: availability
+        annotations:
+          summary: "Medium error budget burn rate detected"
+          description: "Error budget for {{ $labels.service }} availability SLO is burning at {{ $value }}x rate"
+      
+      # SLO Violation Alerts
+      - alert: SLOViolationAvailability
+        expr: sli:episodic_memory:availability:rate1h < 0.999
+        for: 5m
+        labels:
+          severity: critical
+          service: episodic-memory
+          slo_type: availability
+        annotations:
+          summary: "SLO violation: Availability below threshold"
+          description: "{{ $labels.service }} availability is {{ $value | humanizePercentage }}, below 99.9% SLO"
+          runbook_url: "https://runbooks.orchestrix.ai/slo/availability-violation"
+      
+      - alert: SLOViolationLatency
+        expr: sli:episodic_memory:latency:p95_5m > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: episodic-memory
+          slo_type: latency
+        annotations:
+          summary: "SLO violation: Latency above threshold"
+          description: "{{ $labels.service }} P95 latency is {{ $value }}s, above 1.0s SLO"
+          runbook_url: "https://runbooks.orchestrix.ai/slo/latency-violation"
+      
+      # Error Budget Exhaustion Alerts
+      - alert: ErrorBudgetExhaustion
+        expr: slo:episodic_memory:availability:error_budget < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: episodic-memory
+          slo_type: availability
+        annotations:
+          summary: "Error budget nearly exhausted"
+          description: "{{ $labels.service }} has only {{ $value | humanizePercentage }} error budget remaining"
+          runbook_url: "https://runbooks.orchestrix.ai/slo/error-budget-exhaustion"
+      
+      # Multi-window, Multi-burn-rate Alerts
+      - alert: ErrorBudgetBurnRateHigh
+        expr: |
+          (
+            slo:episodic_memory:availability:burn_rate_1h > 14.4
+            and
+            slo:episodic_memory:availability:burn_rate_6h > 6.0
+          )
+        for: 2m
+        labels:
+          severity: critical
+          service: episodic-memory
+          alert_type: multiwindow
+        annotations:
+          summary: "Multiple window burn rate threshold exceeded"
+          description: "Both short (1h) and long (6h) burn rates are elevated"
+---
+# Enhanced AlertManager Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-slo-config
+  namespace: orchestrix-pilot
+  labels:
+    component: alertmanager-slo
+data:
+  alertmanager.yml: |
+    global:
+      smtp_smarthost: 'localhost:587'
+      smtp_from: 'alerts@orchestrix.ai'
+      slack_api_url_file: '/etc/secrets/slack-webhook-url'
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+    
+    route:
+      group_by: ['alertname', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: 'default'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+        group_wait: 10s
+        group_interval: 1m
+        repeat_interval: 5m
+      - match:
+          alert_type: slo
+        receiver: 'slo-alerts'
+        group_by: ['slo_type', 'service']
+        group_wait: 1m
+        group_interval: 5m
+      - match:
+          alert_type: multiwindow
+        receiver: 'multiwindow-alerts'
+        group_wait: 30s
+        group_interval: 2m
+    
+    receivers:
+    - name: 'default'
+      slack_configs:
+      - channel: '#alerts-pilot'
+        title: 'Orchestrix Pilot Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+    
+    - name: 'critical-alerts'
+      pagerduty_configs:
+      - routing_key_file: '/etc/secrets/pagerduty-key'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        severity: 'critical'
+        class: 'infrastructure'
+        component: '{{ .GroupLabels.service }}'
+        group: 'orchestrix-pilot'
+      slack_configs:
+      - channel: '#alerts-critical'
+        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.description }}'
+        send_resolved: true
+        color: 'danger'
+    
+    - name: 'slo-alerts'
+      slack_configs:
+      - channel: '#slo-alerts'
+        title: 'SLO Alert: {{ .GroupLabels.slo_type }} - {{ .GroupLabels.service }}'
+        text: |
+          {{ range .Alerts }}
+          *Service*: {{ .Labels.service }}
+          *SLO Type*: {{ .Labels.slo_type }}
+          *Description*: {{ .Annotations.description }}
+          *Runbook*: {{ .Annotations.runbook_url }}
+          {{ end }}
+        send_resolved: true
+        color: 'warning'
+    
+    - name: 'multiwindow-alerts'
+      pagerduty_configs:
+      - routing_key_file: '/etc/secrets/pagerduty-key'
+        description: 'Multi-window SLO burn rate alert for {{ .GroupLabels.service }}'
+        severity: 'critical'
+        class: 'slo'
+      slack_configs:
+      - channel: '#slo-alerts'
+        title: 'URGENT: Multi-window Burn Rate Alert'
+        text: '{{ .CommonAnnotations.description }}'
+        send_resolved: true
+        color: 'danger'
+    
+    inhibit_rules:
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'service']
+---
+# Service Account for SLO Monitor
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: slo-monitor
+  namespace: orchestrix-pilot
+  labels:
+    component: slo-monitor
+---
+# ClusterRole for SLO Monitor
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: slo-monitor
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "podmonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- nonResourceURLs: ["/metrics", "/api/v1/query", "/api/v1/query_range"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for SLO Monitor
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: slo-monitor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: slo-monitor
+subjects:
+- kind: ServiceAccount
+  name: slo-monitor
+  namespace: orchestrix-pilot
+---
+# SLO Dashboard ConfigMap for Grafana
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-dashboards
+  namespace: orchestrix-pilot
+  labels:
+    grafana_dashboard: "1"
+    component: slo-monitoring
+data:
+  slo-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "SLO Overview - Orchestrix Pilot",
+        "tags": ["slo", "pilot", "overview"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Service Availability SLOs",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sli:episodic_memory:availability:rate1d",
+                "legendFormat": "Episodic Memory"
+              },
+              {
+                "expr": "sli:reputation_service:availability:rate1d",
+                "legendFormat": "Reputation Service"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit",
+                "min": 0.99,
+                "max": 1.0,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0.99},
+                    {"color": "yellow", "value": 0.995},
+                    {"color": "green", "value": 0.999}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Error Budget Remaining",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "slo:episodic_memory:availability:error_budget",
+                "legendFormat": "Availability"
+              },
+              {
+                "expr": "slo:episodic_memory:latency:error_budget",
+                "legendFormat": "Latency"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit",
+                "min": 0,
+                "max": 1.0,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0.0},
+                    {"color": "yellow", "value": 0.2},
+                    {"color": "green", "value": 0.5}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Burn Rate Trends",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "slo:episodic_memory:availability:burn_rate_1h",
+                "legendFormat": "1h Burn Rate"
+              },
+              {
+                "expr": "slo:episodic_memory:availability:burn_rate_6h",
+                "legendFormat": "6h Burn Rate"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "none",
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+          }
+        ],
+        "time": {"from": "now-24h", "to": "now"},
+        "refresh": "30s"
+      }
+    }
+---
+# ServiceMonitor for SLO Metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: slo-monitor-metrics
+  namespace: orchestrix-pilot
+  labels:
+    app: slo-monitor
+    monitoring: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: slo-monitor
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 15s
+---
+# PrometheusRule for SLO Recording Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-recording-rules
+  namespace: orchestrix-pilot
+  labels:
+    prometheus: orchestrix-pilot
+    role: slo-rules
+spec:
+  groups:
+  - name: slo.rules
+    interval: 30s
+    rules:
+    - record: sli:http_requests:rate5m
+      expr: sum(rate(http_requests_total[5m])) by (job, instance, method, status)
+    - record: sli:episodic_memory:availability:rate5m
+      expr: |
+        sum(rate(http_requests_total{job="episodic-memory",status!~"5.."}[5m])) /
+        sum(rate(http_requests_total{job="episodic-memory"}[5m]))
+    - record: slo:episodic_memory:availability:error_budget
+      expr: |
+        1 - (
+          (1 - sli:episodic_memory:availability:rate1d) / (1 - 0.999)
+        )
+---
+# HorizontalPodAutoscaler for SLO Monitor
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: slo-monitor-hpa
+  namespace: orchestrix-pilot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: slo-monitor
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -60,7 +60,7 @@ def test_review_server_endpoints():
     asyncio.run(engine.run_async(GraphState(), thread_id="t2"))
     server, endpoint = _start_server(engine, queue)
 
-    resp = requests.get(f"{endpoint}/tasks")
+    resp = requests.get(f"{endpoint}/tasks", timeout=30)
     assert resp.status_code == 200
     assert "t2" in resp.json()
 

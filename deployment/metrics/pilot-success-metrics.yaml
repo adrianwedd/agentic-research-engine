@@ -1,0 +1,899 @@
+# Phase 2 Pilot Success Metrics and Evaluation Framework
+# Classification: CRITICAL - SUCCESS MEASUREMENT
+# Comprehensive metrics and KPIs for pilot evaluation and production readiness
+# Last Updated: 2025-08-08
+
+# Pilot Metrics Collection System
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pilot-metrics-collector
+  namespace: orchestrix-pilot
+  labels:
+    app: pilot-metrics-collector
+    component: metrics
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: pilot-metrics-collector
+  template:
+    metadata:
+      labels:
+        app: pilot-metrics-collector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: pilot-metrics-collector
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: collector
+        image: agentic/pilot-metrics-collector:v1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"
+        - name: GRAFANA_URL
+          value: "http://grafana:3000"
+        - name: GRAFANA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secrets
+              key: api-key
+        - name: COLLECTION_INTERVAL
+          value: "60s"
+        - name: EVALUATION_INTERVAL
+          value: "300s"
+        - name: PILOT_START_TIME
+          value: "2025-08-08T00:00:00Z"
+        - name: PILOT_DURATION
+          value: "720h"  # 30 days
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: METRICS_RETENTION
+          value: "90d"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        - name: data
+          mountPath: /var/lib/metrics
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        configMap:
+          name: pilot-success-metrics-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: pilot-metrics-data
+      - name: tmp
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - pilot-metrics-collector
+              topologyKey: kubernetes.io/hostname
+---
+# Pilot Metrics Data Storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pilot-metrics-data
+  namespace: orchestrix-pilot
+  labels:
+    app: pilot-metrics-collector
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 20Gi
+---
+# Service Account for Metrics Collector
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pilot-metrics-collector
+  namespace: orchestrix-pilot
+---
+# ClusterRole for Metrics Collector
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pilot-metrics-collector
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics", "/api/v1/query", "/api/v1/query_range"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for Metrics Collector
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pilot-metrics-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pilot-metrics-collector
+subjects:
+- kind: ServiceAccount
+  name: pilot-metrics-collector
+  namespace: orchestrix-pilot
+---
+# Pilot Success Metrics Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pilot-success-metrics-config
+  namespace: orchestrix-pilot
+  labels:
+    component: pilot-metrics
+data:
+  success-criteria.yaml: |
+    pilot_success_criteria:
+      technical_metrics:
+        availability:
+          target: 99.9
+          minimum_acceptable: 99.5
+          measurement_period: "30d"
+          weight: 25
+          query: |
+            sum(rate(http_requests_total{status!~"5.."}[30d])) / 
+            sum(rate(http_requests_total[30d])) * 100
+        
+        performance:
+          latency_p95:
+            target: 1000  # milliseconds
+            minimum_acceptable: 2000
+            measurement_period: "30d"
+            weight: 20
+            query: |
+              histogram_quantile(0.95, 
+                sum(rate(http_request_duration_seconds_bucket[30d])) by (le)
+              ) * 1000
+          
+          latency_p99:
+            target: 2000  # milliseconds
+            minimum_acceptable: 5000
+            measurement_period: "30d"
+            weight: 10
+            query: |
+              histogram_quantile(0.99, 
+                sum(rate(http_request_duration_seconds_bucket[30d])) by (le)
+              ) * 1000
+        
+        reliability:
+          error_rate:
+            target: 0.1  # percentage
+            minimum_acceptable: 1.0
+            measurement_period: "30d"
+            weight: 15
+            query: |
+              sum(rate(http_requests_total{status=~"5.."}[30d])) / 
+              sum(rate(http_requests_total[30d])) * 100
+          
+          mttr:
+            target: 900  # seconds (15 minutes)
+            minimum_acceptable: 1800  # 30 minutes
+            measurement_period: "30d"
+            weight: 10
+            query: |
+              avg(time() - incident_start_timestamp{resolved="true"})
+        
+        scalability:
+          throughput:
+            target: 1000  # requests per second
+            minimum_acceptable: 500
+            measurement_period: "30d"
+            weight: 10
+            query: |
+              sum(rate(http_requests_total[5m]))
+          
+          resource_utilization:
+            cpu:
+              target: 70  # percentage
+              minimum_acceptable: 85
+              weight: 5
+              query: |
+                avg(rate(container_cpu_usage_seconds_total[5m])) * 100
+            
+            memory:
+              target: 75  # percentage
+              minimum_acceptable: 90
+              weight: 5
+              query: |
+                avg(container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100
+      
+      business_metrics:
+        user_adoption:
+          active_users:
+            target: 95  # percentage of invited users
+            minimum_acceptable: 80
+            measurement_period: "30d"
+            weight: 15
+            source: "user_analytics"
+          
+          feature_usage:
+            target: 85  # percentage of features used
+            minimum_acceptable: 70
+            measurement_period: "30d"
+            weight: 10
+            source: "feature_analytics"
+        
+        user_satisfaction:
+          nps_score:
+            target: 50
+            minimum_acceptable: 30
+            measurement_period: "30d"
+            weight: 15
+            source: "user_surveys"
+          
+          support_tickets:
+            target: 5  # tickets per week
+            minimum_acceptable: 15
+            measurement_period: "30d"
+            weight: 10
+            source: "support_system"
+        
+        operational_metrics:
+          deployment_success_rate:
+            target: 98  # percentage
+            minimum_acceptable: 95
+            measurement_period: "30d"
+            weight: 5
+            query: |
+              sum(deployment_success_total) / 
+              sum(deployment_total) * 100
+          
+          change_failure_rate:
+            target: 5  # percentage
+            minimum_acceptable: 10
+            measurement_period: "30d"
+            weight: 5
+            query: |
+              sum(deployment_failure_total) / 
+              sum(deployment_total) * 100
+      
+      security_metrics:
+        vulnerability_score:
+          target: 0  # critical vulnerabilities
+          minimum_acceptable: 2
+          measurement_period: "30d"
+          weight: 10
+          query: |
+            sum(vulnerability_count{severity="CRITICAL"})
+        
+        security_incidents:
+          target: 0
+          minimum_acceptable: 1
+          measurement_period: "30d"
+          weight: 15
+          query: |
+            sum(increase(security_incident_total[30d]))
+        
+        compliance_score:
+          target: 95  # percentage
+          minimum_acceptable: 85
+          measurement_period: "30d"
+          weight: 10
+          query: |
+            avg(compliance_score_percentage)
+      
+      cost_metrics:
+        infrastructure_cost:
+          target: 1500  # USD per month
+          minimum_acceptable: 2000
+          measurement_period: "30d"
+          weight: 5
+          source: "aws_cost_explorer"
+        
+        cost_per_user:
+          target: 15  # USD per active user per month
+          minimum_acceptable: 25
+          measurement_period: "30d"
+          weight: 5
+          calculation: "infrastructure_cost / active_users"
+  
+  evaluation-thresholds.yaml: |
+    evaluation_thresholds:
+      go_decision:
+        overall_score:
+          minimum: 85  # percentage
+          description: "Weighted average of all success criteria"
+        
+        critical_metrics:
+          - name: "availability"
+            minimum: 99.5
+            blocking: true
+            description: "System availability must exceed 99.5%"
+          
+          - name: "security_incidents"
+            maximum: 0
+            blocking: true
+            description: "Zero security incidents allowed"
+          
+          - name: "data_loss_incidents"
+            maximum: 0
+            blocking: true
+            description: "Zero data loss incidents allowed"
+        
+        must_pass_categories:
+          - "technical_metrics"
+          - "security_metrics"
+          - "user_satisfaction"
+        
+        minimum_category_scores:
+          technical_metrics: 80
+          business_metrics: 75
+          security_metrics: 90
+          cost_metrics: 70
+      
+      no_go_decision:
+        blocking_conditions:
+          - "availability < 99.0%"
+          - "security_incidents > 1"
+          - "data_loss_incidents > 0"
+          - "critical_vulnerabilities > 5"
+          - "user_satisfaction_nps < 20"
+          - "support_tickets > 25 per week"
+        
+        automatic_triggers:
+          - "system_down_for > 1 hour"
+          - "data_corruption_detected"
+          - "security_breach_confirmed"
+          - "regulatory_violation"
+      
+      extended_pilot_conditions:
+        reasons:
+          - "overall_score between 75-85%"
+          - "single_category_score < 70%"
+          - "user_feedback_requires_iteration"
+          - "performance_needs_optimization"
+        
+        extension_duration: "30d"
+        maximum_extensions: 2
+  
+  kpi-dashboard.yaml: |
+    kpi_dashboards:
+      executive_summary:
+        title: "Pilot Executive Summary"
+        panels:
+          - title: "Overall Success Score"
+            type: "gauge"
+            target_value: 85
+            current_query: "pilot_overall_success_score"
+          
+          - title: "Critical Metrics Status"
+            type: "status_grid"
+            metrics:
+              - "availability"
+              - "security_incidents" 
+              - "user_satisfaction"
+              - "cost_efficiency"
+          
+          - title: "User Adoption Trend"
+            type: "timeseries"
+            query: "pilot_active_users_count"
+            timerange: "30d"
+          
+          - title: "Key Performance Indicators"
+            type: "table"
+            columns: ["Metric", "Target", "Current", "Status", "Trend"]
+      
+      technical_deep_dive:
+        title: "Technical Performance Analysis"
+        panels:
+          - title: "Service Availability"
+            type: "stat"
+            query: "pilot_availability_percentage"
+            thresholds: [99.0, 99.5, 99.9]
+          
+          - title: "Response Time Distribution"
+            type: "heatmap"
+            query: "pilot_response_time_histogram"
+          
+          - title: "Error Rate Trends"
+            type: "timeseries"
+            query: "pilot_error_rate_percentage"
+            alert_threshold: 1.0
+          
+          - title: "Resource Utilization"
+            type: "timeseries"
+            queries:
+              - "pilot_cpu_utilization"
+              - "pilot_memory_utilization"
+              - "pilot_storage_utilization"
+      
+      business_impact:
+        title: "Business Impact Metrics"
+        panels:
+          - title: "User Satisfaction Score"
+            type: "gauge"
+            query: "pilot_nps_score"
+            target: 50
+          
+          - title: "Feature Adoption Matrix"
+            type: "heatmap"
+            query: "pilot_feature_usage_by_user"
+          
+          - title: "Support Ticket Volume"
+            type: "timeseries"
+            query: "pilot_support_tickets_count"
+            alert_threshold: 15
+          
+          - title: "Cost Analysis"
+            type: "stat"
+            queries:
+              - "pilot_infrastructure_cost"
+              - "pilot_cost_per_user"
+              - "pilot_roi_calculation"
+---
+# Pilot Evaluation CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pilot-evaluation
+  namespace: orchestrix-pilot
+  labels:
+    app: pilot-evaluation
+    component: metrics
+spec:
+  schedule: "0 8 * * 1"  # Weekly on Monday at 8 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: pilot-evaluation
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: pilot-metrics-collector
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          containers:
+          - name: evaluator
+            image: agentic/pilot-evaluator:v1.0.0
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              echo "Starting pilot evaluation..."
+              
+              EVALUATION_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+              REPORT_FILE="/tmp/pilot-evaluation-$(date +%Y%m%d).json"
+              
+              # Initialize evaluation report
+              cat > ${REPORT_FILE} <<EOF
+              {
+                "evaluation_date": "${EVALUATION_DATE}",
+                "pilot_duration_days": $(( ($(date +%s) - $(date -d "2025-08-08" +%s)) / 86400 )),
+                "metrics": {},
+                "recommendations": [],
+                "decision": "pending"
+              }
+              EOF
+              
+              # Evaluate technical metrics
+              echo "Evaluating technical metrics..."
+              
+              # Availability
+              AVAILABILITY=$(curl -s "http://prometheus:9090/api/v1/query?query=sum(rate(http_requests_total{status!~\"5..\"}[7d])) / sum(rate(http_requests_total[7d])) * 100" | jq -r '.data.result[0].value[1] // "0"')
+              
+              # Latency P95
+              LATENCY_P95=$(curl -s "http://prometheus:9090/api/v1/query?query=histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[7d])) by (le)) * 1000" | jq -r '.data.result[0].value[1] // "0"')
+              
+              # Error Rate
+              ERROR_RATE=$(curl -s "http://prometheus:9090/api/v1/query?query=sum(rate(http_requests_total{status=~\"5..\"}[7d])) / sum(rate(http_requests_total[7d])) * 100" | jq -r '.data.result[0].value[1] // "0"')
+              
+              # Security Incidents
+              SECURITY_INCIDENTS=$(curl -s "http://prometheus:9090/api/v1/query?query=sum(increase(security_incident_total[7d]))" | jq -r '.data.result[0].value[1] // "0"')
+              
+              # Calculate weighted score
+              TECHNICAL_SCORE=$(python3 -c "
+              availability = float('${AVAILABILITY}' or 0)
+              latency_p95 = float('${LATENCY_P95}' or 0)
+              error_rate = float('${ERROR_RATE}' or 0)
+              security_incidents = float('${SECURITY_INCIDENTS}' or 0)
+              
+              # Scoring logic
+              avail_score = 100 if availability >= 99.9 else (80 if availability >= 99.5 else 0)
+              latency_score = 100 if latency_p95 <= 1000 else (50 if latency_p95 <= 2000 else 0)
+              error_score = 100 if error_rate <= 0.1 else (50 if error_rate <= 1.0 else 0)
+              security_score = 100 if security_incidents == 0 else 0
+              
+              technical_score = (avail_score * 0.4 + latency_score * 0.3 + error_score * 0.2 + security_score * 0.1)
+              print(technical_score)
+              ")
+              
+              # Update report with metrics
+              jq --arg availability "${AVAILABILITY}" \
+                 --arg latency_p95 "${LATENCY_P95}" \
+                 --arg error_rate "${ERROR_RATE}" \
+                 --arg security_incidents "${SECURITY_INCIDENTS}" \
+                 --arg technical_score "${TECHNICAL_SCORE}" \
+                 '.metrics = {
+                   "availability_percent": ($availability | tonumber),
+                   "latency_p95_ms": ($latency_p95 | tonumber),
+                   "error_rate_percent": ($error_rate | tonumber),
+                   "security_incidents": ($security_incidents | tonumber),
+                   "technical_score": ($technical_score | tonumber)
+                 }' ${REPORT_FILE} > ${REPORT_FILE}.tmp && mv ${REPORT_FILE}.tmp ${REPORT_FILE}
+              
+              # Make go/no-go decision
+              if (( $(echo "${TECHNICAL_SCORE} >= 85" | bc -l) )) && 
+                 (( $(echo "${AVAILABILITY} >= 99.5" | bc -l) )) && 
+                 (( $(echo "${SECURITY_INCIDENTS} == 0" | bc -l) )); then
+                DECISION="GO"
+                RECOMMENDATION="Pilot meets all success criteria. Recommend proceeding to production deployment."
+              elif (( $(echo "${TECHNICAL_SCORE} >= 75" | bc -l) )); then
+                DECISION="EXTEND"
+                RECOMMENDATION="Pilot shows promise but needs improvement. Recommend extended pilot period."
+              else
+                DECISION="NO_GO"
+                RECOMMENDATION="Pilot does not meet minimum success criteria. Recommend returning to development."
+              fi
+              
+              # Update decision
+              jq --arg decision "${DECISION}" \
+                 --arg recommendation "${RECOMMENDATION}" \
+                 '.decision = $decision | .recommendations = [$recommendation]' \
+                 ${REPORT_FILE} > ${REPORT_FILE}.tmp && mv ${REPORT_FILE}.tmp ${REPORT_FILE}
+              
+              echo "Evaluation completed with decision: ${DECISION}"
+              echo "Technical score: ${TECHNICAL_SCORE}/100"
+              echo "Availability: ${AVAILABILITY}%"
+              echo "Latency P95: ${LATENCY_P95}ms"
+              echo "Error rate: ${ERROR_RATE}%"
+              echo "Security incidents: ${SECURITY_INCIDENTS}"
+              
+              # Upload report
+              aws s3 cp ${REPORT_FILE} s3://orchestrix-pilot-reports/evaluations/
+              
+              # Send notification
+              if [ "${DECISION}" = "GO" ]; then
+                ALERT_SEVERITY="info"
+                ALERT_COLOR="good"
+              elif [ "${DECISION}" = "EXTEND" ]; then
+                ALERT_SEVERITY="warning"
+                ALERT_COLOR="warning"
+              else
+                ALERT_SEVERITY="critical"
+                ALERT_COLOR="danger"
+              fi
+              
+              curl -X POST "${SLACK_WEBHOOK_URL}" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"text\": \"Pilot Evaluation Completed\",
+                  \"attachments\": [{
+                    \"color\": \"${ALERT_COLOR}\",
+                    \"fields\": [
+                      {\"title\": \"Decision\", \"value\": \"${DECISION}\", \"short\": true},
+                      {\"title\": \"Technical Score\", \"value\": \"${TECHNICAL_SCORE}/100\", \"short\": true},
+                      {\"title\": \"Availability\", \"value\": \"${AVAILABILITY}%\", \"short\": true},
+                      {\"title\": \"Latency P95\", \"value\": \"${LATENCY_P95}ms\", \"short\": true}
+                    ],
+                    \"text\": \"${RECOMMENDATION}\"
+                  }]
+                }"
+            env:
+            - name: AWS_DEFAULT_REGION
+              value: "us-west-2"
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: notification-secrets
+                  key: slack-webhook-url
+            resources:
+              requests:
+                cpu: 200m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+            volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          volumes:
+          - name: tmp
+            emptyDir: {}
+---
+# Service for Pilot Metrics Collector
+apiVersion: v1
+kind: Service
+metadata:
+  name: pilot-metrics-collector
+  namespace: orchestrix-pilot
+  labels:
+    app: pilot-metrics-collector
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: pilot-metrics-collector
+---
+# ServiceMonitor for Pilot Metrics
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pilot-metrics
+  namespace: orchestrix-pilot
+  labels:
+    app: pilot-metrics
+    monitoring: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: pilot-metrics-collector
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 15s
+---
+# PrometheusRule for Pilot Metrics
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pilot-success-metrics
+  namespace: orchestrix-pilot
+  labels:
+    prometheus: orchestrix-pilot
+    role: pilot-metrics
+spec:
+  groups:
+  - name: pilot.success.rules
+    interval: 60s
+    rules:
+    - record: pilot:availability:7d
+      expr: |
+        sum(rate(http_requests_total{status!~"5.."}[7d])) / 
+        sum(rate(http_requests_total[7d])) * 100
+    
+    - record: pilot:latency_p95:7d
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(http_request_duration_seconds_bucket[7d])) by (le)
+        ) * 1000
+    
+    - record: pilot:error_rate:7d
+      expr: |
+        sum(rate(http_requests_total{status=~"5.."}[7d])) / 
+        sum(rate(http_requests_total[7d])) * 100
+    
+    - record: pilot:throughput:5m
+      expr: |
+        sum(rate(http_requests_total[5m]))
+    
+    - record: pilot:cpu_utilization:5m
+      expr: |
+        avg(rate(container_cpu_usage_seconds_total[5m])) * 100
+    
+    - record: pilot:memory_utilization:5m
+      expr: |
+        avg(container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100
+---
+# Pilot Success Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pilot-success-dashboard
+  namespace: orchestrix-pilot
+  labels:
+    grafana_dashboard: "1"
+data:
+  pilot-success-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Pilot Success Metrics Dashboard",
+        "tags": ["pilot", "success-metrics", "evaluation"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Overall Success Score",
+            "type": "gauge",
+            "targets": [
+              {
+                "expr": "pilot_overall_success_score",
+                "legendFormat": "Success Score"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "min": 0,
+                "max": 100,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 75},
+                    {"color": "green", "value": 85}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 9, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Key Success Metrics",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "pilot:availability:7d",
+                "legendFormat": "Availability"
+              },
+              {
+                "expr": "pilot:latency_p95:7d",
+                "legendFormat": "Latency P95 (ms)"
+              },
+              {
+                "expr": "pilot:error_rate:7d",
+                "legendFormat": "Error Rate"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": 0},
+                    {"color": "yellow", "value": 80},
+                    {"color": "red", "value": 90}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 9, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Performance Trends",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "pilot:availability:7d",
+                "legendFormat": "Availability %"
+              },
+              {
+                "expr": "pilot:latency_p95:7d / 10",
+                "legendFormat": "Latency P95 (ms/10)"
+              },
+              {
+                "expr": "pilot:error_rate:7d",
+                "legendFormat": "Error Rate %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "drawStyle": "line",
+                  "lineInterpolation": "linear",
+                  "lineWidth": 2
+                }
+              }
+            },
+            "gridPos": {"h": 9, "w": 24, "x": 0, "y": 9}
+          },
+          {
+            "id": 4,
+            "title": "Success Criteria Progress",
+            "type": "bargauge",
+            "targets": [
+              {
+                "expr": "pilot_technical_score",
+                "legendFormat": "Technical"
+              },
+              {
+                "expr": "pilot_business_score",
+                "legendFormat": "Business"
+              },
+              {
+                "expr": "pilot_security_score",
+                "legendFormat": "Security"
+              },
+              {
+                "expr": "pilot_cost_score",
+                "legendFormat": "Cost"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "min": 0,
+                "max": 100,
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 70},
+                    {"color": "green", "value": 85}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 9, "w": 24, "x": 0, "y": 18}
+          }
+        ],
+        "time": {"from": "now-30d", "to": "now"},
+        "refresh": "5m"
+      }
+    }

@@ -28,7 +28,7 @@ class SimpleEmbeddingClient(EmbeddingClient):
     @lru_cache(maxsize=1024)
     def _embed_single_cached(self, text: str) -> Tuple[float, ...]:
         """Cache individual text embeddings."""
-        digest = hashlib.sha1(text.encode()).digest()
+        digest = hashlib.sha256(text.encode()).digest()
         return tuple(b / 255.0 for b in digest[:5])
 
     def embed(self, texts: List[str]) -> List[List[float]]:

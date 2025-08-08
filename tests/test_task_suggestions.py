@@ -37,7 +37,7 @@ def test_task_suggestion_api(tmp_path):
     thread.start()
     try:
         url = f"http://127.0.0.1:{server.httpd.server_port}/suggested_tasks"
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=30)
         assert resp.status_code == 200
         assert resp.json() == [{"id": "T1", "title": "demo"}]
     finally:

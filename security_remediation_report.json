@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-08-08T15:30:00Z",
+  "total_fixes_applied": 14,
+  "vulnerabilities_addressed": 0,
+  "results": {
+    "fixes_applied": [
+      "/Users/adrian/repos/agentic-research-engine/tests/test_task_suggestions.py",
+      "/Users/adrian/repos/agentic-research-engine/tests/test_hitl_breakpoint.py",
+      "/Users/adrian/repos/agentic-research-engine/security_patches.py",
+      "/Users/adrian/repos/agentic-research-engine/services/ltm_service/embedding_client.py",
+      "/Users/adrian/repos/agentic-research-engine/security_patches.py",
+      "/Users/adrian/repos/agentic-research-engine/scripts/ci_summary.py",
+      "/Users/adrian/repos/agentic-research-engine/services/config.py",
+      "/Users/adrian/repos/agentic-research-engine/services/guardrail_orchestrator/main.py",
+      "/Users/adrian/repos/agentic-research-engine/services/reputation/main.py",
+      "/Users/adrian/repos/agentic-research-engine/services/ltm_service/openapi_app.py",
+      "/Users/adrian/repos/agentic-research-engine/services/episodic_memory/main.py",
+      "/Users/adrian/repos/agentic-research-engine/requirements.txt",
+      "/Users/adrian/repos/agentic-research-engine/requirements.lock",
+      "/Users/adrian/repos/agentic-research-engine/security_config.json"
+    ],
+    "vulnerabilities_found": [],
+    "recommendations": [
+      "Implement proper input validation for all API endpoints",
+      "Use parameterized queries for all database operations",
+      "Enable HTTPS/TLS for all production deployments",
+      "Implement proper session management and CSRF protection",
+      "Set up comprehensive logging and monitoring",
+      "Regular security dependency updates",
+      "Code review process for security-sensitive changes",
+      "Implement rate limiting and DDoS protection",
+      "Use secrets management system for credentials",
+      "Regular penetration testing and vulnerability assessments"
+    ]
+  }
+}

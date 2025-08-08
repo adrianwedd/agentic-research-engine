@@ -1,3 +1,7 @@
+
+# Security: Only bind to all interfaces in production
+import os
+HOST = HOST if os.getenv("ENVIRONMENT") == "production" else "127.0.0.1"
 from __future__ import annotations
 
 import uvicorn
@@ -5,4 +9,4 @@ import uvicorn
 from .app import app
 
 if __name__ == "__main__":  # pragma: no cover - manual execution
-    uvicorn.run(app, host="0.0.0.0", port=8090)
+    uvicorn.run(app, host=HOST, port=8090)

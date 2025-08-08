@@ -1,0 +1,507 @@
+# Automated Testing and Validation Configuration
+# Classification: CRITICAL - TEST CONFIGURATION
+# Test suite configuration for deployment pipeline validation
+# Last Updated: 2025-08-08
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-test-config
+  namespace: orchestrix-pilot
+  labels:
+    component: deployment-testing
+data:
+  test-configuration.yaml: |
+    test_suites:
+      smoke_tests:
+        description: "Basic health and connectivity tests"
+        timeout_minutes: 5
+        required_for_deployment: true
+        tests:
+          - name: "pod_health_check"
+            type: "kubernetes"
+            target: "all_pods"
+            acceptance_criteria: "all_running"
+          - name: "service_endpoints"
+            type: "http"
+            targets: ["episodic-memory:8081/health", "reputation-service:8090/health"]
+            acceptance_criteria: "http_200"
+          - name: "database_connectivity"
+            type: "database"
+            target: "postgresql"
+            acceptance_criteria: "connection_successful"
+      
+      integration_tests:
+        description: "Service-to-service integration validation"
+        timeout_minutes: 15
+        required_for_deployment: true
+        tests:
+          - name: "memory_storage_integration"
+            type: "integration"
+            services: ["episodic-memory", "weaviate"]
+            test_scenario: "create_retrieve_memory"
+            acceptance_criteria: "data_consistency"
+          - name: "reputation_scoring"
+            type: "integration"
+            services: ["reputation-service", "postgresql"]
+            test_scenario: "score_calculation"
+            acceptance_criteria: "accurate_computation"
+          - name: "metrics_collection"
+            type: "integration"
+            services: ["all", "prometheus"]
+            test_scenario: "metric_ingestion"
+            acceptance_criteria: "metrics_available"
+      
+      performance_tests:
+        description: "Performance and load validation"
+        timeout_minutes: 30
+        required_for_deployment: true
+        tests:
+          - name: "latency_validation"
+            type: "performance"
+            target: "api_endpoints"
+            load_profile:
+              concurrent_users: 50
+              duration_minutes: 10
+              ramp_up_minutes: 2
+            acceptance_criteria:
+              p50_latency_ms: 200
+              p95_latency_ms: 1000
+              p99_latency_ms: 2000
+          - name: "throughput_validation"
+            type: "performance"
+            target: "api_endpoints"
+            load_profile:
+              requests_per_second: 100
+              duration_minutes: 10
+            acceptance_criteria:
+              min_rps: 90
+              error_rate_percent: 1.0
+          - name: "resource_utilization"
+            type: "performance"
+            target: "kubernetes_resources"
+            acceptance_criteria:
+              cpu_utilization_percent: 80
+              memory_utilization_percent: 85
+              disk_utilization_percent: 90
+      
+      security_tests:
+        description: "Security compliance and vulnerability validation"
+        timeout_minutes: 20
+        required_for_deployment: true
+        tests:
+          - name: "container_security_scanning"
+            type: "security"
+            tool: "trivy"
+            acceptance_criteria:
+              critical_vulnerabilities: 0
+              high_vulnerabilities: 5
+          - name: "network_policy_validation"
+            type: "security"
+            target: "network_policies"
+            acceptance_criteria: "policies_enforced"
+          - name: "rbac_validation"
+            type: "security"
+            target: "service_accounts"
+            acceptance_criteria: "least_privilege"
+          - name: "secrets_security"
+            type: "security"
+            target: "kubernetes_secrets"
+            acceptance_criteria: "no_hardcoded_secrets"
+      
+      disaster_recovery_tests:
+        description: "Disaster recovery and failover validation"
+        timeout_minutes: 45
+        required_for_deployment: false
+        tests:
+          - name: "backup_integrity"
+            type: "disaster_recovery"
+            target: "backup_systems"
+            acceptance_criteria: "backup_restorable"
+          - name: "service_failover"
+            type: "disaster_recovery"
+            target: "blue_green_deployment"
+            test_scenario: "traffic_switch"
+            acceptance_criteria: "zero_downtime"
+          - name: "data_recovery"
+            type: "disaster_recovery"
+            target: "database"
+            test_scenario: "point_in_time_recovery"
+            acceptance_criteria: "data_consistency"
+    
+    test_environments:
+      staging:
+        namespace: "orchestrix-staging"
+        resource_limits:
+          cpu_cores: 4
+          memory_gb: 8
+          storage_gb: 50
+        test_data:
+          synthetic_users: 10
+          test_memories: 100
+          test_reputation_scores: 50
+      
+      pilot:
+        namespace: "orchestrix-pilot"
+        resource_limits:
+          cpu_cores: 8
+          memory_gb: 16
+          storage_gb: 100
+        test_data:
+          synthetic_users: 50
+          test_memories: 1000
+          test_reputation_scores: 500
+      
+      production:
+        namespace: "orchestrix-production"
+        resource_limits:
+          cpu_cores: 16
+          memory_gb: 32
+          storage_gb: 500
+        test_data:
+          synthetic_users: 100
+          test_memories: 10000
+          test_reputation_scores: 5000
+    
+    quality_gates:
+      deployment_gates:
+        - name: "smoke_tests_pass"
+          required: true
+          blocking: true
+          description: "All smoke tests must pass"
+        - name: "security_compliance"
+          required: true
+          blocking: true
+          description: "Security tests must pass with zero critical issues"
+        - name: "performance_targets"
+          required: true
+          blocking: true
+          description: "Performance tests must meet SLO targets"
+        - name: "integration_validation"
+          required: true
+          blocking: false
+          description: "Integration tests should pass"
+      
+      rollback_triggers:
+        - name: "service_availability"
+          threshold: "< 99%"
+          window_minutes: 5
+          action: "automatic_rollback"
+        - name: "error_rate"
+          threshold: "> 5%"
+          window_minutes: 5
+          action: "automatic_rollback"
+        - name: "response_time"
+          threshold: "> 5s p95"
+          window_minutes: 10
+          action: "alert_and_manual_review"
+        - name: "security_incident"
+          threshold: "> 0 incidents"
+          window_minutes: 1
+          action: "immediate_rollback"
+    
+    reporting:
+      formats: ["json", "junit", "html"]
+      destinations:
+        - type: "file"
+          path: "/tmp/test-results"
+        - type: "s3"
+          bucket: "orchestrix-pilot-test-reports"
+          prefix: "deployment-tests/"
+        - type: "slack"
+          webhook_url_secret: "slack-webhook-url"
+          channel: "#deployment-tests"
+      
+      notifications:
+        success:
+          - slack
+          - email
+        failure:
+          - slack
+          - email
+          - pagerduty
+        warning:
+          - slack
+  
+  load-test-scenarios.yaml: |
+    load_test_scenarios:
+      baseline_load:
+        description: "Normal operating load simulation"
+        duration_minutes: 10
+        user_profiles:
+          - name: "memory_creator"
+            percentage: 40
+            actions:
+              - create_episodic_memory
+              - retrieve_recent_memories
+            requests_per_minute: 30
+          - name: "reputation_checker"
+            percentage: 30
+            actions:
+              - get_agent_reputation
+              - update_reputation_score
+            requests_per_minute: 20
+          - name: "searcher"
+            percentage: 30
+            actions:
+              - vector_search
+              - semantic_query
+            requests_per_minute: 25
+      
+      peak_load:
+        description: "Peak traffic simulation"
+        duration_minutes: 15
+        user_profiles:
+          - name: "heavy_memory_user"
+            percentage: 50
+            actions:
+              - create_episodic_memory
+              - bulk_memory_retrieval
+              - complex_memory_search
+            requests_per_minute: 60
+          - name: "reputation_analyzer"
+            percentage: 25
+            actions:
+              - bulk_reputation_query
+              - reputation_trend_analysis
+            requests_per_minute: 40
+          - name: "system_monitor"
+            percentage: 25
+            actions:
+              - health_check_polling
+              - metrics_collection
+            requests_per_minute: 120
+      
+      stress_test:
+        description: "System limits and breaking point identification"
+        duration_minutes: 20
+        ramp_up_minutes: 5
+        user_profiles:
+          - name: "aggressive_user"
+            percentage: 100
+            actions:
+              - rapid_memory_creation
+              - concurrent_searches
+              - parallel_reputation_updates
+            requests_per_minute: 200
+        failure_criteria:
+          error_rate_percent: 50
+          response_time_p99_seconds: 30
+          resource_exhaustion: true
+  
+  test-data-generators.yaml: |
+    synthetic_data:
+      episodic_memories:
+        count: 1000
+        templates:
+          - type: "user_interaction"
+            fields:
+              - user_id: "uuid"
+              - action: "enum[login,logout,search,create,update]"
+              - timestamp: "datetime"
+              - context: "json_object"
+              - metadata: "key_value_pairs"
+          - type: "system_event"
+            fields:
+              - event_type: "enum[error,warning,info,debug]"
+              - component: "enum[api,database,cache,queue]"
+              - message: "text"
+              - severity: "integer[1-5]"
+              - tags: "array_of_strings"
+      
+      reputation_scores:
+        count: 500
+        templates:
+          - type: "agent_reputation"
+            fields:
+              - agent_id: "uuid"
+              - score: "float[0.0-1.0]"
+              - category: "enum[reliability,performance,security,accuracy]"
+              - timestamp: "datetime"
+              - evidence: "json_array"
+      
+      test_users:
+        count: 100
+        templates:
+          - type: "synthetic_user"
+            fields:
+              - user_id: "uuid"
+              - username: "string"
+              - email: "email"
+              - role: "enum[admin,user,viewer]"
+              - preferences: "json_object"
+              - created_at: "datetime"
+    
+    mock_services:
+      external_apis:
+        - name: "openai_api"
+          type: "http_mock"
+          responses:
+            "/v1/chat/completions":
+              status: 200
+              body: |
+                {
+                  "id": "chatcmpl-test",
+                  "object": "chat.completion",
+                  "model": "gpt-4",
+                  "choices": [
+                    {
+                      "message": {
+                        "role": "assistant",
+                        "content": "Test response"
+                      }
+                    }
+                  ]
+                }
+        - name: "vector_database"
+          type: "in_memory_mock"
+          data_store: "vectors"
+          operations: ["store", "retrieve", "search", "delete"]
+      
+      database_mocks:
+        - name: "reputation_db"
+          type: "sqlite_mock"
+          schema: "test_schema.sql"
+          seed_data: "test_data.sql"
+---
+# Test Execution Job Template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deployment-validation-job
+  namespace: orchestrix-pilot
+  labels:
+    app: deployment-validation
+    component: testing
+spec:
+  template:
+    metadata:
+      labels:
+        app: deployment-validation
+    spec:
+      restartPolicy: Never
+      serviceAccountName: deployment-tester
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: validator
+        image: agentic/deployment-validator:v1.0.0
+        imagePullPolicy: Always
+        command:
+        - python3
+        - /app/tests/deployment/automated-validation-suite.py
+        - --namespace=orchestrix-pilot
+        - --environment=pilot
+        - --output=/tmp/validation-report.json
+        env:
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: TEST_ENVIRONMENT
+          value: "pilot"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"
+        - name: LOG_LEVEL
+          value: "INFO"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: test-config
+          mountPath: /etc/test-config
+        - name: test-results
+          mountPath: /tmp
+        - name: kubectl-binary
+          mountPath: /usr/local/bin/kubectl
+          subPath: kubectl
+      volumes:
+      - name: test-config
+        configMap:
+          name: deployment-test-config
+      - name: test-results
+        emptyDir: {}
+      - name: kubectl-binary
+        emptyDir: {}
+      initContainers:
+      - name: kubectl-downloader
+        image: curlimages/curl:8.5.0
+        command:
+        - sh
+        - -c
+        - |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /shared/kubectl
+        volumeMounts:
+        - name: kubectl-binary
+          mountPath: /shared
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+---
+# Service Account for Test Execution
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployment-tester
+  namespace: orchestrix-pilot
+---
+# ClusterRole for Testing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deployment-tester
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "namespaces", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+- nonResourceURLs: ["/metrics", "/api/v1/query", "/api/v1/query_range"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for Testing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deployment-tester
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deployment-tester
+subjects:
+- kind: ServiceAccount
+  name: deployment-tester
+  namespace: orchestrix-pilot

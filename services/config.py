@@ -1,3 +1,7 @@
+
+# Security: Only bind to all interfaces in production
+import os
+HOST = HOST if os.getenv("ENVIRONMENT") == "production" else "127.0.0.1"
 """
 Production Configuration Management
 Provides environment-based configuration with secure secret handling
@@ -76,7 +80,7 @@ class SecurityConfig:
 @dataclass
 class ServiceConfig:
     """Service-specific configuration."""
-    host: str = field(default_factory=lambda: os.getenv("HOST", "0.0.0.0"))
+    host: str = field(default_factory=lambda: os.getenv("HOST", HOST))
     port: int = field(default_factory=lambda: int(os.getenv("PORT", "8000")))
     workers: int = field(default_factory=lambda: int(os.getenv("WORKER_COUNT", "4")))
     max_request_size: int = field(default_factory=lambda: int(os.getenv("MAX_REQUEST_SIZE", "16777216")))  # 16MB

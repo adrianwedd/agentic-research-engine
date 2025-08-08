@@ -1,0 +1,1095 @@
+# Comprehensive Operational Runbooks and Incident Response
+# Classification: CRITICAL - OPERATIONAL PROCEDURES
+# Complete incident response and operational procedures for Phase 2 Pilot
+# Last Updated: 2025-08-08
+
+# Runbook Management System
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runbook-manager
+  namespace: orchestrix-pilot
+  labels:
+    app: runbook-manager
+    component: operations
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: runbook-manager
+  template:
+    metadata:
+      labels:
+        app: runbook-manager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: runbook-manager
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: manager
+        image: agentic/runbook-manager:v1.0.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8443
+          name: webhook
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: RUNBOOK_PATH
+          value: "/etc/runbooks"
+        - name: WEBHOOK_PORT
+          value: "8443"
+        - name: METRICS_PORT
+          value: "8080"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"
+        - name: ALERTMANAGER_URL
+          value: "http://alertmanager:9093"
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: notification-secrets
+              key: slack-webhook-url
+        - name: PAGERDUTY_INTEGRATION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: notification-secrets
+              key: pagerduty-key
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        volumeMounts:
+        - name: runbooks
+          mountPath: /etc/runbooks
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: runbooks
+        configMap:
+          name: operational-runbooks
+      - name: tmp
+        emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - runbook-manager
+              topologyKey: kubernetes.io/hostname
+---
+# Service Account for Runbook Manager
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: runbook-manager
+  namespace: orchestrix-pilot
+---
+# ClusterRole for Runbook Manager
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: runbook-manager
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "events", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["prometheusrules", "servicemonitors"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics", "/api/v1/query"]
+  verbs: ["get"]
+---
+# ClusterRoleBinding for Runbook Manager
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: runbook-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: runbook-manager
+subjects:
+- kind: ServiceAccount
+  name: runbook-manager
+  namespace: orchestrix-pilot
+---
+# Operational Runbooks ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: operational-runbooks
+  namespace: orchestrix-pilot
+  labels:
+    component: operations
+data:
+  incident-response-procedures.md: |
+    # Incident Response Procedures
+    ## Phase 2 Pilot - Orchestrix Research Engine
+    
+    ### INCIDENT SEVERITY LEVELS
+    
+    #### P0 - CRITICAL (Immediate Response)
+    **Impact:** Complete service outage, data loss, security breach
+    **Response Time:** 0-5 minutes
+    **Escalation:** Immediate - All hands on deck
+    
+    **Examples:**
+    - All services down
+    - Database corruption/loss
+    - Security breach confirmed
+    - Data privacy violation
+    
+    #### P1 - HIGH (Urgent Response)
+    **Impact:** Major functionality impaired, significant user impact
+    **Response Time:** 5-15 minutes
+    **Escalation:** Primary on-call + SRE lead
+    
+    **Examples:**
+    - Single critical service down
+    - Performance severely degraded (>5s response times)
+    - Authentication/authorization failures
+    - Memory leaks causing instability
+    
+    #### P2 - MEDIUM (Standard Response)
+    **Impact:** Minor functionality impaired, limited user impact
+    **Response Time:** 15-60 minutes
+    **Escalation:** Primary on-call
+    
+    **Examples:**
+    - Non-critical service degradation
+    - Elevated error rates (1-5%)
+    - Resource utilization warnings
+    - Backup failures
+    
+    #### P3 - LOW (Scheduled Response)
+    **Impact:** No immediate user impact, maintenance required
+    **Response Time:** 1-4 hours
+    **Escalation:** Standard business hours
+    
+    **Examples:**
+    - Documentation updates
+    - Performance optimizations
+    - Capacity planning alerts
+    - Certificate expiration warnings
+    
+    ---
+    
+    ## INCIDENT RESPONSE WORKFLOW
+    
+    ### DETECTION AND ALERTING
+    ```bash
+    # Automated detection sources:
+    - Prometheus/Grafana alerts
+    - SLO burn rate alerts
+    - Security monitoring (Falco, OPA)
+    - User-reported issues
+    - Health check failures
+    ```
+    
+    ### INITIAL RESPONSE (0-5 minutes)
+    1. **ACKNOWLEDGE ALERT**
+       - Acknowledge in PagerDuty
+       - Join incident Slack channel: #incident-{timestamp}
+       - Assign incident commander
+    
+    2. **IMMEDIATE ASSESSMENT**
+    ```bash
+    # Quick status check
+    kubectl get pods -n orchestrix-pilot
+    kubectl get services -n orchestrix-pilot
+    kubectl top nodes
+    kubectl get events -n orchestrix-pilot --sort-by='.lastTimestamp' | head -10
+    ```
+    
+    3. **COMMUNICATION**
+       - Update incident status in Slack
+       - Notify stakeholders for P0/P1 incidents
+       - Create incident ticket in Jira
+    
+    ### INVESTIGATION PHASE (5-30 minutes)
+    
+    #### Service Health Assessment
+    ```bash
+    # Check all critical services
+    services=("episodic-memory" "reputation-service" "weaviate" "prometheus" "grafana")
+    
+    for service in "${services[@]}"; do
+      echo "=== Checking $service ==="
+      kubectl get pods -l app=$service -n orchestrix-pilot
+      kubectl logs -l app=$service -n orchestrix-pilot --tail=50
+      kubectl describe service $service -n orchestrix-pilot
+    done
+    ```
+    
+    #### Resource Analysis
+    ```bash
+    # Resource utilization
+    kubectl top pods -n orchestrix-pilot --sort-by=memory
+    kubectl top nodes
+    
+    # Check for resource quotas
+    kubectl describe resourcequota -n orchestrix-pilot
+    
+    # Storage check
+    kubectl get pv,pvc -n orchestrix-pilot
+    df -h  # On nodes if accessible
+    ```
+    
+    #### Network Connectivity
+    ```bash
+    # DNS resolution test
+    kubectl run -i --tty dns-test --image=busybox --restart=Never -- nslookup kubernetes.default
+    
+    # Service connectivity test
+    kubectl run -i --tty net-test --image=nicolaka/netshoot --restart=Never -- bash
+    # Inside pod: curl -I http://episodic-memory:8081/health
+    
+    # External connectivity
+    kubectl run -i --tty ext-test --image=curlimages/curl --restart=Never -- curl -I https://api.openai.com
+    ```
+    
+    #### Database Health
+    ```bash
+    # RDS status (from AWS CLI pod)
+    kubectl run aws-cli --image=amazon/aws-cli:2.15.0 -i --tty --restart=Never -- bash
+    aws rds describe-db-instances --db-instance-identifier orchestrix-pilot-postgres
+    aws rds describe-db-cluster-snapshots --max-items 5
+    ```
+    
+    ### MITIGATION STRATEGIES
+    
+    #### 1. Service Restart
+    ```bash
+    # Rolling restart
+    kubectl rollout restart deployment/{service-name} -n orchestrix-pilot
+    kubectl rollout status deployment/{service-name} -n orchestrix-pilot --timeout=300s
+    
+    # Scale up replicas if needed
+    kubectl scale deployment/{service-name} --replicas=5 -n orchestrix-pilot
+    ```
+    
+    #### 2. Traffic Routing
+    ```bash
+    # Blue-green switch
+    kubectl patch service episodic-memory -n orchestrix-pilot -p '{"spec":{"selector":{"color":"blue"}}}'
+    
+    # Canary rollback
+    kubectl argo rollouts abort episodic-memory-canary -n orchestrix-pilot
+    kubectl argo rollouts promote episodic-memory-canary -n orchestrix-pilot --skip-current-step
+    ```
+    
+    #### 3. Database Recovery
+    ```bash
+    # Connection pool reset
+    kubectl exec deployment/episodic-memory -n orchestrix-pilot -- curl -X POST http://localhost:8081/admin/db/reset-pool
+    
+    # Failover to read replica (manual process)
+    # 1. Update RDS endpoint in secrets
+    # 2. Restart affected services
+    # 3. Monitor for data consistency
+    ```
+    
+    #### 4. Resource Management
+    ```bash
+    # Emergency scaling
+    kubectl patch hpa episodic-memory-hpa -n orchestrix-pilot -p '{"spec":{"maxReplicas":10}}'
+    
+    # Node cordoning if problematic
+    kubectl cordon {node-name}
+    kubectl drain {node-name} --ignore-daemonsets --delete-emptydir-data
+    ```
+    
+    ### RECOVERY VERIFICATION
+    ```bash
+    # Health check script
+    #!/bin/bash
+    echo "=== Post-Recovery Health Check ==="
+    
+    # Service endpoints
+    services=("episodic-memory:8081" "reputation-service:8090" "weaviate:8080")
+    for service in "${services[@]}"; do
+      if curl -f -s -m 10 "http://${service}/health" >/dev/null 2>&1; then
+        echo "✓ ${service} - HEALTHY"
+      else
+        echo "✗ ${service} - FAILED"
+      fi
+    done
+    
+    # Critical metrics
+    echo "=== Key Metrics ==="
+    kubectl port-forward svc/prometheus 9090:9090 -n orchestrix-pilot &
+    sleep 5
+    
+    # Availability
+    AVAILABILITY=$(curl -s 'http://localhost:9090/api/v1/query?query=up' | jq -r '.data.result[0].value[1]')
+    echo "Service Availability: ${AVAILABILITY}"
+    
+    # Response time
+    LATENCY=$(curl -s 'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))' | jq -r '.data.result[0].value[1]')
+    echo "P95 Latency: ${LATENCY}s"
+    
+    pkill -f "kubectl port-forward"
+    ```
+    
+    ### POST-INCIDENT ACTIVITIES
+    
+    #### 1. Documentation
+    - Update incident timeline
+    - Record root cause analysis
+    - Document lessons learned
+    - Update runbooks based on experience
+    
+    #### 2. Communication
+    - Send incident summary to stakeholders
+    - Update status page
+    - Notify affected users if applicable
+    
+    #### 3. Follow-up Actions
+    - Schedule post-incident review (within 48 hours)
+    - Create improvement tickets
+    - Update monitoring/alerting if needed
+    - Review and update response procedures
+    
+    ---
+    
+    ## COMMON SCENARIOS AND SOLUTIONS
+    
+    ### Scenario 1: High Memory Usage
+    **Symptoms:** Pods being OOMKilled, slow response times
+    
+    **Investigation:**
+    ```bash
+    kubectl top pods -n orchestrix-pilot --sort-by=memory
+    kubectl describe pods {pod-name} -n orchestrix-pilot | grep -A 10 "Events:"
+    ```
+    
+    **Solutions:**
+    1. Scale horizontally: `kubectl scale deployment/{name} --replicas=5`
+    2. Increase memory limits temporarily
+    3. Restart affected pods: `kubectl delete pod {pod-name}`
+    4. Check for memory leaks in application logs
+    
+    ### Scenario 2: Database Connection Issues
+    **Symptoms:** Database connection errors, timeouts
+    
+    **Investigation:**
+    ```bash
+    # Check RDS status
+    aws rds describe-db-instances --db-instance-identifier orchestrix-pilot-postgres
+    
+    # Connection test from pod
+    kubectl exec -it deployment/episodic-memory -n orchestrix-pilot -- pg_isready -h {db-host} -p 5432
+    ```
+    
+    **Solutions:**
+    1. Check security groups and network ACLs
+    2. Verify connection pool configuration
+    3. Check for long-running queries
+    4. Consider read replica failover
+    
+    ### Scenario 3: Certificate Expiration
+    **Symptoms:** TLS handshake failures, HTTPS errors
+    
+    **Investigation:**
+    ```bash
+    # Check certificate expiration
+    kubectl get certificates -n orchestrix-pilot
+    kubectl describe certificate {cert-name} -n orchestrix-pilot
+    
+    # Manual certificate check
+    echo | openssl s_client -servername {domain} -connect {domain}:443 2>/dev/null | openssl x509 -noout -dates
+    ```
+    
+    **Solutions:**
+    1. Renew certificates via cert-manager
+    2. Manually update certificate if needed
+    3. Update DNS records if certificate authority changed
+    
+    ### Scenario 4: Storage Full
+    **Symptoms:** Pods failing to start, write errors
+    
+    **Investigation:**
+    ```bash
+    kubectl get pv,pvc -n orchestrix-pilot
+    kubectl describe pvc {pvc-name} -n orchestrix-pilot
+    df -h  # Check node storage if accessible
+    ```
+    
+    **Solutions:**
+    1. Expand PVC if possible: `kubectl patch pvc {name} -p '{"spec":{"resources":{"requests":{"storage":"50Gi"}}}}'`
+    2. Clean up old data/logs
+    3. Move data to external storage
+    4. Scale storage class if supported
+    
+    ---
+    
+    ## ESCALATION MATRIX
+    
+    | Time | P0 | P1 | P2 | P3 |
+    |------|----|----|----|----|
+    | 0-5m | Primary On-call | Primary On-call | Primary On-call | - |
+    | 5-15m | + SRE Lead | + DevOps Lead | - | - |
+    | 15-30m | + Security Team | + SRE Lead | Primary On-call | - |
+    | 30-60m | + Engineering Manager | + Engineering Manager | + DevOps Lead | Primary On-call |
+    | 60m+ | + CTO | + Product Owner | + SRE Lead | + DevOps Lead |
+    
+    ### Emergency Contacts
+    - **Primary On-call:** +1-XXX-XXX-XXXX (Slack: @oncall-primary)
+    - **DevOps Lead:** +1-XXX-XXX-XXXX (Slack: @devops-lead)
+    - **SRE Lead:** +1-XXX-XXX-XXXX (Slack: @sre-lead)
+    - **Security Team:** +1-XXX-XXX-XXXX (Slack: @security-team)
+    - **Engineering Manager:** +1-XXX-XXX-XXXX (Slack: @eng-manager)
+    - **CTO:** +1-XXX-XXX-XXXX (Emergency only)
+    
+    ### Communication Channels
+    - **Incident Channel:** #incident-{timestamp}
+    - **General Alerts:** #alerts-pilot
+    - **Critical Alerts:** #alerts-critical
+    - **Status Updates:** #orchestrix-pilot-status
+  
+  service-specific-runbooks.md: |
+    # Service-Specific Operational Runbooks
+    
+    ## EPISODIC MEMORY SERVICE
+    
+    ### Service Overview
+    - **Purpose:** Manages episodic memory storage and retrieval
+    - **Dependencies:** Redis, Weaviate, PostgreSQL
+    - **Health Endpoint:** `/health`
+    - **Metrics Endpoint:** `/metrics`
+    - **Default Port:** 8081
+    
+    ### Common Issues and Solutions
+    
+    #### High Memory Usage
+    **Symptoms:**
+    - Pod memory > 1.5GB
+    - OOMKilled events
+    - Slow query responses
+    
+    **Investigation:**
+    ```bash
+    # Memory usage check
+    kubectl top pod -l app=episodic-memory -n orchestrix-pilot
+    
+    # Check for memory leaks
+    kubectl logs -l app=episodic-memory -n orchestrix-pilot | grep -i "memory\|oom\|gc"
+    
+    # Profile memory usage (if profiling enabled)
+    kubectl port-forward svc/episodic-memory 8081:8081 -n orchestrix-pilot &
+    curl http://localhost:8081/debug/pprof/heap > heap.prof
+    ```
+    
+    **Solutions:**
+    1. **Scale horizontally:**
+    ```bash
+    kubectl scale deployment episodic-memory --replicas=5 -n orchestrix-pilot
+    ```
+    
+    2. **Increase memory limits temporarily:**
+    ```bash
+    kubectl patch deployment episodic-memory -n orchestrix-pilot -p '{"spec":{"template":{"spec":{"containers":[{"name":"episodic-memory","resources":{"limits":{"memory":"4Gi"}}}]}}}}'
+    ```
+    
+    3. **Clear cache if safe:**
+    ```bash
+    kubectl exec deployment/episodic-memory -n orchestrix-pilot -- curl -X POST http://localhost:8081/admin/cache/clear
+    ```
+    
+    #### Vector Store Connection Issues
+    **Symptoms:**
+    - "Connection to Weaviate failed" errors
+    - Vector search timeouts
+    - High latency on memory retrieval
+    
+    **Investigation:**
+    ```bash
+    # Check Weaviate status
+    kubectl get pods -l app=weaviate -n orchestrix-pilot
+    kubectl logs -l app=weaviate -n orchestrix-pilot --tail=50
+    
+    # Test connectivity from episodic-memory pod
+    kubectl exec deployment/episodic-memory -n orchestrix-pilot -- curl -I http://weaviate:8080/v1/.well-known/live
+    ```
+    
+    **Solutions:**
+    1. **Restart Weaviate:**
+    ```bash
+    kubectl rollout restart statefulset/weaviate -n orchestrix-pilot
+    ```
+    
+    2. **Check network policies:**
+    ```bash
+    kubectl get networkpolicy -n orchestrix-pilot
+    kubectl describe networkpolicy episodic-memory-netpol -n orchestrix-pilot
+    ```
+    
+    3. **Scale Weaviate if needed:**
+    ```bash
+    kubectl scale statefulset weaviate --replicas=2 -n orchestrix-pilot
+    ```
+    
+    ### Performance Tuning
+    
+    #### Optimal Configuration
+    ```yaml
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 2Gi
+    
+    env:
+      - name: WORKER_COUNT
+        value: "2"
+      - name: VECTOR_CACHE_SIZE
+        value: "1000"
+      - name: BATCH_SIZE
+        value: "100"
+      - name: CONNECTION_POOL_SIZE
+        value: "10"
+    ```
+    
+    #### Scaling Guidelines
+    - **Scale out when:** CPU > 70% or Memory > 80% for 5+ minutes
+    - **Max replicas:** 10 (database connection limit consideration)
+    - **Scale in when:** CPU < 30% and Memory < 50% for 10+ minutes
+    
+    ---
+    
+    ## REPUTATION SERVICE
+    
+    ### Service Overview
+    - **Purpose:** Manages agent reputation scoring and history
+    - **Dependencies:** PostgreSQL, Redis (optional)
+    - **Health Endpoint:** `/health`
+    - **Metrics Endpoint:** `/metrics`
+    - **Default Port:** 8090
+    
+    ### Common Issues and Solutions
+    
+    #### Database Connection Pool Exhaustion
+    **Symptoms:**
+    - "Connection pool exhausted" errors
+    - High response times (>2s)
+    - 503 errors on reputation queries
+    
+    **Investigation:**
+    ```bash
+    # Check active connections
+    kubectl exec deployment/reputation-service -n orchestrix-pilot -- curl http://localhost:8090/admin/db/stats
+    
+    # Database connection count
+    kubectl run psql-client --rm -i --tty --image postgres:15 -n orchestrix-pilot -- psql -h {rds-endpoint} -U postgres -d reputation -c "SELECT count(*) FROM pg_stat_activity;"
+    ```
+    
+    **Solutions:**
+    1. **Reset connection pool:**
+    ```bash
+    kubectl exec deployment/reputation-service -n orchestrix-pilot -- curl -X POST http://localhost:8090/admin/db/reset-pool
+    ```
+    
+    2. **Scale service horizontally:**
+    ```bash
+    kubectl scale deployment reputation-service --replicas=4 -n orchestrix-pilot
+    ```
+    
+    3. **Increase connection pool size:**
+    ```bash
+    kubectl patch deployment reputation-service -n orchestrix-pilot -p '{"spec":{"template":{"spec":{"containers":[{"name":"reputation-service","env":[{"name":"DB_POOL_SIZE","value":"20"}]}]}}}}'
+    ```
+    
+    #### Slow Query Performance
+    **Symptoms:**
+    - High P95 latency (>1s)
+    - Database CPU utilization > 80%
+    - Query timeout errors
+    
+    **Investigation:**
+    ```bash
+    # Check slow queries in RDS Performance Insights
+    # Or connect to DB and check:
+    kubectl run psql-client --rm -i --tty --image postgres:15 -n orchestrix-pilot -- psql -h {rds-endpoint} -U postgres -d reputation
+    
+    # Inside psql:
+    SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;
+    ```
+    
+    **Solutions:**
+    1. **Add database indexes:**
+    ```sql
+    CREATE INDEX CONCURRENTLY idx_reputation_agent_id ON reputation_scores (agent_id);
+    CREATE INDEX CONCURRENTLY idx_reputation_timestamp ON reputation_scores (created_at);
+    ```
+    
+    2. **Enable read replicas:**
+    ```bash
+    # Update service configuration to use read replicas for queries
+    kubectl patch deployment reputation-service -n orchestrix-pilot -p '{"spec":{"template":{"spec":{"containers":[{"name":"reputation-service","env":[{"name":"READ_REPLICA_URL","value":"postgresql://..."}]}]}}}}'
+    ```
+    
+    3. **Implement caching:**
+    ```bash
+    kubectl patch deployment reputation-service -n orchestrix-pilot -p '{"spec":{"template":{"spec":{"containers":[{"name":"reputation-service","env":[{"name":"ENABLE_CACHE","value":"true"},{"name":"CACHE_TTL","value":"300"}]}]}}}}'
+    ```
+    
+    ---
+    
+    ## WEAVIATE VECTOR DATABASE
+    
+    ### Service Overview
+    - **Purpose:** Vector storage and similarity search
+    - **Type:** StatefulSet with persistent storage
+    - **Health Endpoint:** `/v1/.well-known/live`
+    - **Ready Endpoint:** `/v1/.well-known/ready`
+    - **Default Port:** 8080
+    
+    ### Common Issues and Solutions
+    
+    #### Storage Space Issues
+    **Symptoms:**
+    - "No space left on device" errors
+    - Pod stuck in Pending state
+    - Vector insertion failures
+    
+    **Investigation:**
+    ```bash
+    # Check PVC usage
+    kubectl get pvc -n orchestrix-pilot
+    kubectl describe pvc weaviate-data-weaviate-0 -n orchestrix-pilot
+    
+    # Storage usage from within pod
+    kubectl exec weaviate-0 -n orchestrix-pilot -- df -h /var/lib/weaviate
+    ```
+    
+    **Solutions:**
+    1. **Expand PVC (if storage class supports it):**
+    ```bash
+    kubectl patch pvc weaviate-data-weaviate-0 -n orchestrix-pilot -p '{"spec":{"resources":{"requests":{"storage":"50Gi"}}}}'
+    ```
+    
+    2. **Clean up old data:**
+    ```bash
+    # Connect to Weaviate and delete old classes/objects
+    kubectl port-forward svc/weaviate 8080:8080 -n orchestrix-pilot &
+    curl -X DELETE http://localhost:8080/v1/schema/{class-name}
+    ```
+    
+    3. **Backup and restore to new volume:**
+    ```bash
+    # Create backup
+    kubectl exec weaviate-0 -n orchestrix-pilot -- tar czf /tmp/weaviate-backup.tar.gz /var/lib/weaviate
+    # Copy backup to S3
+    kubectl cp orchestrix-pilot/weaviate-0:/tmp/weaviate-backup.tar.gz ./weaviate-backup.tar.gz
+    aws s3 cp weaviate-backup.tar.gz s3://orchestrix-pilot-backups/weaviate/
+    ```
+    
+    #### Index Corruption
+    **Symptoms:**
+    - Vector search returning no results
+    - "Index corruption detected" errors
+    - Pod crash loops
+    
+    **Investigation:**
+    ```bash
+    # Check Weaviate logs for corruption indicators
+    kubectl logs weaviate-0 -n orchestrix-pilot | grep -i "corrupt\|index\|error"
+    
+    # Check data consistency
+    kubectl exec weaviate-0 -n orchestrix-pilot -- curl http://localhost:8080/v1/meta
+    ```
+    
+    **Solutions:**
+    1. **Repair index:**
+    ```bash
+    kubectl exec weaviate-0 -n orchestrix-pilot -- curl -X POST http://localhost:8080/v1/schema/{class-name}/shards/{shard-name}/repair
+    ```
+    
+    2. **Restore from backup:**
+    ```bash
+    # Scale down Weaviate
+    kubectl scale statefulset weaviate --replicas=0 -n orchestrix-pilot
+    
+    # Restore data
+    kubectl exec weaviate-0 -n orchestrix-pilot -- rm -rf /var/lib/weaviate/*
+    aws s3 cp s3://orchestrix-pilot-backups/weaviate/weaviate-backup.tar.gz /tmp/
+    kubectl cp /tmp/weaviate-backup.tar.gz orchestrix-pilot/weaviate-0:/tmp/
+    kubectl exec weaviate-0 -n orchestrix-pilot -- tar xzf /tmp/weaviate-backup.tar.gz -C /
+    
+    # Scale up Weaviate
+    kubectl scale statefulset weaviate --replicas=1 -n orchestrix-pilot
+    ```
+    
+    ### Performance Optimization
+    
+    #### Recommended Configuration
+    ```yaml
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+    
+    env:
+      - name: QUERY_DEFAULTS_LIMIT
+        value: "20"
+      - name: QUERY_MAXIMUM_RESULTS
+        value: "1000"
+      - name: PERSISTENCE_DATA_PATH
+        value: "/var/lib/weaviate"
+    ```
+    
+    #### Monitoring Key Metrics
+    - **Query latency:** Should be < 100ms for simple queries
+    - **Memory usage:** Should not exceed 80% of limit
+    - **Disk I/O:** Monitor for high read/write operations
+    - **Vector operations:** Track insert/update/delete rates
+    
+    ---
+    
+    ## MONITORING AND ALERTING TROUBLESHOOTING
+    
+    ### Prometheus Issues
+    
+    #### High Memory Usage
+    ```bash
+    # Check Prometheus memory usage
+    kubectl top pod -l app=prometheus -n orchestrix-pilot
+    
+    # Check retention and storage
+    kubectl exec deployment/prometheus -n orchestrix-pilot -- du -sh /prometheus
+    
+    # Reduce retention if needed
+    kubectl patch deployment prometheus -n orchestrix-pilot -p '{"spec":{"template":{"spec":{"containers":[{"name":"prometheus","args":["--storage.tsdb.retention.time=7d"]}]}}}}'
+    ```
+    
+    #### Missing Metrics
+    ```bash
+    # Check service discovery
+    kubectl port-forward svc/prometheus 9090:9090 -n orchestrix-pilot &
+    # Visit http://localhost:9090/targets to check target status
+    
+    # Verify ServiceMonitor configuration
+    kubectl get servicemonitor -n orchestrix-pilot
+    kubectl describe servicemonitor pilot-services -n orchestrix-pilot
+    ```
+    
+    ### Grafana Issues
+    
+    #### Dashboard Not Loading
+    ```bash
+    # Check Grafana logs
+    kubectl logs deployment/grafana -n orchestrix-pilot
+    
+    # Check data source connectivity
+    kubectl port-forward svc/grafana 3000:3000 -n orchestrix-pilot &
+    # Visit http://localhost:3000/datasources and test connections
+    
+    # Reset admin password if needed
+    kubectl exec deployment/grafana -n orchestrix-pilot -- grafana-cli admin reset-admin-password newpassword
+    ```
+    
+    ### Alerting Issues
+    
+    #### Alerts Not Firing
+    ```bash
+    # Check AlertManager configuration
+    kubectl logs deployment/alertmanager -n orchestrix-pilot
+    
+    # Verify routing rules
+    kubectl port-forward svc/alertmanager 9093:9093 -n orchestrix-pilot &
+    # Visit http://localhost:9093/#/status to check config
+    
+    # Test webhook endpoints
+    kubectl exec deployment/alertmanager -n orchestrix-pilot -- wget --spider {webhook-url}
+    ```
+  
+  maintenance-procedures.md: |
+    # Maintenance Procedures and Scheduled Operations
+    
+    ## ROUTINE MAINTENANCE SCHEDULE
+    
+    ### Daily Operations
+    - **Health Check Review:** Monitor dashboard for anomalies
+    - **Log Review:** Check for errors/warnings in service logs
+    - **Backup Verification:** Confirm automated backups completed
+    - **Resource Monitoring:** Review CPU/memory utilization trends
+    
+    ### Weekly Operations
+    - **Security Scan Review:** Analyze vulnerability scan results
+    - **Performance Analysis:** Review SLO compliance and trends
+    - **Capacity Planning:** Assess resource usage and scaling needs
+    - **Incident Review:** Analyze any incidents from the past week
+    
+    ### Monthly Operations
+    - **Full System Backup Test:** Verify backup restoration procedures
+    - **Disaster Recovery Drill:** Test failover and recovery processes
+    - **Security Audit:** Comprehensive security posture review
+    - **Cost Optimization:** Review and optimize infrastructure costs
+    
+    ## MAINTENANCE PROCEDURES
+    
+    ### Kubernetes Cluster Updates
+    
+    #### Node Group Updates
+    ```bash
+    # Check current version
+    kubectl get nodes
+    
+    # Update node group (AWS EKS)
+    aws eks update-nodegroup-version --cluster-name orchestrix-pilot-cluster --nodegroup-name orchestrix-pilot-nodes --version 1.28
+    
+    # Monitor update progress
+    aws eks describe-nodegroup --cluster-name orchestrix-pilot-cluster --nodegroup-name orchestrix-pilot-nodes
+    
+    # Verify all nodes updated
+    kubectl get nodes -o wide
+    ```
+    
+    #### Control Plane Updates
+    ```bash
+    # Update EKS control plane
+    aws eks update-cluster-version --name orchestrix-pilot-cluster --version 1.28
+    
+    # Monitor update progress
+    aws eks describe-cluster --name orchestrix-pilot-cluster --query 'cluster.status'
+    
+    # Update add-ons after control plane update
+    aws eks update-addon --cluster-name orchestrix-pilot-cluster --addon-name vpc-cni --addon-version v1.12.0-eksbuild.1
+    ```
+    
+    ### Database Maintenance
+    
+    #### PostgreSQL Maintenance
+    ```bash
+    # Schedule maintenance window
+    aws rds modify-db-instance --db-instance-identifier orchestrix-pilot-postgres \
+      --preferred-maintenance-window "sun:03:00-sun:04:00" \
+      --apply-immediately
+    
+    # Create snapshot before major maintenance
+    aws rds create-db-snapshot --db-instance-identifier orchestrix-pilot-postgres \
+      --db-snapshot-identifier "pre-maintenance-$(date +%Y%m%d)"
+    
+    # Update minor version
+    aws rds modify-db-instance --db-instance-identifier orchestrix-pilot-postgres \
+      --auto-minor-version-upgrade \
+      --apply-immediately
+    ```
+    
+    ### Application Updates
+    
+    #### Rolling Updates
+    ```bash
+    # Update container image
+    kubectl set image deployment/episodic-memory episodic-memory=agentic/research-engine:v1.1.0 -n orchestrix-pilot
+    
+    # Monitor rollout
+    kubectl rollout status deployment/episodic-memory -n orchestrix-pilot --timeout=600s
+    
+    # Verify health after update
+    kubectl port-forward svc/episodic-memory 8081:8081 -n orchestrix-pilot &
+    curl -f http://localhost:8081/health
+    ```
+    
+    #### Blue-Green Deployment Update
+    ```bash
+    # Deploy to green environment
+    kubectl apply -f deployment/k8s/blue-green-deployment.yaml
+    
+    # Update green deployment image
+    kubectl set image deployment/episodic-memory-green episodic-memory=agentic/research-engine:v1.1.0 -n orchestrix-pilot
+    
+    # Scale green deployment
+    kubectl scale deployment episodic-memory-green --replicas=2 -n orchestrix-pilot
+    
+    # Switch traffic to green
+    kubectl patch service episodic-memory -n orchestrix-pilot -p '{"spec":{"selector":{"color":"green"}}}'
+    
+    # Monitor for 10 minutes, then scale down blue
+    kubectl scale deployment episodic-memory-blue --replicas=0 -n orchestrix-pilot
+    ```
+    
+    ### Certificate Renewal
+    
+    #### Automated Certificate Renewal (cert-manager)
+    ```bash
+    # Check certificate status
+    kubectl get certificates -n orchestrix-pilot
+    
+    # Force renewal if needed
+    kubectl delete certificaterequest {cert-request-name} -n orchestrix-pilot
+    
+    # Verify new certificate
+    kubectl describe certificate {cert-name} -n orchestrix-pilot
+    ```
+    
+    #### Manual Certificate Update
+    ```bash
+    # Generate new certificate (if needed)
+    openssl req -new -newkey rsa:2048 -nodes -keyout tls.key -out tls.csr
+    
+    # Update secret with new certificate
+    kubectl create secret tls {secret-name} --cert=tls.crt --key=tls.key -n orchestrix-pilot --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Restart services using the certificate
+    kubectl rollout restart deployment/api-gateway -n orchestrix-pilot
+    ```
+    
+    ## EMERGENCY MAINTENANCE PROCEDURES
+    
+    ### Emergency Security Patching
+    ```bash
+    # Immediate patch deployment
+    # 1. Build patched container image
+    docker build -t agentic/research-engine:security-patch-$(date +%Y%m%d) .
+    docker push agentic/research-engine:security-patch-$(date +%Y%m%d)
+    
+    # 2. Update all deployments
+    kubectl set image deployment/episodic-memory episodic-memory=agentic/research-engine:security-patch-$(date +%Y%m%d) -n orchestrix-pilot
+    kubectl set image deployment/reputation-service reputation-service=agentic/research-engine:security-patch-$(date +%Y%m%d) -n orchestrix-pilot
+    
+    # 3. Monitor rollout
+    kubectl get pods -n orchestrix-pilot -w
+    ```
+    
+    ### Emergency Scaling
+    ```bash
+    # Scale up immediately for traffic spike
+    kubectl scale deployment episodic-memory --replicas=10 -n orchestrix-pilot
+    kubectl scale deployment reputation-service --replicas=8 -n orchestrix-pilot
+    
+    # Update HPA limits
+    kubectl patch hpa episodic-memory-hpa -n orchestrix-pilot -p '{"spec":{"maxReplicas":20}}'
+    
+    # Monitor resource usage
+    kubectl top pods -n orchestrix-pilot
+    kubectl top nodes
+    ```
+    
+    ### Data Recovery Procedures
+    ```bash
+    # Database point-in-time recovery
+    aws rds restore-db-instance-to-point-in-time \
+      --source-db-instance-identifier orchestrix-pilot-postgres \
+      --target-db-instance-identifier orchestrix-pilot-postgres-recovery \
+      --restore-time 2025-08-08T12:00:00.000Z
+    
+    # Update connection strings to recovery instance
+    kubectl patch secret application-secrets -n orchestrix-pilot -p '{"data":{"database-url":"'$(echo "postgresql://postgres:password@recovery-endpoint:5432/reputation" | base64)'"}}'
+    
+    # Restart affected services
+    kubectl rollout restart deployment/reputation-service -n orchestrix-pilot
+    ```
+    
+    ## POST-MAINTENANCE VERIFICATION
+    
+    ### Comprehensive Health Check
+    ```bash
+    #!/bin/bash
+    echo "=== Post-Maintenance Health Check ==="
+    
+    # 1. Pod Status
+    echo "1. Checking pod status..."
+    kubectl get pods -n orchestrix-pilot | grep -E "(Running|Ready)"
+    
+    # 2. Service Endpoints
+    echo "2. Testing service endpoints..."
+    services=("episodic-memory:8081" "reputation-service:8090" "weaviate:8080" "prometheus:9090" "grafana:3000")
+    for service in "${services[@]}"; do
+      if timeout 10 kubectl run test-${service/:/-} --rm -i --image=curlimages/curl --restart=Never -- curl -f -s http://${service}/health >/dev/null 2>&1; then
+        echo "  ✓ ${service} - HEALTHY"
+      else
+        echo "  ✗ ${service} - FAILED"
+      fi
+    done
+    
+    # 3. Database Connectivity
+    echo "3. Testing database connectivity..."
+    if kubectl run db-test --rm -i --image=postgres:15 --restart=Never -n orchestrix-pilot -- pg_isready -h {db-endpoint} -p 5432 >/dev/null 2>&1; then
+      echo "  ✓ Database - CONNECTED"
+    else
+      echo "  ✗ Database - FAILED"
+    fi
+    
+    # 4. Key Metrics
+    echo "4. Checking key metrics..."
+    kubectl port-forward svc/prometheus 9090:9090 -n orchestrix-pilot &
+    sleep 5
+    
+    AVAILABILITY=$(curl -s 'http://localhost:9090/api/v1/query?query=up' | jq -r '.data.result[0].value[1]')
+    LATENCY=$(curl -s 'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))' | jq -r '.data.result[0].value[1]')
+    
+    echo "  Availability: ${AVAILABILITY}"
+    echo "  P95 Latency: ${LATENCY}s"
+    
+    pkill -f "kubectl port-forward" >/dev/null 2>&1
+    
+    echo "=== Health Check Complete ==="
+    ```
+    
+    ### Performance Baseline Verification
+    ```bash
+    # Run load test to verify performance
+    kubectl run load-test --rm -i --image=jordi/ab --restart=Never -- \
+      ab -n 1000 -c 10 http://episodic-memory:8081/health
+    
+    # Compare with pre-maintenance metrics
+    echo "Pre-maintenance P95: {recorded-value}ms"
+    echo "Post-maintenance P95: $(curl -s 'http://localhost:9090/api/v1/query?query=histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))' | jq -r '.data.result[0].value[1]')ms"
+    ```

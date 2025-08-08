@@ -1,6 +1,6 @@
 import os
 import sys
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ElementTree  # Security: Use defusedxml as ET
 from pathlib import Path
 
 

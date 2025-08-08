@@ -1,3 +1,7 @@
+
+# Security: Only bind to all interfaces in production
+import os
+HOST = HOST if os.getenv("ENVIRONMENT") == "production" else "127.0.0.1"
 """OpenAPI FastAPI application exposing the LTM service."""
 
 from __future__ import annotations
@@ -484,7 +488,7 @@ async def _log_slow_request(endpoint: str, response_time: float, *args) -> None:
 
 def run_optimized_server(
     service: LTMService,
-    host: str = "0.0.0.0",
+    host: str = HOST,
     port: int = 8081,
     workers: int = 1,
     log_level: str = "info"
@@ -527,7 +531,7 @@ if __name__ == "__main__":  # pragma: no cover - manual execution
         episodic,
         procedural_memory=ProceduralMemoryService(InMemoryStorage()),
     )
-    uvicorn.run(create_app(service), host="0.0.0.0", port=8081)
+    uvicorn.run(create_app(service), host=HOST, port=8081)
 =======
     # Create optimized service
     max_workers = int(os.getenv("LTM_MAX_WORKERS", "8"))
@@ -536,7 +540,7 @@ if __name__ == "__main__":  # pragma: no cover - manual execution
     # Run with optimized settings
     run_optimized_server(
         service=service,
-        host="0.0.0.0",
+        host=HOST,
         port=int(os.getenv("LTM_PORT", "8081")),
         workers=1,  # Single worker for shared state
         log_level=os.getenv("LOG_LEVEL", "info").lower()
