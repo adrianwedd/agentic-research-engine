@@ -6,11 +6,7 @@ import os
 import time
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
-<<<<<<< Updated upstream
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
-=======
-from typing import Dict, List, Optional, Set, Tuple, Union
->>>>>>> Stashed changes
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import parse_qs, urlparse
 from concurrent.futures import ThreadPoolExecutor
 import time
