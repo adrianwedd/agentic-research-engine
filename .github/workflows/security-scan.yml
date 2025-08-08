@@ -1,0 +1,238 @@
+name: Security Scanning Pipeline
+
+on:
+  push:
+    branches: [main, develop, "feature/*"]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  secret-scanning:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}}
+
+  dependency-scanning:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit semgrep
+
+      - name: Run Safety check
+        run: |
+          pip freeze | safety check --json --output safety-report.json || true
+        continue-on-error: true
+
+      - name: Run Bandit security linter
+        run: |
+          bandit -r . -f json -o bandit-report.json || true
+        continue-on-error: true
+
+      - name: Run Semgrep
+        run: |
+          semgrep --config=auto --json --output=semgrep-report.json . || true
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+            semgrep-report.json
+
+  container-scanning:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker images
+        run: |
+          docker build -t reputation-service:test -f services/reputation/Dockerfile .
+          docker build -t ltm-service:test -f services/ltm/Dockerfile . || echo "LTM Dockerfile not found, skipping"
+
+      - name: Run Trivy vulnerability scanner - Reputation Service
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: reputation-service:test
+          format: 'sarif'
+          output: 'trivy-reputation.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-reputation.sarif'
+
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v3
+        id: grype-scan
+        with:
+          image: reputation-service:test
+          fail-build: false
+          output-format: sarif
+
+      - name: Upload Grype scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+
+  infrastructure-scanning:
+    name: Infrastructure Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform,kubernetes,dockerfile
+          output_format: sarif
+          output_file_path: reports/checkov-results.sarif
+
+      - name: Upload Checkov scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: reports/checkov-results.sarif
+
+      - name: Run Terrascan
+        uses: tenable/terrascan-action@main
+        with:
+          iac_type: 'terraform'
+          iac_version: 'v14'
+          policy_type: 'aws'
+          only_warn: true
+          sarif_upload: true
+
+      - name: Run kube-score
+        run: |
+          wget https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64.tar.gz
+          tar -xzf kube-score_linux_amd64.tar.gz
+          chmod +x kube-score
+          find deployment/k8s -name "*.yaml" -exec ./kube-score score {} \; || true
+
+  compliance-check:
+    name: Security Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run custom security validation
+        run: |
+          # Check for hardcoded secrets
+          echo "Checking for hardcoded secrets..."
+          if grep -r --include="*.py" --include="*.js" --include="*.yaml" -E "(password|secret|key|token)\s*=\s*['\"][^'\"]{8,}" . --exclude-dir=.git; then
+            echo "❌ Potential hardcoded secrets found"
+            exit 1
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+
+          # Check for HTTP URLs in production configs
+          echo "Checking for insecure HTTP URLs..."
+          if grep -r --include="*.yaml" --include="*.json" "http://" deployment/ | grep -v localhost; then
+            echo "❌ Insecure HTTP URLs found in deployment configs"
+            exit 1
+          else
+            echo "✅ No insecure HTTP URLs found"
+          fi
+
+          # Check for default passwords
+          echo "Checking for default passwords..."
+          if grep -r --include="*.yaml" -i "admin123\|password123\|default\|changeme" deployment/; then
+            echo "❌ Default or weak passwords found"
+            exit 1
+          else
+            echo "✅ No default passwords detected"
+          fi
+
+          # Validate environment variable patterns
+          echo "Checking environment variable security..."
+          if grep -r --include="*.py" --include="*.yaml" "os\.getenv.*password.*=" . | grep -v "None\|''\|\"\""; then
+            echo "⚠️ Environment variables with default values detected"
+          fi
+
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [secret-scanning, dependency-scanning, infrastructure-scanning, compliance-check]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download security reports
+        uses: actions/download-artifact@v3
+        with:
+          name: security-reports
+          path: security-reports/
+
+      - name: Generate security summary
+        run: |
+          echo "# 🛡️ Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Secret Scanning**: ${{ needs.secret-scanning.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Scanning**: ${{ needs.dependency-scanning.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Infrastructure Scanning**: ${{ needs.infrastructure-scanning.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Compliance Check**: ${{ needs.compliance-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.secret-scanning.result }}" != "success" ] || [ "${{ needs.compliance-check.result }}" != "success" ]; then
+            echo "❌ **CRITICAL**: Security vulnerabilities detected. Review required before deployment." >> $GITHUB_STEP_SUMMARY
+            echo "::error::Critical security issues found"
+            exit 1
+          else
+            echo "✅ **PASSED**: All security checks completed successfully." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload combined security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-scan-results
+          path: security-reports/

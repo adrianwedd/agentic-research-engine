@@ -99,8 +99,54 @@ def run_python_code(
         Optional list of IP addresses that the code is permitted to
         access. ``None`` disables all network access.
     """
+    # Security validations
     if not isinstance(code, str):
         raise ValueError("code must be a string")
+    
+    if len(code) > 100000:  # 100KB limit
+        raise ValueError("Code too large (max 100KB)")
+    
+    # Check for dangerous imports and patterns
+    dangerous_patterns = [
+        'import os', 'import subprocess', 'import sys', 'import shutil',
+        'import glob', 'from os', 'from subprocess', 'from sys',
+        '__import__', 'exec(', 'eval(', 'compile(', 'open(',
+        'file(', 'input(', 'raw_input('
+    ]
+    
+    code_lower = code.lower()
+    for pattern in dangerous_patterns:
+        if pattern in code_lower:
+            raise ValueError(f"Dangerous pattern detected: {pattern}")
+    
+    # Validate timeout and memory limits
+    if not isinstance(timeout, int) or timeout <= 0 or timeout > 30:
+        raise ValueError("Timeout must be a positive integer <= 30 seconds")
+    
+    if not isinstance(memory_limit_mb, int) or memory_limit_mb <= 0 or memory_limit_mb > 512:
+        raise ValueError("Memory limit must be a positive integer <= 512 MB")
+    
+    # Validate arguments
+    if args:
+        if not isinstance(args, list) or len(args) > 10:
+            raise ValueError("Args must be a list with max 10 elements")
+        for arg in args:
+            if not isinstance(arg, str) or len(arg) > 1000:
+                raise ValueError("Each arg must be a string with max 1000 characters")
+            # Prevent shell injection
+            if any(char in arg for char in [';', '&', '|', '`', '$', '(', ')']):
+                raise ValueError("Arguments contain potentially dangerous characters")
+    
+    # Validate allowed hosts
+    if allowed_hosts is not None:
+        if not isinstance(allowed_hosts, list) or len(allowed_hosts) > 10:
+            raise ValueError("Allowed hosts must be a list with max 10 elements")
+        import ipaddress
+        for host in allowed_hosts:
+            try:
+                ipaddress.ip_address(host)
+            except ValueError:
+                raise ValueError(f"Invalid IP address: {host}")
 
     args = args or []
 

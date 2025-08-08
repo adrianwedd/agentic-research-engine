@@ -1,0 +1,327 @@
+# Network Security Policies for Agentic Research Engine
+# Classification: CRITICAL - NETWORK SECURITY
+# Last Updated: 2025-08-08
+
+---
+# Default Deny All Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: orchestrix-pilot
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# Allow API Gateway Ingress Traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-ingress
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - podSelector:
+        matchLabels:
+          app: istio-proxy
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090  # Metrics
+
+---
+# Allow Reputation Service Internal Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: reputation-service
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: reputation-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from API Gateway and Agent Services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    - podSelector:
+        matchLabels:
+          component: agent
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow to PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow to LTM Service
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ltm-service
+    ports:
+    - protocol: TCP
+      port: 8001
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Allow LTM Service Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ltm-service
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: ltm-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Reputation Service and Agent Services
+  - from:
+    - podSelector:
+        matchLabels:
+          app: reputation-service
+    - podSelector:
+        matchLabels:
+          component: agent
+    ports:
+    - protocol: TCP
+      port: 8001
+  egress:
+  # Allow to Vector Database
+  - to:
+    - podSelector:
+        matchLabels:
+          app: chroma
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Allow Agent Services Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-services
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      component: agent
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from API Gateway
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow to Reputation Service
+  - to:
+    - podSelector:
+        matchLabels:
+          app: reputation-service
+    ports:
+    - protocol: TCP
+      port: 8000
+  # Allow to LTM Service
+  - to:
+    - podSelector:
+        matchLabels:
+          app: ltm-service
+    ports:
+    - protocol: TCP
+      port: 8001
+  # Allow to external APIs (LLM providers)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Allow Database Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-database
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from Reputation Service only
+  - from:
+    - podSelector:
+        matchLabels:
+          app: reputation-service
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Allow Vector Database Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chroma-vectordb
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: chroma
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from LTM Service only
+  - from:
+    - podSelector:
+        matchLabels:
+          app: ltm-service
+    ports:
+    - protocol: TCP
+      port: 8000
+
+---
+# Allow Monitoring Stack Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-stack
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      component: monitoring
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow from Istio for metrics collection
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    ports:
+    - protocol: TCP
+      port: 9090  # Prometheus
+    - protocol: TCP
+      port: 3000  # Grafana
+  # Allow internal monitoring traffic
+  - from:
+    - podSelector:
+        matchLabels:
+          component: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 3000
+    - protocol: TCP
+      port: 9093  # Alertmanager
+  egress:
+  # Allow to all pods for metrics scraping
+  - to:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Allow Istio Service Mesh Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: istio-sidecar
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      security.istio.io/tlsMode: istio
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow Istio sidecar communication
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - podSelector:
+        matchLabels:
+          app: istio-proxy
+  egress:
+  # Allow to Istio control plane
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
