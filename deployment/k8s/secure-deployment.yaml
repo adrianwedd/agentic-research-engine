@@ -1,0 +1,646 @@
+# Secure Deployment Configuration - Agentic Research Engine
+# Classification: CRITICAL - PILOT DEPLOYMENT
+# Last Updated: 2025-08-08
+
+# Episodic Memory Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: episodic-memory
+  namespace: orchestrix-pilot
+  labels:
+    app: episodic-memory
+    version: v1.0.0
+    component: memory-service
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: episodic-memory
+  template:
+    metadata:
+      labels:
+        app: episodic-memory
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: application-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+      containers:
+      - name: episodic-memory
+        image: agentic/research-engine:pilot-v1.0.0
+        imagePullPolicy: Always
+        command: 
+        - uvicorn
+        - services.episodic_memory.app:app
+        - --host=0.0.0.0
+        - --port=8081
+        - --workers=2
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_VERSION
+          value: "v1.0.0"
+        - name: WORKER_COUNT
+          value: "2"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "episodic-memory"
+        - name: STORAGE_BACKEND
+          value: "redis"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: application-secrets
+              key: redis-url
+        - name: VECTOR_STORE_TYPE
+          value: "weaviate"
+        - name: WEAVIATE_URL
+          value: "http://weaviate:8080"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: ENABLE_TRACING
+          value: "true"
+        - name: ENABLE_METRICS
+          value: "true"
+        - name: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          value: "3"
+        - name: CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          value: "60"
+        - name: MAX_RETRIES
+          value: "3"
+        - name: REQUEST_TIMEOUT
+          value: "30"
+        envFrom:
+        - secretRef:
+            name: application-secrets
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 2
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 10
+          successThreshold: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+---
+# Reputation Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reputation-service
+  namespace: orchestrix-pilot
+  labels:
+    app: reputation-service
+    version: v1.0.0
+    component: reputation-service
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: reputation-service
+  template:
+    metadata:
+      labels:
+        app: reputation-service
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: application-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
+      containers:
+      - name: reputation-service
+        image: agentic/research-engine:pilot-v1.0.0
+        imagePullPolicy: Always
+        command:
+        - uvicorn
+        - services.reputation.app:app
+        - --host=0.0.0.0
+        - --port=8090
+        - --workers=2
+        ports:
+        - containerPort: 8090
+          name: http
+          protocol: TCP
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SERVICE_VERSION
+          value: "v1.0.0"
+        - name: WORKER_COUNT
+          value: "2"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "reputation-service"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: application-secrets
+              key: database-url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: application-secrets
+              key: secret-key
+        - name: API_KEYS
+          valueFrom:
+            secretKeyRef:
+              name: application-secrets
+              key: api-keys
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: ENABLE_TRACING
+          value: "true"
+        - name: ENABLE_METRICS
+          value: "true"
+        - name: CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          value: "3"
+        - name: MAX_RETRIES
+          value: "3"
+        - name: REQUEST_TIMEOUT
+          value: "30"
+        envFrom:
+        - secretRef:
+            name: application-secrets
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1
+            memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8090
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8090
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 2
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8090
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 10
+          successThreshold: 1
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-run
+          mountPath: /var/run
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
+---
+# Weaviate Vector Database
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: weaviate
+  namespace: orchestrix-pilot
+  labels:
+    app: weaviate
+    version: v1.30.5
+    component: vector-database
+spec:
+  serviceName: weaviate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weaviate
+  template:
+    metadata:
+      labels:
+        app: weaviate
+        version: v1.30.5
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: weaviate
+        image: semitechnologies/weaviate:1.30.5
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: QUERY_DEFAULTS_LIMIT
+          value: "20"
+        - name: DEFAULT_VECTORIZER_MODULE
+          value: "none"
+        - name: DISABLE_TELEMETRY
+          value: "true"
+        - name: PERSISTENCE_DATA_PATH
+          value: "/var/lib/weaviate"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /v1/.well-known/live
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /v1/.well-known/ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: weaviate-data
+          mountPath: /var/lib/weaviate
+  volumeClaimTemplates:
+  - metadata:
+      name: weaviate-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: gp3
+      resources:
+        requests:
+          storage: 20Gi
+---
+# Service Account for Applications
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: application-service-account
+  namespace: orchestrix-pilot
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/orchestrix-pilot-app-role"
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: episodic-memory
+  namespace: orchestrix-pilot
+  labels:
+    app: episodic-memory
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: http
+  selector:
+    app: episodic-memory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reputation-service
+  namespace: orchestrix-pilot
+  labels:
+    app: reputation-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8090
+    targetPort: 8090
+    protocol: TCP
+    name: http
+  selector:
+    app: reputation-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weaviate
+  namespace: orchestrix-pilot
+  labels:
+    app: weaviate
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: weaviate
+---
+# Redis Deployment for Production Caching and Session Storage
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: orchestrix-pilot
+  labels:
+    app: redis
+    version: v7.0
+    component: cache-database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        version: v7.0
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: redis
+        image: redis:7.0-alpine
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --maxmemory
+        - 256mb
+        - --maxmemory-policy
+        - allkeys-lru
+        - --save
+        - "900 1"
+        - --save
+        - "300 10"
+        - --save
+        - "60 10000"
+        ports:
+        - containerPort: 6379
+          name: redis
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: application-secrets
+              key: redis-password
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --no-auth-warning
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+# Redis PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: orchestrix-pilot
+  labels:
+    app: redis
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: orchestrix-pilot
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis
+---
+# Network Policies for Inter-Service Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: episodic-memory-netpol
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: episodic-memory
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 8081
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: weaviate
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 4317
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: reputation-service-netpol
+  namespace: orchestrix-pilot
+spec:
+  podSelector:
+    matchLabels:
+      app: reputation-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api-gateway
+    ports:
+    - protocol: TCP
+      port: 8090
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 5432  # RDS PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: otel-collector
+    ports:
+    - protocol: TCP
+      port: 4317

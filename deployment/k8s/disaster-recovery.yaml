@@ -1,0 +1,578 @@
+# Disaster Recovery and Risk Mitigation Configuration
+# Classification: CRITICAL - DISASTER RECOVERY
+# Last Updated: 2025-08-08
+
+# Backup CronJob for Persistent Data
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-persistent-data
+  namespace: orchestrix-pilot
+  labels:
+    app: backup-job
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: backup-job
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-service-account
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          containers:
+          - name: backup
+            image: amazon/aws-cli:2.15.0
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              
+              # Backup Weaviate data
+              kubectl exec -n orchestrix-pilot statefulset/weaviate -- tar czf - /var/lib/weaviate | aws s3 cp - s3://orchestrix-pilot-backups/weaviate/backup-$(date +%Y%m%d-%H%M%S).tar.gz
+              
+              # Backup Prometheus data
+              kubectl exec -n orchestrix-pilot deployment/prometheus -- tar czf - /prometheus | aws s3 cp - s3://orchestrix-pilot-backups/prometheus/backup-$(date +%Y%m%d-%H%M%S).tar.gz
+              
+              # Backup Grafana data
+              kubectl exec -n orchestrix-pilot deployment/grafana -- tar czf - /var/lib/grafana | aws s3 cp - s3://orchestrix-pilot-backups/grafana/backup-$(date +%Y%m%d-%H%M%S).tar.gz
+              
+              # Clean up old backups (keep 30 days)
+              aws s3api list-objects-v2 --bucket orchestrix-pilot-backups --query "Contents[?LastModified<=\`$(date -d '30 days ago' --iso-8601)\`].[Key]" --output text | xargs -I {} aws s3 rm s3://orchestrix-pilot-backups/{}
+              
+              echo "Backup completed successfully at $(date)"
+            env:
+            - name: AWS_DEFAULT_REGION
+              value: "us-west-2"
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 200m
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                - ALL
+            volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          volumes:
+          - name: tmp
+            emptyDir: {}
+---
+# ServiceAccount for Backup Job
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-service-account
+  namespace: orchestrix-pilot
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/orchestrix-pilot-backup-role"
+---
+# RBAC for Backup Service Account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: orchestrix-pilot
+  name: backup-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/exec"]
+  verbs: ["get", "list", "create"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-role-binding
+  namespace: orchestrix-pilot
+subjects:
+- kind: ServiceAccount
+  name: backup-service-account
+  namespace: orchestrix-pilot
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Pod Disruption Budget for High Availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: episodic-memory-pdb
+  namespace: orchestrix-pilot
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: episodic-memory
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: reputation-service-pdb
+  namespace: orchestrix-pilot
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: reputation-service
+---
+# Horizontal Pod Autoscaler for Auto-scaling
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: episodic-memory-hpa
+  namespace: orchestrix-pilot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: episodic-memory
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reputation-service-hpa
+  namespace: orchestrix-pilot
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reputation-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+---
+# Chaos Engineering with Chaos Monkey
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-monkey
+  namespace: orchestrix-pilot
+  labels:
+    app: chaos-monkey
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-monkey
+  template:
+    metadata:
+      labels:
+        app: chaos-monkey
+    spec:
+      serviceAccountName: chaos-monkey
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: chaos-monkey
+        image: quay.io/linki/chaoskube:v0.21.0
+        args:
+        - --interval=10m
+        - --dry-run=false
+        - --timezone=UTC
+        - --log-level=info
+        - --annotation-selector=chaos.alpha.kubernetes.io/enabled=true
+        - --metrics-addr=0.0.0.0:8080
+        env:
+        - name: CHAOS_SCHEDULE
+          value: "0 */6 * * *"  # Every 6 hours
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - containerPort: 8080
+          name: metrics
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+# ServiceAccount and RBAC for Chaos Monkey
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-monkey
+  namespace: orchestrix-pilot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-monkey
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list", "delete", "get"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-monkey
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chaos-monkey
+subjects:
+- kind: ServiceAccount
+  name: chaos-monkey
+  namespace: orchestrix-pilot
+---
+# Emergency Runbook ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: emergency-runbook
+  namespace: orchestrix-pilot
+data:
+  incident-response.md: |
+    # Emergency Incident Response Runbook
+    
+    ## Service Down (CRITICAL)
+    
+    ### Immediate Actions (0-5 minutes)
+    1. Check service status: `kubectl get pods -n orchestrix-pilot`
+    2. Check recent deployments: `kubectl rollout history deployment/<service> -n orchestrix-pilot`
+    3. Check logs: `kubectl logs -f deployment/<service> -n orchestrix-pilot --tail=100`
+    4. If deployment issue, rollback: `kubectl rollout undo deployment/<service> -n orchestrix-pilot`
+    
+    ### Investigation (5-15 minutes)
+    1. Check Prometheus alerts: http://prometheus.orchestrix-pilot:9090/alerts
+    2. Check Grafana dashboards: http://grafana.orchestrix-pilot:3000
+    3. Check Jaeger traces: http://jaeger.orchestrix-pilot:16686
+    4. Check resource usage: `kubectl top pods -n orchestrix-pilot`
+    
+    ### Escalation
+    - Level 1: DevOps Engineer (Slack: #orchestrix-pilot-alerts)
+    - Level 2: Security Engineer + SRE (PagerDuty)
+    - Level 3: CTO + Security Council (Phone + Email)
+    
+    ## Database Connection Failure (CRITICAL)
+    
+    ### Immediate Actions
+    1. Check RDS status in AWS Console
+    2. Verify security groups and network connectivity
+    3. Check connection pool status in application logs
+    4. Verify database credentials in secrets
+    
+    ### Recovery Actions
+    1. Restart affected services: `kubectl rollout restart deployment/<service> -n orchestrix-pilot`
+    2. Check database parameters and performance insights
+    3. Consider failover to read replica if available
+    
+    ## High Memory Usage (WARNING)
+    
+    ### Actions
+    1. Identify memory-consuming pods: `kubectl top pods -n orchestrix-pilot --sort-by=memory`
+    2. Check if HPA is working: `kubectl get hpa -n orchestrix-pilot`
+    3. Scale manually if needed: `kubectl scale deployment/<service> --replicas=<count> -n orchestrix-pilot`
+    4. Investigate memory leaks in application code
+    
+    ## Security Breach (CRITICAL)
+    
+    ### Immediate Actions (0-2 minutes)
+    1. STOP - Do not panic, follow procedure
+    2. Isolate affected components: Apply network policies to deny all traffic
+    3. Preserve evidence: Take snapshots of logs and system state
+    4. Notify Security Council immediately
+    
+    ### Containment (2-30 minutes)
+    1. Scale down affected services to 0 replicas
+    2. Block external access at ingress level
+    3. Rotate all secrets and API keys
+    4. Activate incident response team
+    
+    ### Recovery
+    1. Patch security vulnerabilities
+    2. Deploy from clean container images
+    3. Restore from known-good backups
+    4. Conduct post-incident review
+    
+    ## Rollback Procedure
+    
+    ### Application Rollback
+    ```bash
+    # Check rollout history
+    kubectl rollout history deployment/<service> -n orchestrix-pilot
+    
+    # Rollback to previous version
+    kubectl rollout undo deployment/<service> -n orchestrix-pilot
+    
+    # Rollback to specific version
+    kubectl rollout undo deployment/<service> -n orchestrix-pilot --to-revision=<revision>
+    
+    # Monitor rollback
+    kubectl rollout status deployment/<service> -n orchestrix-pilot
+    ```
+    
+    ### Infrastructure Rollback
+    ```bash
+    # Terraform rollback
+    cd deployment/terraform
+    terraform plan -target=<resource>
+    terraform apply -target=<resource>
+    ```
+    
+    ## Contact Information
+    - DevOps Engineer: +1-XXX-XXX-XXXX (Primary)
+    - Security Engineer: +1-XXX-XXX-XXXX 
+    - SRE: +1-XXX-XXX-XXXX
+    - CTO: +1-XXX-XXX-XXXX (Emergency Only)
+    
+    ## Useful Commands
+    ```bash
+    # Get all resources
+    kubectl get all -n orchestrix-pilot
+    
+    # Describe problematic pod
+    kubectl describe pod <pod-name> -n orchestrix-pilot
+    
+    # Get events
+    kubectl get events -n orchestrix-pilot --sort-by='.lastTimestamp'
+    
+    # Port forward for troubleshooting
+    kubectl port-forward svc/<service> <local-port>:<service-port> -n orchestrix-pilot
+    
+    # Check resource usage
+    kubectl top nodes
+    kubectl top pods -n orchestrix-pilot
+    
+    # Access database directly (emergency only)
+    kubectl run psql-client --rm -i --tty --image postgres:15 -- psql -h <rds-endpoint> -U postgres -d reputation
+    ```
+  
+  disaster-recovery.md: |
+    # Disaster Recovery Procedures
+    
+    ## RTO/RPO Targets
+    - RTO (Recovery Time Objective): 15 minutes
+    - RPO (Recovery Point Objective): 5 minutes
+    
+    ## Backup Locations
+    - Database: RDS automated backups + manual snapshots
+    - Application Data: S3 bucket `orchestrix-pilot-backups`
+    - Configuration: Git repository with versioned configs
+    - Container Images: ECR with immutable tags
+    
+    ## Recovery Scenarios
+    
+    ### Scenario 1: Single Service Failure
+    1. Identify failing service from monitoring alerts
+    2. Check recent deployments and rollback if necessary
+    3. Scale healthy replicas to compensate
+    4. Investigate root cause
+    
+    ### Scenario 2: Database Failure
+    1. Check RDS status in AWS console
+    2. If primary failed, promote read replica
+    3. Update application connection strings
+    4. Verify data integrity after recovery
+    
+    ### Scenario 3: Complete Cluster Failure
+    1. Create new EKS cluster using Terraform
+    2. Restore database from latest backup
+    3. Deploy applications using Kubernetes manifests
+    4. Restore persistent data from S3 backups
+    5. Update DNS to point to new cluster
+    
+    ### Scenario 4: Data Center/AZ Failure
+    1. AWS handles this automatically with multi-AZ setup
+    2. Monitor for any manual intervention needed
+    3. Scale resources if performance is impacted
+    
+    ## Testing Schedule
+    - Backup restore testing: Monthly
+    - Service failure simulation: Weekly
+    - Full disaster recovery drill: Quarterly
+    
+    ## Recovery Verification
+    1. All services report healthy status
+    2. Database connectivity confirmed
+    3. Application functionality tested
+    4. Monitoring and alerting operational
+    5. All data integrity checks passed
+    
+    ## Post-Recovery Actions
+    1. Document lessons learned
+    2. Update procedures based on experience
+    3. Conduct blameless post-mortem
+    4. Implement preventive measures
+---
+# Health Check Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-checker
+  namespace: orchestrix-pilot
+  labels:
+    app: health-checker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-checker
+  template:
+    metadata:
+      labels:
+        app: health-checker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: health-checker
+        image: curlimages/curl:8.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            # Check all services
+            services=("episodic-memory:8081" "reputation-service:8090" "weaviate:8080" "prometheus:9090" "grafana:3000")
+            
+            for service in "${services[@]}"; do
+              if curl -f -s -o /dev/null --max-time 10 "http://${service}/health" 2>/dev/null || \
+                 curl -f -s -o /dev/null --max-time 10 "http://${service}/" 2>/dev/null; then
+                echo "$(date): ${service} - OK"
+              else
+                echo "$(date): ${service} - FAILED"
+                # Send alert to monitoring system
+                curl -X POST "http://prometheus:9090/api/v1/alerts" \
+                  -H "Content-Type: application/json" \
+                  -d "{\"alerts\":[{\"labels\":{\"alertname\":\"ServiceHealthCheckFailed\",\"service\":\"${service}\",\"severity\":\"warning\"}}]}" 2>/dev/null || true
+              fi
+            done
+            
+            sleep 30
+          done
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+---
+# Service for Health Checker
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-checker
+  namespace: orchestrix-pilot
+  labels:
+    app: health-checker
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: health-checker

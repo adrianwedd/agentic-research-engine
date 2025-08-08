@@ -1,0 +1,149 @@
+# ORCHESTRIX Pilot - Kubernetes Namespace Configuration
+# Classification: CRITICAL - PILOT DEPLOYMENT
+# Last Updated: 2025-08-08
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: orchestrix-pilot
+  labels:
+    name: orchestrix-pilot
+    environment: pilot
+    project: orchestrix-integration
+    security-policy: restricted
+  annotations:
+    orchestrix.ai/security-scan: "required"
+    orchestrix.ai/compliance: "high"
+    orchestrix.ai/data-classification: "restricted"
+---
+# Network Policy - Default Deny All
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: orchestrix-pilot
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Network Policy - Allow DNS
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: orchestrix-pilot
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# Resource Quota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pilot-resource-quota
+  namespace: orchestrix-pilot
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: "16Gi"
+    limits.cpu: "12"
+    limits.memory: "24Gi"
+    persistentvolumeclaims: "10"
+    services: "20"
+    count/ingresses: "5"
+    count/secrets: "20"
+    count/configmaps: "30"
+---
+# Limit Range
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: pilot-limit-range
+  namespace: orchestrix-pilot
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "50m"
+      memory: "128Mi"
+    type: Container
+---
+# Pod Security Policy (if enabled)
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: pilot-restricted-psp
+  namespace: orchestrix-pilot
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+  readOnlyRootFilesystem: true
+---
+# Service Account for External Secrets Operator
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets
+  namespace: orchestrix-pilot
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/orchestrix-pilot-external-secrets-role"
+---
+# RBAC for External Secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: external-secrets-pilot
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "create", "update", "patch"]
+- apiGroups: ["external-secrets.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: external-secrets-pilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-secrets-pilot
+subjects:
+- kind: ServiceAccount
+  name: external-secrets
+  namespace: orchestrix-pilot

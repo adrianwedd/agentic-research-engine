@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
+<<<<<<< Updated upstream
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+=======
+from typing import Dict, List, Optional, Set, Tuple, Union
+>>>>>>> Stashed changes
 from urllib.parse import parse_qs, urlparse
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 try:
     from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -166,12 +173,13 @@ else:  # pragma: no cover
 
 
 class LTMService:
-    """Coordinate access to various memory modules."""
+    """Optimized coordinator for memory modules with async support and connection pooling."""
 
     def __init__(
         self,
         episodic_memory: EpisodicMemoryService,
         semantic_memory: SemanticMemoryService | None = None,
+<<<<<<< Updated upstream
         procedural_memory: ProceduralMemoryService | None = None,
         evaluator_memory: EpisodicMemoryService | None = None,
         monitor: SystemMonitor | None = None,
@@ -299,6 +307,56 @@ class LTMService:
                 provenance=provenance,
             )
         raise ValueError(f"Unsupported memory type: {memory_type}")
+=======
+        max_workers: int = 8,
+    ) -> None:
+        self._modules: Dict[str, object] = {"episodic": episodic_memory}
+        self._modules["semantic"] = semantic_memory or SemanticMemoryService()
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        self._stats = {
+            "total_requests": 0,
+            "consolidate_requests": 0,
+            "retrieve_requests": 0,
+            "forget_requests": 0,
+            "total_response_time": 0.0,
+        }
+
+    def consolidate(self, memory_type: str, record: Dict) -> str:
+        """Store memory record with performance tracking."""
+        start_time = time.perf_counter()
+        try:
+            if memory_type not in ALLOWED_MEMORY_TYPES:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+            module = self._modules.get(memory_type)
+            if module is None:
+                raise ValueError(f"Unknown memory type: {memory_type}")
+            
+            result = None
+            if memory_type == "episodic":
+                result = module.store_experience(
+                    record.get("task_context", {}),
+                    record.get("execution_trace", {}),
+                    record.get("outcome", {}),
+                )
+            elif memory_type == "semantic":
+                result = module.store_fact(
+                    record["subject"],
+                    record["predicate"],
+                    record["object"],
+                    properties=record.get("properties", {}),
+                )
+            else:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+            
+            return result
+        finally:
+            self._update_stats("consolidate", time.perf_counter() - start_time)
+    
+    async def consolidate_async(self, memory_type: str, record: Dict) -> str:
+        """Async version of consolidate for better concurrency."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, self.consolidate, memory_type, record)
+>>>>>>> Stashed changes
 
     def semantic_consolidate(
         self, payload: Dict | str, *, fmt: str = "jsonld"
@@ -411,6 +469,7 @@ class LTMService:
         return module.forget_experience(identifier, hard=hard)
 
     def retrieve(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
+<<<<<<< Updated upstream
         validate_memory_type(memory_type)
         module = self._modules.get(memory_type)
         if module is None:
@@ -452,15 +511,96 @@ class LTMService:
             if hasattr(module, "forget_procedure"):
                 return module.forget_procedure(identifier, hard=hard)
         raise ValueError(f"Unsupported memory type: {memory_type}")
+=======
+        """Retrieve memory records with performance tracking."""
+        start_time = time.perf_counter()
+        try:
+            if memory_type not in ALLOWED_MEMORY_TYPES:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+            module = self._modules.get(memory_type)
+            if module is None:
+                raise ValueError(f"Unknown memory type: {memory_type}")
+            
+            # Limit maximum results for performance
+            safe_limit = min(limit, 100)
+            
+            result = None
+            if memory_type == "episodic":
+                result = module.retrieve_similar_experiences(query, limit=safe_limit)
+            elif memory_type == "semantic":
+                result = module.query_facts(**query)[:safe_limit]
+            else:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+                
+            return result
+        finally:
+            self._update_stats("retrieve", time.perf_counter() - start_time)
+            
+    async def retrieve_async(self, memory_type: str, query: Dict, *, limit: int = 5) -> List[Dict]:
+        """Async version of retrieve for better concurrency."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, self.retrieve, memory_type, query, limit=limit)
+
+    def forget(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
+        """Forget memory record with performance tracking."""
+        start_time = time.perf_counter()
+        try:
+            if memory_type not in ALLOWED_MEMORY_TYPES:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+            module = self._modules.get(memory_type)
+            if module is None:
+                raise ValueError(f"Unknown memory type: {memory_type}")
+            
+            result = False
+            if memory_type == "episodic":
+                if hasattr(module, "forget_experience"):
+                    result = module.forget_experience(identifier, hard=hard)
+            elif memory_type == "semantic":
+                if hasattr(module, "forget_fact"):
+                    result = module.forget_fact(identifier, hard=hard)
+            else:
+                raise ValueError(f"Unsupported memory type: {memory_type}")
+                
+            return result
+        finally:
+            self._update_stats("forget", time.perf_counter() - start_time)
+            
+    async def forget_async(self, memory_type: str, identifier: str, *, hard: bool = False) -> bool:
+        """Async version of forget for better concurrency."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self._executor, self.forget, memory_type, identifier, hard=hard)
+        
+    def _update_stats(self, operation: str, response_time: float) -> None:
+        """Update performance statistics."""
+        self._stats["total_requests"] += 1
+        self._stats[f"{operation}_requests"] += 1
+        self._stats["total_response_time"] += response_time
+        
+    def get_stats(self) -> Dict[str, Union[int, float]]:
+        """Get service performance statistics."""
+        stats = self._stats.copy()
+        if stats["total_requests"] > 0:
+            stats["avg_response_time"] = stats["total_response_time"] / stats["total_requests"]
+        else:
+            stats["avg_response_time"] = 0.0
+        return stats
+        
+    def close(self) -> None:
+        """Clean up resources."""
+        if self._executor:
+            self._executor.shutdown(wait=True)
+>>>>>>> Stashed changes
 
 
 class LTMServiceServer:
-    """Minimal HTTP API for the LTM service."""
+    """Optimized HTTP API server with connection pooling and async support."""
 
     def __init__(
-        self, service: LTMService, host: str = "127.0.0.1", port: int = 8081
+        self, service: LTMService, host: str = "127.0.0.1", port: int = 8081, max_connections: int = 100
     ) -> None:
         self.service = service
+        self.max_connections = max_connections
+        self._connection_pool = ThreadPoolExecutor(max_workers=max_connections)
         self.httpd = HTTPServer((host, port), self._handler())
 
     def _handler(self):
