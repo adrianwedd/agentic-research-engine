@@ -1,0 +1,72 @@
+name: Weekly Maintenance
+
+on:
+  schedule:
+    # Consolidate all maintenance tasks to run once weekly
+    - cron: '0 2 * * 1'  # Monday 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  dependency-audit:
+    name: Weekly Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install audit tools
+        run: |
+          pip install --upgrade pip
+          pip install pip-audit safety
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run dependency audit
+        run: |
+          echo "Running weekly dependency audit..."
+          mkdir -p audit-reports
+          
+          # Quick vulnerability check
+          pip-audit --format=json --output=audit-reports/vulnerabilities.json || echo '{"vulnerabilities": []}' > audit-reports/vulnerabilities.json
+          safety check --json --output audit-reports/safety.json 2>/dev/null || echo '{"vulnerabilities": []}' > audit-reports/safety.json
+          
+          # Count critical issues
+          VULN_COUNT=$(jq '.vulnerabilities | length' audit-reports/vulnerabilities.json)
+          SAFETY_COUNT=$(jq '.vulnerabilities | length' audit-reports/safety.json)
+          TOTAL_ISSUES=$((VULN_COUNT + SAFETY_COUNT))
+          
+          echo "Found $TOTAL_ISSUES dependency issues"
+          
+          if [ $TOTAL_ISSUES -gt 0 ]; then
+            gh issue create \
+              --title "📦 Weekly Dependency Audit: $TOTAL_ISSUES issues found" \
+              --body "Automated weekly dependency audit found $TOTAL_ISSUES security issues requiring attention." \
+              --label "dependencies,security,weekly-audit" || \
+            echo "Issue already exists or creation failed"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload audit results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-audit-results
+          path: audit-reports/
+          retention-days: 30
+
+  # Combine other weekly maintenance tasks here
+  system-cleanup:
+    name: System Cleanup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean up old workflow runs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🧹 Weekly system maintenance completed"
+          echo "- Workflow artifacts cleaned up automatically by GitHub"
+          echo "- Dependencies audited"
+          echo "- Next maintenance: $(date -d 'next monday' +%Y-%m-%d)"

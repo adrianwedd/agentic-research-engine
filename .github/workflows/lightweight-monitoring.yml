@@ -1,0 +1,64 @@
+name: Lightweight System Monitoring
+
+on:
+  schedule:
+    # Monitor 3x per day during business hours only
+    - cron: '0 6,14,22 * * 1-5'  # 66 runs/month vs 2,628!
+    - cron: '0 10 * * 1'         # Weekly comprehensive check
+  workflow_run:
+    workflows: ["Optimized CI"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: System Health Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # Reduced from 20
+    
+    steps:
+      - name: Check recent workflow success rate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Analyzing recent pipeline health..."
+          
+          # Get recent workflow runs (last 10)
+          gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[:10] | map(select(.name == "Optimized CI")) | {total: length, successful: map(select(.conclusion == "success")) | length}' \
+            > health-data.json
+          
+          TOTAL=$(jq -r '.total' health-data.json)
+          SUCCESSFUL=$(jq -r '.successful' health-data.json)
+          SUCCESS_RATE=$(echo "scale=1; $SUCCESSFUL * 100 / $TOTAL" | bc -l 2>/dev/null || echo "0")
+          
+          echo "## 📊 Pipeline Health Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Success Rate | ${SUCCESS_RATE}% | $([ $(echo "$SUCCESS_RATE >= 80" | bc -l 2>/dev/null || echo "0") -eq 1 ] && echo '✅ Healthy' || echo '⚠️ Needs Attention') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Recent Runs | $SUCCESSFUL/$TOTAL | $([ $SUCCESSFUL -eq $TOTAL ] && echo '✅ All Passing' || echo '📊 Some Failures') |" >> $GITHUB_STEP_SUMMARY
+          
+          # Simple alerting logic
+          if [ $(echo "$SUCCESS_RATE < 70" | bc -l 2>/dev/null || echo "0") -eq 1 ]; then
+            echo "🚨 ALERT: Pipeline success rate below 70%"
+            echo "alert-required=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Pipeline health is good"
+            echo "alert-required=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Only create alerts if needed
+  create-alert:
+    needs: health-check
+    if: needs.health-check.outputs.alert-required == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create monitoring issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "🚨 Pipeline Health Alert - $(date +%Y-%m-%d)" \
+            --body "Automated monitoring detected pipeline health issues. Please investigate recent failures." \
+            --label "monitoring,alert" || \
+          echo "Issue creation failed or duplicate exists"

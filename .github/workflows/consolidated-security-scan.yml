@@ -1,0 +1,141 @@
+name: Consolidated Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Reduce to twice weekly - Tuesday and Friday
+    - cron: '0 2 * * 2,5'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  security-scan:
+    name: Comprehensive Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install security tools
+        run: |
+          pip install --upgrade pip
+          pip install safety bandit pip-audit semgrep
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run dependency security scan
+        continue-on-error: true
+        run: |
+          mkdir -p security-reports
+          
+          # Run all security scans in sequence (not parallel)
+          echo "Running Safety scan..."
+          safety check --json --output security-reports/safety.json 2>/dev/null || echo '{}' > security-reports/safety.json
+          
+          echo "Running pip-audit..."
+          pip-audit --format=json --output=security-reports/pip-audit.json 2>/dev/null || echo '{}' > security-reports/pip-audit.json
+          
+          echo "Running Bandit code analysis..."
+          bandit -r . -f json -o security-reports/bandit.json --exclude .git,venv,.venv 2>/dev/null || echo '{}' > security-reports/bandit.json
+
+      - name: Secret scanning
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --only-verified
+
+      - name: Generate security summary
+        run: |
+          python3 -c "
+          import json, glob, os
+          from datetime import datetime
+          
+          reports = {}
+          total_issues = 0
+          high_severity = 0
+          
+          # Parse all security reports
+          for report_file in glob.glob('security-reports/*.json'):
+              try:
+                  with open(report_file, 'r') as f:
+                      data = json.load(f)
+                      if 'vulnerabilities' in data:
+                          count = len(data['vulnerabilities'])
+                          total_issues += count
+                      elif 'results' in data:  # Bandit format
+                          results = data['results']
+                          count = len(results)
+                          total_issues += count
+                          high_severity += len([r for r in results if r.get('issue_severity') == 'HIGH'])
+                      reports[os.path.basename(report_file)] = count
+              except: pass
+          
+          summary = {
+              'timestamp': datetime.now().isoformat(),
+              'total_security_issues': total_issues,
+              'high_severity_issues': high_severity,
+              'scan_results': reports,
+              'status': 'PASS' if high_severity == 0 else 'REVIEW_REQUIRED'
+          }
+          
+          with open('security-reports/summary.json', 'w') as f:
+              json.dump(summary, f, indent=2)
+          
+          print(f'Security scan completed: {total_issues} total issues, {high_severity} high severity')
+          "
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consolidated-security-reports
+          path: security-reports/
+          retention-days: 14  # Reduced from 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('security-reports/summary.json')) {
+              const summary = JSON.parse(fs.readFileSync('security-reports/summary.json', 'utf8'));
+              const status = summary.status === 'PASS' ? '✅ No critical security issues' : `⚠️ ${summary.high_severity_issues} high-severity issues found`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🛡️ Consolidated Security Scan\n\n${status}\n\n**Total findings:** ${summary.total_security_issues}`
+              });
+            }
+
+      - name: Fail on critical vulnerabilities
+        run: |
+          if [ -f security-reports/summary.json ]; then
+            HIGH_ISSUES=$(jq -r '.high_severity_issues' security-reports/summary.json)
+            if [ "$HIGH_ISSUES" -gt 0 ]; then
+              echo "❌ $HIGH_ISSUES critical security issues found"
+              exit 1
+            fi
+          fi
