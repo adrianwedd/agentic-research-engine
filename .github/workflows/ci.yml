@@ -42,7 +42,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -85,7 +85,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -146,7 +146,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -172,7 +172,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -204,7 +204,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-precommit-${{ hashFiles('.pre-commit-config.yaml') }}
