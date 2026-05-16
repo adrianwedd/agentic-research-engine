@@ -260,9 +260,6 @@ llvmlite==0.44.0
 locust==2.38.0
 locust-cloud==1.26.3
 loguru==0.7.3
-lunar_tools @ git+https://github.com/lunarring/lunar_tools@65051056f0a2cc810e5e85fe2dd4cf6f99f39c28
-# Editable install with no version control (lunar_tools_art==0.1.0)
--e /Users/adrian/repos/lunar_tools
 lxml==5.4.0
 lxml_html_clean==0.4.2
 lz4==4.4.4
